@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+/* ── Dark palette (default) ── */
+:root {
+  --bg:               #0F162F;
+  --fg:               #FFFCEB;
+  --fg-muted:         #E0D4B6;
+  --gold:             #D2A657;
+  --gold-faint:       rgba(210,166,87,0.2);
+  --gold-low:         rgba(210,166,87,0.25);
+  --gold-mid:         rgba(210,166,87,0.3);
+  --gold-high:        rgba(210,166,87,0.7);
+  --gold-quote:       rgba(210,166,87,0.4);
+  --input-bg:         rgba(255,255,255,0.04);
+  --card-bg:          rgba(255,255,255,0.03);
+  --spinner-track:    rgba(255,252,235,0.2);
+}
+
+/* ── Light palette ── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:             #F5F0E6;
+    --fg:             #1C1A2E;
+    --fg-muted:       #4A4560;
+    --gold:           #9A6F10;
+    --gold-faint:     rgba(154,111,16,0.2);
+    --gold-low:       rgba(154,111,16,0.3);
+    --gold-mid:       rgba(154,111,16,0.35);
+    --gold-high:      rgba(154,111,16,0.8);
+    --gold-quote:     rgba(154,111,16,0.45);
+    --input-bg:       rgba(0,0,0,0.05);
+    --card-bg:        rgba(0,0,0,0.04);
+    --spinner-track:  rgba(28,26,46,0.2);
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--fg-muted);
+  opacity: 0.4;
+}
+
+/* ── Mode tags ── */
+.mode-tag-work    { background: rgba(42,98,198,0.15);  color: #93b4f0; outline: 1px solid rgba(42,98,198,0.4); }
+.mode-tag-career  { background: rgba(210,166,87,0.12); color: #e5c88a; outline: 1px solid rgba(210,166,87,0.35); }
+.mode-tag-founder { background: rgba(224,212,182,0.10);color: #E0D4B6; outline: 1px solid rgba(224,212,182,0.3); }
+.mode-tag-life    { background: rgba(52,211,153,0.10); color: #6ee7b7; outline: 1px solid rgba(52,211,153,0.3); }
+
+@media (prefers-color-scheme: light) {
+  .mode-tag-work    { background: rgba(42,98,198,0.1);   color: #1a4aac; outline: 1px solid rgba(42,98,198,0.3); }
+  .mode-tag-career  { background: rgba(154,111,16,0.1);  color: #7a5510; outline: 1px solid rgba(154,111,16,0.3); }
+  .mode-tag-founder { background: rgba(120,100,60,0.1);  color: #5a4820; outline: 1px solid rgba(120,100,60,0.25); }
+  .mode-tag-life    { background: rgba(16,185,129,0.1);  color: #047857; outline: 1px solid rgba(16,185,129,0.3); }
+}
