@@ -190,7 +190,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
 
-  const userContent = title ? `Title hint: ${title}\n\n${content}` : content;
+  // If content is a bare URL, fetch and extract the page text server-side
+  let processedContent = content.trim();
+  if (/^https?:\/\/\S+$/.test(processedContent)) {
+    try {
+      const pageRes = await fetch(processedContent, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; Mnemos/1.0)" },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (pageRes.ok) {
+        const html = await pageRes.text();
+        const text = html
+          .replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 15000);
+        if (text.length > 200) {
+          processedContent = `Source URL: ${content.trim()}\n\n${text}`;
+        }
+      }
+    } catch {
+      // Failed to fetch URL; proceed with the URL string as content
+    }
+  }
+
+  const userContent = title ? `Title hint: ${title}\n\n${processedContent}` : processedContent;
 
   try {
     const message = await client.messages.create({

@@ -140,7 +140,7 @@ export default function CapturePage() {
           />
 
           <textarea
-            placeholder={"Paste anything.\nArticle, thread, blog post, research, notes, transcript..."}
+            placeholder={"Paste anything — URL, article, thread, notes, transcript..."}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
