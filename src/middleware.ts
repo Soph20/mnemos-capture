@@ -11,6 +11,9 @@ export function middleware(req: NextRequest): NextResponse {
 
   const auth = req.cookies.get("meridian_auth");
   if (!auth) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const loginUrl = new URL("/login", req.url);
     return NextResponse.redirect(loginUrl);
   }

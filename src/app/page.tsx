@@ -69,6 +69,10 @@ export default function CapturePage() {
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
         let errorMsg = `HTTP ${res.status}`;
         try {
           const data = await res.json() as { error?: string };
@@ -77,7 +81,12 @@ export default function CapturePage() {
         throw new Error(errorMsg);
       }
 
-      const data = await res.json() as CaptureResult;
+      let data: CaptureResult;
+      try {
+        data = await res.json() as CaptureResult;
+      } catch {
+        throw new Error("Unexpected response from server. Please refresh and try again.");
+      }
       setResult(data);
       setStatus("done");
       setContent("");
