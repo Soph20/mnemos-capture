@@ -69,8 +69,12 @@ export default function CapturePage() {
       });
 
       if (!res.ok) {
-        const data = await res.json() as { error?: string };
-        throw new Error(data.error ?? `HTTP ${res.status}`);
+        let errorMsg = `HTTP ${res.status}`;
+        try {
+          const data = await res.json() as { error?: string };
+          if (data.error) errorMsg = data.error;
+        } catch { /* response was not JSON */ }
+        throw new Error(errorMsg);
       }
 
       const data = await res.json() as CaptureResult;

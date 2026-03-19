@@ -192,32 +192,37 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const userContent = title ? `Title hint: ${title}\n\n${content}` : content;
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 2048,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userContent }],
-  });
-
-  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
-  const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-
-  let capture: ExtractedCapture;
   try {
-    capture = JSON.parse(rawJson) as ExtractedCapture;
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to parse AI response. Please try again." },
-      { status: 500 }
-    );
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userContent }],
+    });
+
+    const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
+    const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+    let capture: ExtractedCapture;
+    try {
+      capture = JSON.parse(rawJson) as ExtractedCapture;
+    } catch {
+      return NextResponse.json(
+        { error: "Failed to parse AI response. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    const date = formatDate();
+    const filename = `${date}-${capture.slug}.md`;
+    const markdown = buildMarkdown(date, capture, content);
+
+    await writeCapture(filename, markdown);
+    await appendToIndex(date, capture, filename);
+
+    return NextResponse.json({ capture, filename });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const date = formatDate();
-  const filename = `${date}-${capture.slug}.md`;
-  const markdown = buildMarkdown(date, capture, content);
-
-  await writeCapture(filename, markdown);
-  await appendToIndex(date, capture, filename);
-
-  return NextResponse.json({ capture, filename });
 }
