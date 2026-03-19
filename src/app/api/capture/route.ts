@@ -194,14 +194,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 1024,
+    max_tokens: 2048,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userContent }],
   });
 
   const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
   const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  const capture = JSON.parse(rawJson) as ExtractedCapture;
+
+  let capture: ExtractedCapture;
+  try {
+    capture = JSON.parse(rawJson) as ExtractedCapture;
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to parse AI response. Please try again." },
+      { status: 500 }
+    );
+  }
 
   const date = formatDate();
   const filename = `${date}-${capture.slug}.md`;
