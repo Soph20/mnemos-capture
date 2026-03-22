@@ -52,6 +52,30 @@ The user sees the same phrase in both cases. Source B was repeatedly misdiagnose
 
 ---
 
+### Debugging process failure: pattern-matching on error strings instead of tracing code paths
+
+**The mistake:** When the same error recurred across multiple fix attempts, each diagnosis was made by asking "what throws this string?" rather than "what code path is the request actually taking right now?" Those are different questions. The first produces a list of plausible causes. The second requires knowing the actual execution path.
+
+**How it played out:** "The string did not match the expected pattern." appeared repeatedly. Each fix targeted a plausible-sounding cause (server crash → HTML response, middleware redirect, GitHub API slug validation) without verifying that the proposed mechanism was actually possible. The slug sanitization fix was wrong because `Buffer.from(content, "utf-8").toString("base64")` always produces valid base64 — a non-ASCII slug cannot cause GitHub to return that error. The story fit the surface facts but the mechanism was never checked.
+
+**The root cause of repeated misdiagnosis:** Every catch block returned `err.message` with no context about where the error came from. "The string did not match the expected pattern." looks identical whether it came from Safari's JSON engine, the GitHub API, or the Anthropic SDK. An opaque error message makes every fix a guess.
+
+**The fix that should have come first:** Before changing any logic, add source context to error responses:
+```typescript
+// Instead of:
+return NextResponse.json({ error: message }, { status: 500 });
+
+// Add where it came from:
+return NextResponse.json({ error: `[github-write] ${message}` }, { status: 500 });
+```
+This alone would have immediately shown whether the error was coming from the GitHub write step, the Anthropic call, or the JSON parse — and every subsequent fix would have been targeted rather than speculative.
+
+**Rule:** When an error recurs across multiple fixes, the problem is not the fix — it's that the error message doesn't contain enough information to identify its source. Fix observability first, then fix the error.
+
+**Rule:** Before proposing a fix, verify the mechanism: could the proposed cause actually produce this error given the code? If the answer requires assumptions you can't verify, add logging before writing any fix.
+
+---
+
 ### "Load failed" (Safari)
 **What it is:** Safari's `TypeError` when a `fetch()` connection is dropped at the TCP level — not an HTTP error. No response ever arrives; the connection is terminated.
 
