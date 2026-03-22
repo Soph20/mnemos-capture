@@ -69,11 +69,24 @@ export default function CapturePage() {
       });
 
       if (!res.ok) {
-        const data = await res.json() as { error?: string };
-        throw new Error(data.error ?? `HTTP ${res.status}`);
+        if (res.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
+        let errorMsg = `HTTP ${res.status}`;
+        try {
+          const data = await res.json() as { error?: string };
+          if (data.error) errorMsg = data.error;
+        } catch { /* response was not JSON */ }
+        throw new Error(errorMsg);
       }
 
-      const data = await res.json() as CaptureResult;
+      let data: CaptureResult;
+      try {
+        data = await res.json() as CaptureResult;
+      } catch {
+        throw new Error("Unexpected response from server. Please refresh and try again.");
+      }
       setResult(data);
       setStatus("done");
       setContent("");
@@ -127,7 +140,7 @@ export default function CapturePage() {
           />
 
           <textarea
-            placeholder={"Paste anything.\nArticle, thread, blog post, research, notes, transcript..."}
+            placeholder={"Paste anything — URL, article, thread, notes, transcript..."}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}

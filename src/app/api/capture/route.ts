@@ -183,32 +183,92 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const body = await req.json() as { content: string; title?: string };
+  let body: { content: string; title?: string };
+  try {
+    body = await req.json() as { content: string; title?: string };
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
   const { content, title } = body;
 
   if (!content?.trim()) {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
 
-  const userContent = title ? `Title hint: ${title}\n\n${content}` : content;
+  // If content is a bare URL, fetch and extract the page text server-side
+  let processedContent = content.trim();
+  if (/^https?:\/\/\S+$/.test(processedContent)) {
+    try {
+      const pageRes = await fetch(processedContent, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; Mnemos/1.0)" },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (pageRes.ok) {
+        const html = await pageRes.text();
+        // Detect bot-challenge pages (Cloudflare, etc.) — they return 200 OK
+        // but contain no real article content. Passing this garbage to Claude
+        // causes malformed AI responses or downstream errors.
+        const isChallenge =
+          html.includes("cf-browser-verification") ||
+          html.includes("cf_chl_") ||
+          (html.includes("Just a moment") && html.includes("Cloudflare")) ||
+          html.includes("Enable JavaScript and cookies to continue");
+        if (!isChallenge) {
+          const text = html
+            .replace(/<script[\s\S]*?<\/script>/gi, "")
+            .replace(/<style[\s\S]*?<\/style>/gi, "")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 15000);
+          if (text.length > 200) {
+            processedContent = `Source URL: ${content.trim()}\n\n${text}`;
+          }
+        }
+      }
+    } catch {
+      // Failed to fetch URL; proceed with the URL string as content
+    }
+  }
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userContent }],
-  });
+  const userContent = title ? `Title hint: ${title}\n\n${processedContent}` : processedContent;
 
-  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
-  const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  const capture = JSON.parse(rawJson) as ExtractedCapture;
+  try {
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userContent }],
+    });
 
-  const date = formatDate();
-  const filename = `${date}-${capture.slug}.md`;
-  const markdown = buildMarkdown(date, capture, content);
+    const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
+    const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
 
-  await writeCapture(filename, markdown);
-  await appendToIndex(date, capture, filename);
+    let capture: ExtractedCapture;
+    try {
+      capture = JSON.parse(rawJson) as ExtractedCapture;
+    } catch {
+      return NextResponse.json(
+        { error: "Failed to parse AI response. Please try again." },
+        { status: 500 }
+      );
+    }
 
-  return NextResponse.json({ capture, filename });
+    const date = formatDate();
+    const safeSlug = (capture.slug ?? "untitled")
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || "untitled";
+    const filename = `${date}-${safeSlug}.md`;
+    const markdown = buildMarkdown(date, capture, content);
+
+    await writeCapture(filename, markdown);
+    await appendToIndex(date, capture, filename);
+
+    return NextResponse.json({ capture, filename });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
