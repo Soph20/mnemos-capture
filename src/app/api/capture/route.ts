@@ -205,14 +205,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
       if (pageRes.ok) {
         const html = await pageRes.text();
-        const text = html
-          .replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, "")
-          .replace(/<[^>]+>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-          .slice(0, 15000);
-        if (text.length > 200) {
-          processedContent = `Source URL: ${content.trim()}\n\n${text}`;
+        // Detect bot-challenge pages (Cloudflare, etc.) — they return 200 OK
+        // but contain no real article content. Passing this garbage to Claude
+        // causes malformed AI responses or downstream errors.
+        const isChallenge =
+          html.includes("cf-browser-verification") ||
+          html.includes("cf_chl_") ||
+          (html.includes("Just a moment") && html.includes("Cloudflare")) ||
+          html.includes("Enable JavaScript and cookies to continue");
+        if (!isChallenge) {
+          const text = html
+            .replace(/<script[\s\S]*?<\/script>/gi, "")
+            .replace(/<style[\s\S]*?<\/style>/gi, "")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 15000);
+          if (text.length > 200) {
+            processedContent = `Source URL: ${content.trim()}\n\n${text}`;
+          }
         }
       }
     } catch {

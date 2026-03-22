@@ -26,8 +26,25 @@ The user sees the same phrase in both cases. Source B was repeatedly misdiagnose
 
 **Triggers for Source B (GitHub API 422) found in this project:**
 
-4. **Slug containing non-ASCII or special characters** → Cloudflare-protected URLs (e.g. `claude.com`) return a JS bot-challenge page when fetched server-side. After HTML stripping, the extracted "content" is garbage challenge text. Claude generates a slug from it that may contain em-dashes, accented letters, or other characters outside `[a-z0-9-]`. These characters end up in the GitHub API file-path URL, which GitHub rejects with 422.
+4. **Slug containing non-ASCII or special characters** → slug ends up in the GitHub API file-path URL, which GitHub rejects with 422 if the path is malformed.
    - Fix: sanitize the slug before use: `.replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "untitled"`.
+
+---
+
+### Bot-challenge pages (Cloudflare) silently corrupting captured content
+
+**What it is:** When fetching a Cloudflare-protected URL server-side (e.g. `claude.com`), Cloudflare returns a **bot-challenge page** with status `200 OK` — not the real article. The page contains JavaScript challenge code and phrases like "Just a moment... Enable JavaScript and cookies to continue."
+
+**Why it's dangerous:** The server sees `pageRes.ok === true` and proceeds to extract text. The extracted text is garbage challenge content (sometimes including JavaScript fragments that the regex doesn't fully strip). This garbage is passed to Claude as the "article content." Claude, trying to extract insights from JavaScript/challenge text, may produce malformed JSON or output that causes downstream failures — including errors that surface as "The string did not match the expected pattern."
+
+**The regex problem:** The original script-stripping regex `/<(script|style|...)[\s\S]*?<\/\1>/gi` uses a lazy quantifier that stops at the **first** closing tag it finds. Cloudflare's JavaScript often contains strings like `"</div>"` or `"</script>"` embedded in the JS code. The lazy regex stops early and leaves JavaScript fragments in the extracted text.
+
+**Fix:**
+1. Detect challenge pages before extracting text by checking for known Cloudflare signatures (`cf-browser-verification`, `cf_chl_`, "Just a moment" + "Cloudflare").
+2. If a challenge page is detected, skip extraction entirely and fall back to URL-only mode (Claude uses training data).
+3. Use separate regex passes for `<script>` and `<style>` instead of a combined backreference regex.
+
+**Rule:** Before using server-fetched HTML content, validate that it's real article content — not a bot challenge, login wall, or error page. `pageRes.ok === true` does not mean the content is usable.
 
 **Rule:** API routes must always return JSON. Never redirect an API route to an HTML page. Redirects are for browser navigation; JSON errors are for API clients.
 
