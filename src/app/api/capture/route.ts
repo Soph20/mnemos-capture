@@ -183,7 +183,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const body = await req.json() as { content: string; title?: string };
+  let body: { content: string; title?: string };
+  try {
+    body = await req.json() as { content: string; title?: string };
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
   const { content, title } = body;
 
   if (!content?.trim()) {
@@ -239,7 +244,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const date = formatDate();
-    const filename = `${date}-${capture.slug}.md`;
+    const safeSlug = (capture.slug ?? "untitled")
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || "untitled";
+    const filename = `${date}-${safeSlug}.md`;
     const markdown = buildMarkdown(date, capture, content);
 
     await writeCapture(filename, markdown);

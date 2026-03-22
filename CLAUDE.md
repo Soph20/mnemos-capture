@@ -2,11 +2,18 @@
 
 ## Debugging learnings
 
-### "The string did not match the expected pattern." (Safari)
-**What it is:** Safari/WebKit's `SyntaxError` when `JSON.parse()` receives HTML instead of JSON.
-**Not** a validation error, not a GitHub API error — it's a browser-engine-specific JSON parse failure message. Chrome shows `"Unexpected token '<'"` for the same bug.
+### "The string did not match the expected pattern."
+**IMPORTANT: This phrase has two completely different sources. Do not assume it's always a Safari error.**
 
-**Two triggers found in this project:**
+**Source A — Safari/WebKit `JSON.parse()` SyntaxError:** Occurs in the *browser* when `res.json()` receives HTML instead of JSON. Chrome shows `"Unexpected token '<'"` for the same bug. The error comes from the browser engine, not the app.
+
+**Source B — GitHub API 422 Unprocessable Entity:** Occurs on the *server* when a `PUT /repos/.../contents/...` request fails GitHub's validation. GitHub returns `{"message":"The string did not match the expected pattern.","documentation_url":"..."}` as a proper JSON error. The app correctly propagates it as `{ error: "GitHub PUT ...: HTTP 422 — {\"message\":\"The string did not match the expected pattern.\"}" }`.
+
+The user sees the same phrase in both cases. Source B was repeatedly misdiagnosed as Source A.
+
+---
+
+**Triggers for Source A (Safari JSON parse) found in this project:**
 
 1. **Server route throwing uncaught exception** → Next.js returns HTML 500 page → client calls `res.json()` on HTML.
    - Fix: wrap the entire route handler body in `try/catch` so the route always returns JSON.
@@ -14,7 +21,17 @@
 2. **Auth cookie expired → middleware redirect to `/login` HTML** → `fetch()` follows the 307, receives `200 OK` HTML from the login page → `res.ok` is `true` so the error branch is skipped → unguarded success-path `res.json()` throws.
    - Fix: middleware returns `401 { error: "Unauthorized" }` for `/api/*` routes instead of redirecting. Client handles `401` by doing `window.location.href = "/login"`.
 
+3. **`req.json()` outside try-catch** → if body parsing fails for any reason, the route crashes and Next.js returns HTML.
+   - Fix: wrap `req.json()` in its own try-catch at the top of the handler.
+
+**Triggers for Source B (GitHub API 422) found in this project:**
+
+4. **Slug containing non-ASCII or special characters** → Cloudflare-protected URLs (e.g. `claude.com`) return a JS bot-challenge page when fetched server-side. After HTML stripping, the extracted "content" is garbage challenge text. Claude generates a slug from it that may contain em-dashes, accented letters, or other characters outside `[a-z0-9-]`. These characters end up in the GitHub API file-path URL, which GitHub rejects with 422.
+   - Fix: sanitize the slug before use: `.replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "untitled"`.
+
 **Rule:** API routes must always return JSON. Never redirect an API route to an HTML page. Redirects are for browser navigation; JSON errors are for API clients.
+
+**Rule:** When the same error string can come from multiple sources (browser engine AND external API), diagnose by checking: is the server returning HTML (Source A) or is it returning `{ error: "..." }` JSON that happens to contain the phrase (Source B)?
 
 ---
 
