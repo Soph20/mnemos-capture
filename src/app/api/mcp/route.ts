@@ -305,10 +305,10 @@ async function dispatch(req: JsonRpcRequest): Promise<JsonRpcResponse> {
         let text: string;
         switch (toolName) {
           case "search_lenny":
-            text = await searchLenny(toolArgs as SearchLennyArgs);
+            text = await searchLenny(toolArgs as unknown as SearchLennyArgs);
             break;
           case "get_insights":
-            text = await getInsights(toolArgs as GetInsightsArgs);
+            text = await getInsights(toolArgs as unknown as GetInsightsArgs);
             break;
           case "list_speakers":
             text = await listSpeakers();
