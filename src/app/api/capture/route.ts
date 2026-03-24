@@ -149,7 +149,14 @@ async function githubPut(
 }
 
 async function writeCapture(filename: string, markdown: string): Promise<void> {
-  await githubPut(`inbox/${filename}`, markdown, `capture: add ${filename}`);
+  const existing = await githubGet(`inbox/${filename}`);
+  const sha = existing?.sha;
+  await githubPut(
+    `inbox/${filename}`,
+    markdown,
+    sha ? `capture: update ${filename}` : `capture: add ${filename}`,
+    sha
+  );
 }
 
 async function appendToIndex(
