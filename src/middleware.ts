@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // /api/mcp handles its own auth via MCP_SECRET bearer token
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/mcp"];
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/mcp", "/api/version"];
 
 export function middleware(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;

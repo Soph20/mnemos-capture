@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type CaptureMode = "work" | "career" | "founder" | "life";
 
@@ -54,6 +54,27 @@ export default function CapturePage() {
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [result, setResult] = useState<CaptureResult | null>(null);
   const [error, setError] = useState("");
+  const [newVersionAvailable, setNewVersionAvailable] = useState(false);
+  const initialBuildId = useRef<string | null>(null);
+
+  useEffect(() => {
+    async function checkVersion() {
+      try {
+        const res = await fetch("/api/version");
+        if (!res.ok) return;
+        const data = await res.json() as { buildId: string };
+        if (!initialBuildId.current) {
+          initialBuildId.current = data.buildId;
+        } else if (data.buildId !== initialBuildId.current && data.buildId !== "unknown") {
+          setNewVersionAvailable(true);
+        }
+      } catch { /* silently ignore network errors */ }
+    }
+
+    void checkVersion();
+    const interval = setInterval(() => void checkVersion(), 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleSubmit() {
     if (!content.trim()) return;
@@ -110,7 +131,21 @@ export default function CapturePage() {
   }
 
   return (
-    <main className="min-h-dvh flex flex-col items-center px-4 py-8 max-w-xl mx-auto">
+    <>
+    {newVersionAvailable && (
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
+        style={{ background: "var(--bg)", borderBottom: "1px solid var(--gold-low)" }}>
+        <span style={{ color: "var(--fg-muted)" }}>A new version is available.</span>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-sm font-medium shrink-0"
+          style={{ color: "var(--gold)" }}
+        >
+          Refresh now
+        </button>
+      </div>
+    )}
+    <main className="min-h-dvh flex flex-col items-center px-4 py-8 max-w-xl mx-auto" style={newVersionAvailable ? { paddingTop: "3rem" } : undefined}>
 
       {/* Header */}
       <div className="w-full mb-10">
@@ -119,6 +154,22 @@ export default function CapturePage() {
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
           <h1 className="text-base font-semibold tracking-tight" style={{ color: "var(--fg)" }}>Mnemos</h1>
+          <button
+            onClick={() => window.location.reload()}
+            aria-label="Refresh page"
+            className="ml-auto p-1.5 rounded-lg transition-opacity"
+            style={{ background: "transparent", color: "var(--fg)", opacity: 0.35 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.8"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.35"; }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+              <path d="M8 16H3v5"/>
+            </svg>
+          </button>
         </div>
         <p className="text-sm pl-10" style={{ color: "var(--fg-muted)", opacity: 0.7 }}>
           Capture anything. Insights surface automatically.
@@ -270,5 +321,6 @@ export default function CapturePage() {
         </div>
       )}
     </main>
+    </>
   );
 }
