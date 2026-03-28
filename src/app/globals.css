@@ -54,15 +54,3 @@ textarea::placeholder {
   opacity: 0.4;
 }
 
-/* ── Mode tags ── */
-.mode-tag-work    { background: rgba(42,98,198,0.15);  color: #93b4f0; outline: 1px solid rgba(42,98,198,0.4); }
-.mode-tag-career  { background: rgba(210,166,87,0.12); color: #e5c88a; outline: 1px solid rgba(210,166,87,0.35); }
-.mode-tag-founder { background: rgba(224,212,182,0.10);color: #E0D4B6; outline: 1px solid rgba(224,212,182,0.3); }
-.mode-tag-life    { background: rgba(52,211,153,0.10); color: #6ee7b7; outline: 1px solid rgba(52,211,153,0.3); }
-
-@media (prefers-color-scheme: light) {
-  .mode-tag-work    { background: rgba(42,98,198,0.1);   color: #1a4aac; outline: 1px solid rgba(42,98,198,0.3); }
-  .mode-tag-career  { background: rgba(154,111,16,0.1);  color: #7a5510; outline: 1px solid rgba(154,111,16,0.3); }
-  .mode-tag-founder { background: rgba(120,100,60,0.1);  color: #5a4820; outline: 1px solid rgba(120,100,60,0.25); }
-  .mode-tag-life    { background: rgba(16,185,129,0.1);  color: #047857; outline: 1px solid rgba(16,185,129,0.3); }
-}
