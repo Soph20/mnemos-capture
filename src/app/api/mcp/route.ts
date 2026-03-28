@@ -1,370 +1,208 @@
-/**
- * MCP endpoint — mnemos knowledge layer
- *
- * Implements the MCP JSON-RPC 2.0 protocol over HTTP (streamable transport).
- * Serves the full Lenny knowledge base (305 structured insight files) to any
- * Claude Code session that points its .mcp.json at this URL.
- *
- * Tools:
- *   search_lenny   — keyword search → returns full matching insight files
- *   get_insights   — fetch full files for specific speakers by name
- *   list_speakers  — browse all 305 speakers + their topics
- *
- * Auth: Bearer token via MCP_SECRET env var (optional — skip in dev).
- */
-
 import { NextRequest, NextResponse } from "next/server";
+import { getUserByApiKey } from "@/lib/db";
+import type { User } from "@/lib/db";
+import Anthropic from "@anthropic-ai/sdk";
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
-const GITHUB_REPO = process.env.GITHUB_REPO ?? "";
-const GITHUB_BRANCH = process.env.GITHUB_BRANCH ?? "main";
-const MCP_SECRET = process.env.MCP_SECRET ?? "";
-
-const MCP_PROTOCOL_VERSION = "2024-11-05";
-const SERVER_NAME = "mnemos";
-const SERVER_VERSION = "1.0.0";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── Types ──
 
 interface JsonRpcRequest {
   jsonrpc: "2.0";
-  id: number | string | null;
+  id?: string | number;
   method: string;
   params?: Record<string, unknown>;
 }
 
-interface JsonRpcResponse {
-  jsonrpc: "2.0";
-  id: number | string | null;
-  result?: unknown;
-  error?: { code: number; message: string };
-}
+// ── GitHub helpers ──
 
-interface SearchLennyArgs {
-  query: string;
-  max_results?: number;
-}
-
-interface GetInsightsArgs {
-  speakers: string[];
-}
-
-interface IndexRow {
-  slug: string;
-  speaker: string;
-  role: string;
-  topics: string;
-}
-
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-
-function isAuthorized(req: NextRequest): boolean {
-  if (!MCP_SECRET) return true; // No secret set → open (safe for dev)
-  const auth = req.headers.get("authorization") ?? "";
-  return auth === `Bearer ${MCP_SECRET}`;
-}
-
-// ─── GitHub helpers ───────────────────────────────────────────────────────────
-
-async function githubGetContent(filePath: string): Promise<string | null> {
-  // Encode each segment separately to preserve slashes
-  const encodedPath = filePath
-    .split("/")
-    .map(encodeURIComponent)
-    .join("/");
-
+async function githubGet(token: string, repo: string, path: string): Promise<{ ok: boolean; data: unknown }> {
   const res = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/contents/${encodedPath}?ref=${GITHUB_BRANCH}`,
-    {
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
+    `https://api.github.com/repos/${repo}/contents/${path}?ref=main`,
+    { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
   );
-
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GitHub GET ${filePath}: HTTP ${res.status}`);
-
-  const data = (await res.json()) as { content: string };
-  return Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf-8");
+  if (res.status === 404) return { ok: false, data: null };
+  const data: unknown = await res.json();
+  return { ok: res.ok, data };
 }
 
-// ─── Index parser ─────────────────────────────────────────────────────────────
-
-function parseIndexRows(indexContent: string): IndexRow[] {
-  return indexContent
-    .split("\n")
-    .filter(
-      (line) =>
-        line.startsWith("|") &&
-        !line.includes("---") &&
-        !line.includes("| Slug") &&
-        !line.includes("| Speaker")
-    )
-    .map((line) => {
-      const cols = line
-        .split("|")
-        .map((c) => c.trim())
-        .filter(Boolean);
-      if (cols.length < 4) return null;
-      return {
-        slug: cols[0] ?? "",
-        speaker: cols[1] ?? "",
-        role: cols[2] ?? "",
-        topics: cols[3] ?? "",
-      };
-    })
-    .filter((r): r is IndexRow => r !== null);
+async function githubPut(token: string, repo: string, filePath: string, content: string, message: string, sha?: string): Promise<void> {
+  const body: Record<string, string> = { message, content: Buffer.from(content, "utf-8").toString("base64"), branch: "main" };
+  if (sha) body["sha"] = sha;
+  const res = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`GitHub PUT ${filePath}: HTTP ${res.status}`);
 }
 
-function scoreRow(row: IndexRow, terms: string[]): number {
-  const text = `${row.slug} ${row.speaker} ${row.role} ${row.topics}`.toLowerCase();
-  return terms.reduce((acc, term) => acc + (text.includes(term) ? 1 : 0), 0);
-}
-
-// ─── Tool: search_lenny ───────────────────────────────────────────────────────
-
-async function searchLenny(args: SearchLennyArgs): Promise<string> {
-  const { query, max_results = 8 } = args;
-  const capped = Math.min(max_results, 12);
-  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-
-  const indexContent = await githubGetContent("lenny/INDEX.md");
-  if (!indexContent) {
-    return "Lenny knowledge index not found. Check that lenny/INDEX.md exists in the repo.";
-  }
-
-  const rows = parseIndexRows(indexContent);
-
-  const matches = rows
-    .map((row) => ({ row, score: scoreRow(row, terms) }))
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, capped)
-    .map(({ row }) => row);
-
-  if (matches.length === 0) {
-    return (
-      `No Lenny insights matched "${query}".\n` +
-      `Try broader terms: prioritization, growth, PLG, metrics, strategy, hiring, ` +
-      `discovery, roadmap, pricing, retention, experimentation, OKRs, stakeholders, ` +
-      `leadership, scaling, product-market fit, user research, frameworks.`
-    );
-  }
-
-  // Fetch full insight files in parallel
-  const files = await Promise.all(
-    matches.map(async ({ slug, speaker }) => {
-      const content = await githubGetContent(`lenny/${slug}-insights.md`);
-      return content ?? `## ${speaker}\n_Insight file not found for slug: ${slug}_\n`;
-    })
-  );
-
-  return (
-    `# Lenny Insights — "${query}"\n\n` +
-    `${matches.length} expert(s) matched. Full structured insights below.\n\n` +
-    `---\n\n` +
-    files.join("\n\n---\n\n")
-  );
-}
-
-// ─── Tool: get_insights ───────────────────────────────────────────────────────
-
-async function getInsights(args: GetInsightsArgs): Promise<string> {
-  const { speakers } = args;
-
-  if (!speakers.length) return "No speakers provided.";
-
-  const files = await Promise.all(
-    speakers.map(async (speaker) => {
-      const content = await githubGetContent(`lenny/${speaker}-insights.md`);
-      if (!content) {
-        return (
-          `## ${speaker}\n` +
-          `_Not found. Use \`list_speakers\` to find the exact slug._\n`
-        );
-      }
-      return content;
-    })
-  );
-
-  return files.join("\n\n---\n\n");
-}
-
-// ─── Tool: list_speakers ──────────────────────────────────────────────────────
-
-async function listSpeakers(): Promise<string> {
-  const content = await githubGetContent("lenny/INDEX.md");
-  if (!content) return "Lenny index not found.";
-  return content;
-}
-
-// ─── Tool registry ────────────────────────────────────────────────────────────
+// ── Tool definitions ──
 
 const TOOLS = [
   {
-    name: "search_lenny",
-    description:
-      "Search 305 structured Lenny Rachitsky podcast insights from top PMs, founders, and product leaders. " +
-      "Returns FULL insight files — frameworks, key insights, product decision patterns, anti-patterns, heuristics, and direct quotes. " +
-      "Use this to back up any product decision, interview answer, roadmap choice, prioritization call, or PM/founder reasoning with real expert knowledge. " +
-      "Always query this before making product recommendations.",
+    name: "capture",
+    description: "Capture a resource (article, thread, notes, transcript) into the knowledge hub. Claude extracts insights, tags them, and commits to the knowledge repo.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        query: {
-          type: "string",
-          description:
-            "Search query. Topics: prioritization, growth, PLG, metrics, hiring, strategy, " +
-            "discovery, roadmap, pricing, retention, experimentation, OKRs, stakeholders, " +
-            "leadership, scaling, product-market fit, user research. Or a speaker name.",
-        },
-        max_results: {
-          type: "number",
-          description: "Number of full insight files to return. Default: 8. Max: 12.",
-        },
+        content: { type: "string", description: "The content to capture" },
+        title: { type: "string", description: "Optional title hint" },
+      },
+      required: ["content"],
+    },
+  },
+  {
+    name: "search_captures",
+    description: "Search the knowledge hub for captures matching a query.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "Search term" },
+        mode: { type: "string", enum: ["career", "work", "founder", "life"], description: "Filter by mode" },
       },
       required: ["query"],
     },
   },
   {
-    name: "get_insights",
-    description:
-      "Fetch full structured insight files for specific speakers by name. " +
-      "Use when you know exactly which expert's thinking is most relevant. " +
-      "Returns complete frameworks, patterns, anti-patterns, heuristics, and direct quotes.",
-    inputSchema: {
-      type: "object" as const,
-      properties: {
-        speakers: {
-          type: "array",
-          items: { type: "string" },
-          description:
-            "Speaker slugs — exact names as in list_speakers. " +
-            "Examples: 'Shreyas Doshi', 'Elena Verna 2.0', 'Brian Chesky', 'Marty Cagan'. " +
-            "Can fetch multiple at once.",
-        },
-      },
-      required: ["speakers"],
-    },
-  },
-  {
-    name: "list_speakers",
-    description:
-      "Browse all 305 speakers in the Lenny knowledge base with their roles, companies, and topics. " +
-      "Use to discover available experts or find exact speaker names before calling get_insights.",
-    inputSchema: {
-      type: "object" as const,
-      properties: {},
-      required: [],
-    },
+    name: "list_inbox",
+    description: "List all unprocessed captures in the inbox.",
+    inputSchema: { type: "object" as const, properties: {} },
   },
 ];
 
-// ─── JSON-RPC helpers ─────────────────────────────────────────────────────────
+// ── Tool handlers ──
 
-function ok(id: number | string | null, result: unknown): JsonRpcResponse {
-  return { jsonrpc: "2.0", id, result };
-}
+async function handleCapture(user: User, args: { content: string; title?: string }): Promise<string> {
+  if (!user.llm_api_key) throw new Error("API key not configured. Complete onboarding at mnemos-capture.vercel.app");
+  if (!user.github_repo) throw new Error("Knowledge repo not configured");
 
-function rpcError(
-  id: number | string | null,
-  code: number,
-  message: string
-): JsonRpcResponse {
-  return { jsonrpc: "2.0", id, error: { code, message } };
-}
+  const client = new Anthropic({ apiKey: user.llm_api_key });
+  const userContent = args.title ? `Title hint: ${args.title}\n\n${args.content}` : args.content;
 
-// ─── Method dispatcher ────────────────────────────────────────────────────────
+  const SYSTEM_PROMPT = `You are processing a captured resource for a personal knowledge hub. Extract the following and return ONLY valid JSON:
+{"slug":"short-hyphenated","inferredTitle":"Title","inferredAuthor":null,"inferredUrl":null,"inferredType":"article","coreIdea":"The insight","takeaways":["takeaway"],"quotes":[],"modes":["career"],"appliedTo":null}`;
 
-async function dispatch(req: JsonRpcRequest): Promise<JsonRpcResponse> {
-  const { id, method, params } = req;
+  const message = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1024,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userContent }],
+  });
 
-  switch (method) {
-    case "initialize":
-      return ok(id, {
-        protocolVersion: MCP_PROTOCOL_VERSION,
-        serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
-        capabilities: { tools: {} },
-      });
+  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
+  const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const capture = JSON.parse(rawJson) as Record<string, unknown>;
 
-    case "notifications/initialized":
-      return ok(id, {});
+  const date = new Date().toISOString().split("T")[0] as string;
+  const slug = capture["slug"] as string;
+  const filename = `${date}-${slug}.md`;
+  const modes = capture["modes"] as string[];
+  const takeaways = capture["takeaways"] as string[];
+  const quotes = capture["quotes"] as string[];
+  const coreIdea = capture["coreIdea"] as string;
 
-    case "tools/list":
-      return ok(id, { tools: TOOLS });
+  const markdown = `---\ndate: ${date}\nsource: ${capture["inferredTitle"]}\ntype: ${capture["inferredType"]}\nmodes: ${modes.join(", ")}\nstatus: inbox\n---\n\n# ${capture["inferredTitle"]}\n\n## Core idea\n${coreIdea}\n\n## Key takeaways\n${takeaways.map((t) => `- ${t}`).join("\n")}\n\n## Quotes\n${quotes.length > 0 ? quotes.map((q) => `> "${q}"`).join("\n\n") : "_none_"}\n`;
 
-    case "tools/call": {
-      const p = params as { name?: string; arguments?: Record<string, unknown> };
-      const toolName = p?.name;
-      const toolArgs = p?.arguments ?? {};
+  await githubPut(user.github_token, user.github_repo, `inbox/${filename}`, markdown, `capture: add ${filename}`);
 
-      try {
-        let text: string;
-        switch (toolName) {
-          case "search_lenny":
-            text = await searchLenny(toolArgs as unknown as SearchLennyArgs);
-            break;
-          case "get_insights":
-            text = await getInsights(toolArgs as unknown as GetInsightsArgs);
-            break;
-          case "list_speakers":
-            text = await listSpeakers();
-            break;
-          default:
-            return rpcError(id, -32601, `Unknown tool: ${String(toolName)}`);
-        }
-        return ok(id, { content: [{ type: "text", text }] });
-      } catch (e) {
-        const message = e instanceof Error ? e.message : "Unknown error";
-        return ok(id, {
-          content: [{ type: "text", text: `Error: ${message}` }],
-          isError: true,
-        });
-      }
-    }
-
-    default:
-      return rpcError(id, -32601, `Method not found: ${method}`);
+  // Update INDEX.md
+  const row = `| ${date} | [${slug}](inbox/${filename}) | ${coreIdea.slice(0, 80)}... | ${modes.join(", ")} |\n`;
+  const existing = await githubGet(user.github_token, user.github_repo, "INDEX.md");
+  if (existing.ok) {
+    const fileData = existing.data as { sha: string; content: string };
+    const current = Buffer.from(fileData.content.replace(/\n/g, ""), "base64").toString("utf-8");
+    await githubPut(user.github_token, user.github_repo, "INDEX.md", current + row, `capture: update index`, fileData.sha);
   }
+
+  return `Captured: ${capture["inferredTitle"]}\nFile: inbox/${filename}\nModes: ${modes.join(", ")}`;
 }
 
-// ─── Route handlers ───────────────────────────────────────────────────────────
+async function handleListInbox(user: User): Promise<string> {
+  if (!user.github_repo) return "Knowledge repo not configured.";
+  const res = await githubGet(user.github_token, user.github_repo, "inbox");
+  if (!res.ok) return "Inbox is empty.";
+  const files = res.data as Array<{ name: string }>;
+  const mdFiles = files.filter((f) => f.name.endsWith(".md"));
+  if (mdFiles.length === 0) return "Inbox is empty.";
+  return `${mdFiles.length} capture(s):\n${mdFiles.map((f) => `- ${f.name}`).join("\n")}`;
+}
+
+async function handleSearch(user: User, args: { query: string; mode?: string }): Promise<string> {
+  if (!user.github_repo) return "Knowledge repo not configured.";
+  const res = await githubGet(user.github_token, user.github_repo, "INDEX.md");
+  if (!res.ok) return "No captures yet.";
+  const fileData = res.data as { content: string };
+  const content = Buffer.from(fileData.content.replace(/\n/g, ""), "base64").toString("utf-8");
+  const lines = content.split("\n").filter((l) => l.startsWith("|") && !l.startsWith("| Date") && !l.startsWith("|---"));
+  const q = args.query.toLowerCase();
+  const matches = lines.filter((l) => {
+    const lower = l.toLowerCase();
+    return lower.includes(q) && (args.mode ? lower.includes(args.mode) : true);
+  });
+  if (matches.length === 0) return `No matches for "${args.query}".`;
+  return `${matches.length} match(es):\n${matches.join("\n")}`;
+}
+
+// ── MCP HTTP handler ──
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Auth via Bearer token (API key)
+  const authHeader = req.headers.get("authorization");
+  const apiKey = authHeader?.replace("Bearer ", "");
+
+  if (!apiKey) {
+    return NextResponse.json({ jsonrpc: "2.0", error: { code: -32600, message: "Missing API key" } }, { status: 401 });
   }
 
-  if (!GITHUB_TOKEN || !GITHUB_REPO) {
-    return NextResponse.json(
-      { error: "GITHUB_TOKEN and GITHUB_REPO not configured" },
-      { status: 500 }
-    );
+  const user = await getUserByApiKey(apiKey);
+  if (!user) {
+    return NextResponse.json({ jsonrpc: "2.0", error: { code: -32600, message: "Invalid API key" } }, { status: 401 });
   }
 
-  let body: JsonRpcRequest;
+  const body = (await req.json()) as JsonRpcRequest;
+  const { method, id, params } = body;
+
   try {
-    body = (await req.json()) as JsonRpcRequest;
-  } catch {
-    return NextResponse.json(rpcError(null, -32700, "Parse error: invalid JSON"), {
-      status: 400,
-    });
+    switch (method) {
+      case "initialize":
+        return NextResponse.json({
+          jsonrpc: "2.0", id,
+          result: {
+            protocolVersion: "2024-11-05",
+            capabilities: { tools: {} },
+            serverInfo: { name: "mnemos", version: "1.0.0" },
+          },
+        });
+
+      case "tools/list":
+        return NextResponse.json({ jsonrpc: "2.0", id, result: { tools: TOOLS } });
+
+      case "tools/call": {
+        const toolName = (params as { name: string }).name;
+        const toolArgs = (params as { arguments?: Record<string, unknown> }).arguments ?? {};
+
+        let result: string;
+        switch (toolName) {
+          case "capture":
+            result = await handleCapture(user, toolArgs as { content: string; title?: string });
+            break;
+          case "list_inbox":
+            result = await handleListInbox(user);
+            break;
+          case "search_captures":
+            result = await handleSearch(user, toolArgs as { query: string; mode?: string });
+            break;
+          default:
+            return NextResponse.json({ jsonrpc: "2.0", id, error: { code: -32601, message: `Unknown tool: ${toolName}` } });
+        }
+
+        return NextResponse.json({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text: result }] } });
+      }
+
+      default:
+        return NextResponse.json({ jsonrpc: "2.0", id, error: { code: -32601, message: `Unknown method: ${method}` } });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal error";
+    return NextResponse.json({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text: `Error: ${message}` }], isError: true } });
   }
-
-  const response = await dispatch(body);
-  return NextResponse.json(response);
-}
-
-// Health check + discovery
-export async function GET(): Promise<NextResponse> {
-  return NextResponse.json({
-    status: "ok",
-    server: SERVER_NAME,
-    version: SERVER_VERSION,
-    protocol: MCP_PROTOCOL_VERSION,
-    tools: TOOLS.map((t) => t.name),
-  });
 }

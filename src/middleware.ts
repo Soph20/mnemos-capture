@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// /api/mcp handles its own auth via MCP_SECRET bearer token
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/mcp", "/api/version"];
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/auth/github", "/api/auth/callback"];
 
 export function middleware(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;
 
+  // Allow public paths
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  const auth = req.cookies.get("meridian_auth");
-  if (!auth) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  // Check for session cookie
+  const session = req.cookies.get("mnemos_session");
+  if (!session) {
     const loginUrl = new URL("/login", req.url);
     return NextResponse.redirect(loginUrl);
   }

@@ -1,11 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
-const GITHUB_REPO = process.env.GITHUB_REPO ?? ""; // e.g., "spv/meridian-knowledge"
-const GITHUB_BRANCH = process.env.GITHUB_BRANCH ?? "main";
+import { getSession } from "@/lib/session";
 
 type CaptureMode = "work" | "career" | "founder" | "life";
 
@@ -98,15 +93,15 @@ ${rawContent.trim()}
 
 interface GithubFileResponse {
   sha: string;
-  content: string; // base64 encoded with embedded newlines
+  content: string;
 }
 
-async function githubGet(filePath: string): Promise<GithubFileResponse | null> {
+async function githubGet(token: string, repo: string, filePath: string): Promise<GithubFileResponse | null> {
   const res = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}?ref=${GITHUB_BRANCH}`,
+    `https://api.github.com/repos/${repo}/contents/${filePath}?ref=main`,
     {
       headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Authorization: `Bearer ${token}`,
         Accept: "application/vnd.github+json",
       },
     }
@@ -117,6 +112,8 @@ async function githubGet(filePath: string): Promise<GithubFileResponse | null> {
 }
 
 async function githubPut(
+  token: string,
+  repo: string,
   filePath: string,
   content: string,
   message: string,
@@ -125,16 +122,16 @@ async function githubPut(
   const body: Record<string, string> = {
     message,
     content: Buffer.from(content, "utf-8").toString("base64"),
-    branch: GITHUB_BRANCH,
+    branch: "main",
   };
   if (sha) body["sha"] = sha;
 
   const res = await fetch(
-    `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`,
+    `https://api.github.com/repos/${repo}/contents/${filePath}`,
     {
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Authorization: `Bearer ${token}`,
         Accept: "application/vnd.github+json",
         "Content-Type": "application/json",
       },
@@ -148,134 +145,68 @@ async function githubPut(
   }
 }
 
-async function writeCapture(filename: string, markdown: string): Promise<void> {
-  const existing = await githubGet(`inbox/${filename}`);
-  const sha = existing?.sha;
-  await githubPut(
-    `inbox/${filename}`,
-    markdown,
-    sha ? `capture: update ${filename}` : `capture: add ${filename}`,
-    sha
-  );
-}
-
-async function appendToIndex(
-  date: string,
-  capture: ExtractedCapture,
-  filename: string
-): Promise<void> {
-  const row = `| ${date} | [${capture.slug}](inbox/${filename}) | ${capture.coreIdea.slice(0, 80)}... | ${capture.modes.join(", ")} |\n`;
-
-  const existing = await githubGet("INDEX.md");
-
-  if (existing) {
-    const current = Buffer.from(existing.content.replace(/\n/g, ""), "base64").toString("utf-8");
-    await githubPut(
-      "INDEX.md",
-      current + row,
-      `capture: update index for ${filename}`,
-      existing.sha
-    );
-  } else {
-    const header = `# Knowledge Hub — Master Index\n\n> Search by topic, mode, date, or keyword.\n> Full records in \`inbox/\` (unprocessed) or \`[mode]/\` (processed).\n\n| Date | Resource | Keywords | Modes |\n|------|----------|----------|-------|\n`;
-    await githubPut("INDEX.md", header + row, "capture: initialize index");
-  }
-}
-
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  if (!GITHUB_TOKEN || !GITHUB_REPO) {
-    return NextResponse.json(
-      { error: "GITHUB_TOKEN and GITHUB_REPO not configured" },
-      { status: 500 }
-    );
+  // Get authenticated user
+  const user = await getSession();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  let body: { content: string; title?: string };
-  try {
-    body = await req.json() as { content: string; title?: string };
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  if (!user.github_repo) {
+    return NextResponse.json({ error: "Knowledge repo not configured. Complete onboarding first." }, { status: 400 });
   }
+
+  const body = (await req.json()) as { content: string; title?: string };
   const { content, title } = body;
 
   if (!content?.trim()) {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
 
-  // If content is a bare URL, fetch and extract the page text server-side
-  let processedContent = content.trim();
-  if (/^https?:\/\/\S+$/.test(processedContent)) {
-    try {
-      const pageRes = await fetch(processedContent, {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; Mnemos/1.0)" },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (pageRes.ok) {
-        const html = await pageRes.text();
-        // Detect bot-challenge pages (Cloudflare, etc.) — they return 200 OK
-        // but contain no real article content. Passing this garbage to Claude
-        // causes malformed AI responses or downstream errors.
-        const isChallenge =
-          html.includes("cf-browser-verification") ||
-          html.includes("cf_chl_") ||
-          (html.includes("Just a moment") && html.includes("Cloudflare")) ||
-          html.includes("Enable JavaScript and cookies to continue");
-        if (!isChallenge) {
-          const text = html
-            .replace(/<script[\s\S]*?<\/script>/gi, "")
-            .replace(/<style[\s\S]*?<\/style>/gi, "")
-            .replace(/<[^>]+>/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-            .slice(0, 15000);
-          if (text.length > 200) {
-            processedContent = `Source URL: ${content.trim()}\n\n${text}`;
-          }
-        }
-      }
-    } catch {
-      // Failed to fetch URL; proceed with the URL string as content
-    }
+  // Use the user's own LLM key (Anthropic for now)
+  if (!user.llm_api_key) {
+    return NextResponse.json({ error: "API key not configured. Complete onboarding first." }, { status: 400 });
   }
 
-  const userContent = title ? `Title hint: ${title}\n\n${processedContent}` : processedContent;
+  const client = new Anthropic({ apiKey: user.llm_api_key });
+  const userContent = title ? `Title hint: ${title}\n\n${content}` : content;
 
-  try {
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userContent }],
-    });
+  const message = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1024,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userContent }],
+  });
 
-    const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
-    const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
+  const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  const capture = JSON.parse(rawJson) as ExtractedCapture;
 
-    let capture: ExtractedCapture;
-    try {
-      capture = JSON.parse(rawJson) as ExtractedCapture;
-    } catch {
-      return NextResponse.json(
-        { error: "Failed to parse AI response. Please try again." },
-        { status: 500 }
-      );
-    }
+  const date = formatDate();
+  const filename = `${date}-${capture.slug}.md`;
+  const markdown = buildMarkdown(date, capture, content);
 
-    const date = formatDate();
-    const safeSlug = (capture.slug ?? "untitled")
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "") || "untitled";
-    const filename = `${date}-${safeSlug}.md`;
-    const markdown = buildMarkdown(date, capture, content);
+  // Write to the USER's GitHub repo using THEIR token
+  await githubPut(user.github_token, user.github_repo, `inbox/${filename}`, markdown, `capture: add ${filename}`);
 
-    await writeCapture(filename, markdown);
-    await appendToIndex(date, capture, filename);
+  // Update INDEX.md
+  const row = `| ${date} | [${capture.slug}](inbox/${filename}) | ${capture.coreIdea.slice(0, 80)}... | ${capture.modes.join(", ")} |\n`;
 
-    return NextResponse.json({ capture, filename });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unexpected error";
-    return NextResponse.json({ error: message }, { status: 500 });
+  const existing = await githubGet(user.github_token, user.github_repo, "INDEX.md");
+  if (existing) {
+    const current = Buffer.from(existing.content.replace(/\n/g, ""), "base64").toString("utf-8");
+    await githubPut(
+      user.github_token,
+      user.github_repo,
+      "INDEX.md",
+      current + row,
+      `capture: update index for ${filename}`,
+      existing.sha
+    );
+  } else {
+    const header = `# Knowledge Hub — Master Index\n\n| Date | Resource | Keywords | Modes |\n|------|----------|----------|-------|\n`;
+    await githubPut(user.github_token, user.github_repo, "INDEX.md", header + row, "capture: initialize index");
   }
+
+  return NextResponse.json({ capture, filename });
 }
