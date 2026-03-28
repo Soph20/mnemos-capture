@@ -1,6 +1,18 @@
-.next/
+# Dependencies
 node_modules/
+
+# Build outputs
+.next/
 dist/
+
+# Environment
 .env.local
-*.log
+.env*.local
+
+# OS artifacts
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

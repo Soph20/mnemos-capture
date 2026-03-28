@@ -66,7 +66,7 @@ async function createKnowledgeRepo(token: string, username: string, repoName: st
   await new Promise((r) => setTimeout(r, 2000));
 
   // Create INDEX.md
-  const indexContent = `# Knowledge Hub — Master Index\n\n> Search by topic, mode, date, or keyword.\n\n| Date | Resource | Keywords | Modes |\n|------|----------|----------|-------|\n`;
+  const indexContent = `# Knowledge Hub — Master Index\n\n> Search by topic, tag, date, or keyword.\n\n| Date | Resource | Keywords | Tags |\n|------|----------|----------|------|\n`;
 
   await githubApiPut(token, `/repos/${fullRepo}/contents/INDEX.md`, {
     message: "Initialize knowledge hub",

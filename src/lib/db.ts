@@ -89,6 +89,13 @@ export async function updateUserLlmKey(userId: number, provider: LlmProvider, ap
   await sql`UPDATE users SET llm_provider = ${provider}, llm_api_key = ${apiKey} WHERE id = ${userId}`;
 }
 
+export async function getUserByUsername(username: string): Promise<User | null> {
+  const { rows } = await sql<User>`
+    SELECT * FROM users WHERE github_username = ${username} LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
 export async function getUserCount(): Promise<number> {
   const { rows } = await sql<{ count: string }>`SELECT COUNT(*) as count FROM users`;
   return parseInt(rows[0]?.count ?? "0", 10);

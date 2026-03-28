@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createUser, getUserByGithubId } from "@/lib/db";
 import { createSession } from "@/lib/session";
+import { env } from "@/lib/env";
 
 interface GithubTokenResponse {
   access_token: string;
@@ -19,28 +20,23 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const state = searchParams.get("state");
   const storedState = req.cookies.get("oauth_state")?.value;
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
-  // Validate state
+  // Validate CSRF state
   if (!state || !storedState || state !== storedState) {
-    return NextResponse.redirect(`${appUrl}/login?error=invalid_state`);
+    return NextResponse.redirect(`${env.appUrl}/login?error=invalid_state`);
   }
 
   if (!code) {
-    return NextResponse.redirect(`${appUrl}/login?error=no_code`);
+    return NextResponse.redirect(`${env.appUrl}/login?error=no_code`);
   }
 
   try {
     // Exchange code for access token
     const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        client_id: env.githubClientId,
+        client_secret: env.githubClientSecret,
         code,
       }),
     });
@@ -48,7 +44,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const tokenData = (await tokenRes.json()) as GithubTokenResponse;
 
     if (!tokenData.access_token) {
-      return NextResponse.redirect(`${appUrl}/login?error=token_failed`);
+      return NextResponse.redirect(`${env.appUrl}/login?error=token_failed`);
     }
 
     // Get GitHub user info
@@ -67,15 +63,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // Create session
     await createSession(user.id);
 
-    // Clear OAuth state cookie
+    // Redirect: onboard if no repo, otherwise home
     const response = user.github_repo
-      ? NextResponse.redirect(`${appUrl}/`)
-      : NextResponse.redirect(`${appUrl}/onboard`);
+      ? NextResponse.redirect(`${env.appUrl}/`)
+      : NextResponse.redirect(`${env.appUrl}/onboard`);
 
     response.cookies.delete("oauth_state");
     return response;
   } catch (err) {
     console.error("OAuth callback error:", err);
-    return NextResponse.redirect(`${appUrl}/login?error=server_error`);
+    return NextResponse.redirect(`${env.appUrl}/login?error=server_error`);
   }
 }

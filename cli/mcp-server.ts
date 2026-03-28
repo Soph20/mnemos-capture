@@ -1,5 +1,5 @@
 // MCP server that runs locally via stdio and proxies to the hosted Mnemos API.
-// Used by Claude Code: claude mcp add mnemos -- npx mnemos serve-mcp --key <api-key>
+// Used by Claude Code: claude mcp add mnemos -- npx mnemos-capture serve-mcp --key <api-key>
 
 const HOSTED_URL = "https://mnemos-capture.vercel.app/api/mcp";
 
@@ -45,7 +45,7 @@ export async function serveMcp(): Promise<void> {
 
   if (!apiKey) {
     process.stderr.write("\nMnemos MCP server requires an API key.\n");
-    process.stderr.write("Usage: npx mnemos serve-mcp --key <your-api-key>\n\n");
+    process.stderr.write("Usage: npx mnemos-capture serve-mcp --key <your-api-key>\n\n");
     process.stderr.write("Get your API key at: https://mnemos-capture.vercel.app/onboard\n\n");
     process.exit(1);
   }
