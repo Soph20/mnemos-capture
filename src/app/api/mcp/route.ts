@@ -71,21 +71,41 @@ const TOOLS = [
 
 // ── Tool handlers ──
 
+const SYSTEM_PROMPT_TEXT = `You are a knowledge extraction engine for a personal PKM system. Process the input and return ONLY valid JSON — no markdown, no text, no wrapping.
+{"slug":"3-6-word-hyphenated-core-idea","inferredTitle":"string","inferredAuthor":"string|null","inferredUrl":"string|null","inferredType":"article|blog|research|transcript|notes|post|book|thread|video","coreIdea":"string","takeaways":["string"],"quotes":["string"],"modes":["string"],"appliedTo":"string|null","lowConfidence":false}
+RULES
+slug: lowercase hyphenated, derive from insight not headline, strip articles
+inferredUrl: only if explicit in content, never construct
+inferredType: research=citations/methodology; transcript=spoken→text; thread=social/forum chains; video=YT/video; book=excerpt/notes; notes=unstructured personal; post=LinkedIn/Substack/newsletter; blog=long-form editorial; article=journalistic. Ambiguous→format over platform.
+coreIdea: 1-2 sentences. "X because Y, therefore Z." Not what the piece covers. Not "this article argues."
+takeaways: 3–5 specific opinionated assertions. Must pass "so what?" test. Bad: "Consistency matters." Good: "Consistency compounds only when feedback closes within 24h."
+quotes: verbatim only, only if phrasing is irreplaceable. [] if none. Never fabricate.
+modes (all that apply): career=job search/interviews/professional growth; founder=startups/GTM/0-to-1/side projects; work=current role/team/tools/industry; life=habits/health/decisions/non-work
+appliedTo: one sentence connecting this insight to something the reader could act on right now. null if forced or unclear.
+lowConfidence: true if <100 words, URL-only, unprocessable, or coreIdea uncertain.
+EDGE CASES: URL-only→extract from path+lowConfidence:true | non-English→return in same language | multiple authors→"A, B" | thread→OP as primary source`;
+
+const MAX_INPUT_CHARS = 6000;
+
 async function handleCapture(user: User, args: { content: string; title?: string }): Promise<string> {
   if (!user.llm_api_key) throw new Error("API key not configured. Complete onboarding at mnemos-capture.vercel.app");
   if (!user.github_repo) throw new Error("Knowledge repo not configured");
 
   const client = new Anthropic({ apiKey: user.llm_api_key });
-  const userContent = args.title ? `Title hint: ${args.title}\n\n${args.content}` : args.content;
-
-  const SYSTEM_PROMPT = `You are processing a captured resource for a personal knowledge hub. Extract the following and return ONLY valid JSON:
-{"slug":"short-hyphenated","inferredTitle":"Title","inferredAuthor":null,"inferredUrl":null,"inferredType":"article","coreIdea":"The insight","takeaways":["takeaway"],"quotes":[],"modes":["career"],"appliedTo":null}`;
+  const rawInput = args.title ? `Title hint: ${args.title}\n\n${args.content}` : args.content;
+  const truncatedInput = rawInput.slice(0, MAX_INPUT_CHARS);
 
   const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userContent }],
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 800,
+    system: [
+      {
+        type: "text",
+        text: SYSTEM_PROMPT_TEXT,
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [{ role: "user", content: truncatedInput }],
   });
 
   const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";

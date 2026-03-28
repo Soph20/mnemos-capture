@@ -9,40 +9,34 @@ interface ExtractedCapture {
   inferredTitle: string;
   inferredAuthor: string | null;
   inferredUrl: string | null;
-  inferredType: "article" | "blog" | "research" | "transcript" | "notes" | "post" | "book";
+  inferredType: "article" | "blog" | "research" | "transcript" | "notes" | "post" | "book" | "thread" | "video";
   coreIdea: string;
   takeaways: string[];
   quotes: string[];
   modes: CaptureMode[];
   appliedTo: string | null;
+  lowConfidence: boolean;
 }
 
-const SYSTEM_PROMPT = `You are processing a captured resource for a personal knowledge hub. Extract the following from the content provided and return ONLY valid JSON — no markdown, no explanation, just the JSON object.
+const SYSTEM_PROMPT_TEXT = `You are a knowledge extraction engine for a personal PKM system. Process the input and return ONLY valid JSON — no markdown, no text, no wrapping.
+{"slug":"3-6-word-hyphenated-core-idea","inferredTitle":"string","inferredAuthor":"string|null","inferredUrl":"string|null","inferredType":"article|blog|research|transcript|notes|post|book|thread|video","coreIdea":"string","takeaways":["string"],"quotes":["string"],"modes":["string"],"appliedTo":"string|null","lowConfidence":false}
+RULES
+slug: lowercase hyphenated, derive from insight not headline, strip articles
+inferredUrl: only if explicit in content, never construct
+inferredType: research=citations/methodology; transcript=spoken→text; thread=social/forum chains; video=YT/video; book=excerpt/notes; notes=unstructured personal; post=LinkedIn/Substack/newsletter; blog=long-form editorial; article=journalistic. Ambiguous→format over platform.
+coreIdea: 1-2 sentences. "X because Y, therefore Z." Not what the piece covers. Not "this article argues."
+takeaways: 3–5 specific opinionated assertions. Must pass "so what?" test. Bad: "Consistency matters." Good: "Consistency compounds only when feedback closes within 24h."
+quotes: verbatim only, only if phrasing is irreplaceable. [] if none. Never fabricate.
+modes (all that apply): career=job search/interviews/professional growth; founder=startups/GTM/0-to-1/side projects; work=current role/team/tools/industry; life=habits/health/decisions/non-work
+appliedTo: one sentence connecting this insight to something the reader could act on right now. null if forced or unclear.
+lowConfidence: true if <100 words, URL-only, unprocessable, or coreIdea uncertain.
+EDGE CASES: URL-only→extract from path+lowConfidence:true | non-English→return in same language | multiple authors→"A, B" | thread→OP as primary source
+EXAMPLE
+Input: "The mom test — Rob Fitzpatrick. Don't ask if your idea is good. Ask about their life. 'Would you use this?' measures politeness. Ask: 'Walk me through the last time you dealt with this.' No recent instance = not urgent enough to build."
+Output: {"slug":"mom-test-past-behavior-not-validation","inferredTitle":"The Mom Test — Validating Without Leading","inferredAuthor":"Rob Fitzpatrick","inferredUrl":null,"inferredType":"book","coreIdea":"People lie about future behavior to be kind. The only reliable signal is past behavior — so questions must be about their life, not your idea.","takeaways":["'Would you use this?' measures politeness, not demand","Recency is a proxy for urgency — no recent instance means no pressing need","Interviews yield signal only when the subject doesn't know they're evaluating your idea"],"quotes":["Walk me through the last time you dealt with this."],"modes":["founder","career"],"appliedTo":"Structure discovery calls around past failures and workarounds, not hypothetical product interest.","lowConfidence":false}`;
 
-{
-  "slug": "short-lowercase-hyphenated-title-max-6-words",
-  "inferredTitle": "Human readable title",
-  "inferredAuthor": "Author name or null",
-  "inferredUrl": "URL if present in content or null",
-  "inferredType": "article|blog|research|transcript|notes|post|book",
-  "coreIdea": "1-2 sentences. The actual insight, not a summary. Not 'this article discusses X.' More like 'X is true because Y, which means Z.'",
-  "takeaways": ["specific opinionated takeaway — not a restatement", "another takeaway"],
-  "quotes": ["verbatim quote worth keeping — only if genuinely quotable"],
-  "modes": ["career", "founder", "work", "life"],
-  "appliedTo": "one sentence connecting to something actionable, or null"
-}
-
-Mode routing rules — include all that apply:
-- Career growth, skill building, interviews, job search, professional development, networking → "career"
-- Startups, side projects, product ideas, entrepreneurship, business models, 0-to-1 thinking → "founder"
-- Well-being, habits, books (non-work), life decisions, mental health, energy, relationships → "life"
-- Day job, current role, team processes, tools, industry knowledge, stakeholder management → "work"
-
-Rules:
-- takeaways: 3–5 max, specific and opinionated, not restatements of the headline
-- quotes: only verbatim, skip if nothing is genuinely quotable
-- When in doubt on modes, tag broadly rather than narrowly
-- coreIdea must be the actual insight, not a description of what the resource covers`;
+// Max input characters to send to the LLM (~1500 tokens, covers 95% of captures)
+const MAX_INPUT_CHARS = 6000;
 
 function formatDate(): string {
   return new Date().toISOString().split("T")[0] as string;
@@ -54,6 +48,10 @@ function buildMarkdown(date: string, capture: ExtractedCapture, rawContent: stri
       ? capture.quotes.map((q) => `> "${q}"`).join("\n\n")
       : "_none_";
 
+  const confidenceNote = capture.lowConfidence
+    ? "\n> **Low confidence extraction** — input was short or ambiguous. Review before acting on it.\n"
+    : "";
+
   return `---
 date: ${date}
 source: ${capture.inferredTitle}${capture.inferredAuthor ? ` — ${capture.inferredAuthor}` : ""}
@@ -64,7 +62,7 @@ status: inbox
 ---
 
 # ${capture.inferredTitle}
-
+${confidenceNote}
 ## Core idea
 ${capture.coreIdea}
 
@@ -169,13 +167,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const client = new Anthropic({ apiKey: user.llm_api_key });
-  const userContent = title ? `Title hint: ${title}\n\n${content}` : content;
+
+  // Build user content with optional title hint, truncated for token efficiency
+  const rawInput = title ? `Title hint: ${title}\n\n${content}` : content;
+  const truncatedInput = rawInput.slice(0, MAX_INPUT_CHARS);
 
   const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userContent }],
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 800,
+    system: [
+      {
+        type: "text",
+        text: SYSTEM_PROMPT_TEXT,
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    messages: [{ role: "user", content: truncatedInput }],
   });
 
   const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
