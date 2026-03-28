@@ -1,6 +1,6 @@
 {
   "name": "mnemos-capture",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Zero-friction knowledge capture for agentic workflows. Paste anything → Claude extracts insights → auto-commits to your knowledge repo → your Claude Code workflow picks it up.",
   "type": "module",
   "bin": {
