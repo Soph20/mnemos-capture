@@ -185,7 +185,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
   const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  const capture = JSON.parse(rawJson) as ExtractedCapture;
+
+  let capture: ExtractedCapture;
+  try {
+    capture = JSON.parse(rawJson) as ExtractedCapture;
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to parse LLM response. The extraction returned invalid JSON." },
+      { status: 502 }
+    );
+  }
 
   const date = formatDate();
   const filename = `${date}-${capture.slug}.md`;

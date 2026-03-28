@@ -8,8 +8,16 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 // Simple session: cookie stores the user ID, signed with a secret.
 // For production, you'd use JWT or a session store. This is intentionally simple.
 
+function getSecret(): string {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    throw new Error("SESSION_SECRET environment variable is required. Set it in your Vercel project settings.");
+  }
+  return secret;
+}
+
 function encode(userId: number): string {
-  const secret = process.env.SESSION_SECRET ?? "mnemos-default-secret";
+  const secret = getSecret();
   // Simple HMAC-like signing: base64(userId:hash)
   const payload = String(userId);
   const crypto = require("crypto") as typeof import("crypto");
@@ -19,7 +27,7 @@ function encode(userId: number): string {
 
 function decode(token: string): number | null {
   try {
-    const secret = process.env.SESSION_SECRET ?? "mnemos-default-secret";
+    const secret = getSecret();
     const raw = Buffer.from(token, "base64").toString("utf-8");
     const [payload, sig] = raw.split(":");
     if (!payload || !sig) return null;

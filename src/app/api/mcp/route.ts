@@ -110,7 +110,13 @@ async function handleCapture(user: User, args: { content: string; title?: string
 
   const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
   const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-  const capture = JSON.parse(rawJson) as Record<string, unknown>;
+
+  let capture: Record<string, unknown>;
+  try {
+    capture = JSON.parse(rawJson) as Record<string, unknown>;
+  } catch {
+    throw new Error("Failed to parse LLM response — extraction returned invalid JSON. Try again or shorten the input.");
+  }
 
   const date = new Date().toISOString().split("T")[0] as string;
   const slug = capture["slug"] as string;

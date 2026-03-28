@@ -55,17 +55,6 @@ Mnemos handles any text-based input. Paste it, and the LLM figures out the forma
 
 Coming soon: voice memos, URL auto-fetch, and browser extension for one-click capture.
 
-## What the LLM extracts
-
-Every capture produces a structured Markdown file with:
-
-- **Core idea** — the actual insight, not "this article discusses X"
-- **Key takeaways** — 3-5 specific, opinionated assertions that pass the "so what?" test
-- **Quotes** — only verbatim lines worth keeping. None if nothing is genuinely quotable
-- **Tags** — 2-5 topic tags relevant to the content (e.g. `product-discovery`, `ai-agents`, `pricing`)
-- **Applied to** — one sentence connecting this to something you're building right now
-- **Low confidence flag** — alerts you when input is too short or ambiguous for reliable extraction
-
 ## Cost
 
 Mnemos uses your own Anthropic API key (BYOK — you bring your own key, Mnemos never charges you).
