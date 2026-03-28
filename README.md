@@ -1,99 +1,138 @@
-# mnemos-capture
+# Mnemos
 
-Two things in one deployment:
+**Stop saving things you'll never read again.**
 
-1. **Capture app** — paste anything (URL, article, notes, transcript). Claude extracts structured insights and writes them to `mnemos-knowledge` on GitHub.
-2. **MCP endpoint** — serves the full Lenny Rachitsky knowledge base (305 structured insight files) to any Claude Code session via `https://mnemos-capture.vercel.app/api/mcp`.
+Mnemos is a zero-friction knowledge capture tool for people who learn by doing. Paste any resource — article, thread, transcript, research, notes — and Claude extracts the insights, tags them by context, and commits them to your personal knowledge repo. When you're ready to work, your agentic workflows pull from the same repo automatically.
 
-**Live at:** https://mnemos-capture.vercel.app
+No more bookmarks. No more "I'll read it later." Capture once, apply everywhere.
 
----
-
-## Knowledge store
-
-All captured knowledge lives in a separate repo: [`mnemos-knowledge`](https://github.com/Soph20/mnemos-knowledge)
+## How it works
 
 ```
-mnemos-knowledge/
-├── INDEX.md          ← master index of all captures
-├── inbox/            ← new captures (unprocessed)
-├── lenny/            ← 305 Lenny podcast insight files + INDEX.md
-├── work/
-├── career/
-├── founder/
-└── life/
+You find something valuable
+        ↓
+Open Mnemos → paste it → hit Capture
+        ↓
+Claude extracts: core idea, takeaways, quotes, context tags
+        ↓
+Auto-committed to your GitHub knowledge repo (inbox/)
+        ↓
+Your Claude Code workflow picks it up and applies it
 ```
 
----
+**What Claude extracts from each capture:**
+- **Core idea** — the actual insight, not a summary
+- **Key takeaways** — specific, opinionated, actionable
+- **Quotes** — only genuinely quotable lines
+- **Mode tags** — where this applies (career, work, founder, life)
+- **Applied to** — one sentence connecting it to something you're doing
 
-## MCP — Lenny knowledge base
+## Deploy your own (60 seconds)
 
-Any Claude Code repo can query the Lenny knowledge base by adding to `.mcp.json`:
+### Option A: One-click deploy to Vercel
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Soph20/mnemos-capture&env=ANTHROPIC_API_KEY,GITHUB_TOKEN,GITHUB_REPO,CAPTURE_SECRET&envDescription=Configuration%20for%20your%20Mnemos%20instance&envLink=https://github.com/Soph20/mnemos-capture%23environment-variables)
+
+Vercel will prompt you for the required environment variables (see below).
+
+### Option B: Run locally
+
+```bash
+git clone https://github.com/Soph20/mnemos-capture.git
+cd mnemos-capture
+cp .env.example .env.local    # then edit with your values
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+## Environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | Yes | Your Claude API key. Get one at [console.anthropic.com](https://console.anthropic.com) |
+| `GITHUB_TOKEN` | Yes | GitHub Personal Access Token with `repo` scope. [Create one here](https://github.com/settings/tokens/new?scopes=repo&description=mnemos-capture) |
+| `GITHUB_REPO` | Yes | Your knowledge repo in `owner/repo` format (e.g., `yourname/mnemos-knowledge`) |
+| `CAPTURE_SECRET` | Yes | Any string — used as a PIN to lock your instance |
+| `GITHUB_BRANCH` | No | Branch to commit to. Defaults to `main` |
+
+## Set up your knowledge repo
+
+Mnemos writes captures to a GitHub repo you own. You have two options:
+
+**Option A (recommended):** Use the [mnemos-knowledge-template](https://github.com/Soph20/mnemos-knowledge-template) — click "Use this template" to create your repo with the correct structure.
+
+**Option B:** Create any repo. Mnemos will auto-create `INDEX.md` and write captures to `inbox/` on first use.
+
+### Repo structure
+
+```
+your-knowledge-repo/
+├── INDEX.md           ← Master index (auto-maintained)
+├── inbox/             ← Unprocessed captures land here
+├── career/            ← Processed: career-related insights
+├── work/              ← Processed: work-related insights
+├── founder/           ← Processed: founder-related insights
+└── life/              ← Processed: life-related insights
+```
+
+## Mobile access
+
+Mnemos is a PWA — add it to your home screen on iPhone/iPad for app-like access.
+
+**Same network:**
+1. Find your Mac's local IP (`System Settings → Wi-Fi → Details`)
+2. Open `http://[your-ip]:3000` in Safari
+3. Share → Add to Home Screen
+
+**Remote access (free, no account):**
+```bash
+brew install cloudflare/cloudflare/cloudflared
+cloudflared tunnel --url http://localhost:3000
+```
+
+## Connect to your Claude Code workflow
+
+Mnemos captures knowledge. To apply it, connect your knowledge repo to Claude Code:
+
+**1. Add Mnemos as an MCP source** in your `.mcp.json`:
 ```json
 {
-  "mcpServers": {
-    "mnemos": {
-      "type": "http",
-      "url": "https://mnemos-capture.vercel.app/api/mcp"
-    }
+  "mnemos": {
+    "type": "http",
+    "url": "https://your-mnemos-instance.vercel.app/api/mcp"
   }
 }
 ```
 
-**Available tools:**
-
-| Tool | Description |
-|---|---|
-| `search_lenny` | Keyword search → returns full matching insight files |
-| `get_insights` | Fetch full files for specific speakers by name |
-| `list_speakers` | Browse all 305 speakers, roles, and topics |
-
-No local setup. Works on any machine.
-
----
-
-## Capture app
-
-Paste any content → Claude extracts core idea, takeaways, quotes, mode tags → saved to `mnemos-knowledge/inbox/` via GitHub API.
-
-**Mode routing:**
-- `work` — telecom, B2B SaaS, campaigns, messaging platforms
-- `career` — PM craft, product frameworks, interviews, job search
-- `founder` — AI-native products, startup, B2B ops, 0-to-1
-- `life` — well-being, habits, books, mental health, energy, ADHD
-
----
-
-## Environment variables
-
-Set these in Vercel (or `.env.local` for local dev):
-
+**2. Process captures** — in any Claude Code session, say:
 ```
-ANTHROPIC_API_KEY=sk-ant-...       # Claude API key
-GITHUB_TOKEN=ghp_...               # Personal access token (repo scope)
-GITHUB_REPO=Soph20/mnemos-knowledge
-GITHUB_BRANCH=main
-CAPTURE_SECRET=your-pin            # PIN for the capture app UI
-MCP_SECRET=                        # Optional — Bearer token for /api/mcp (leave empty = open)
+process inbox
 ```
 
----
+Claude reads your knowledge repo's `inbox/`, extracts insights relevant to your current workflow, and moves processed captures to the appropriate mode folder.
 
-## Local development
+## Tech stack
 
-```bash
-npm install
-cp .env.local.example .env.local   # fill in your values
-npm run dev                         # http://localhost:3000
-```
+- **Next.js 15** (App Router, server components)
+- **Anthropic SDK** (Claude Sonnet for extraction)
+- **GitHub API** (storage — no database needed)
+- **TypeScript** (strict mode)
+- **Tailwind CSS** (dark/light themes)
 
----
+## Why GitHub as storage?
 
-## How a capture flows
+No database to provision. No vendor lock-in. Your knowledge is version-controlled, portable, and readable as plain Markdown. Clone it, search it, back it up — it's just files in a repo you own.
 
-1. Paste URL or text → hit **Capture** (or `⌘↵`)
-2. If URL: server fetches and strips the page (Cloudflare-protected pages are skipped)
-3. Claude extracts: `slug`, `coreIdea`, `takeaways`, `quotes`, `modes`, `appliedTo`
-4. Written to `mnemos-knowledge/inbox/YYYY-MM-DD-{slug}.md`
-5. `INDEX.md` updated with a new row
+## Roadmap
+
+- [ ] GitHub OAuth (eliminate PAT setup)
+- [ ] First-run setup wizard in the app
+- [ ] Claude Code plugin for one-command install
+- [ ] Batch capture (multiple URLs at once)
+- [ ] Search across your knowledge hub
+
+## License
+
+MIT — see [LICENSE](LICENSE)
