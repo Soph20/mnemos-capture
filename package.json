@@ -1,10 +1,10 @@
 {
-  "name": "mnemos",
+  "name": "mnemos-capture",
   "version": "1.0.0",
   "description": "Zero-friction knowledge capture for agentic workflows. Paste anything → Claude extracts insights → auto-commits to your knowledge repo → your Claude Code workflow picks it up.",
   "type": "module",
   "bin": {
-    "mnemos": "./dist/cli/index.js"
+    "mnemos-capture": "./dist/cli/index.js"
   },
   "scripts": {
     "dev": "next dev",

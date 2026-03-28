@@ -26,7 +26,7 @@ async function main(): Promise<void> {
   console.log("  First time? Sign in with GitHub — setup takes 30 seconds.");
   console.log("");
   console.log("  Connect to Claude Code:");
-  console.log("  claude mcp add mnemos -- npx mnemos serve-mcp");
+  console.log("  claude mcp add mnemos -- npx mnemos-capture serve-mcp --key YOUR_API_KEY");
   console.log("");
 
   // Try to open the URL in the default browser
@@ -40,18 +40,18 @@ function printHelp(): void {
   Mnemos — Knowledge capture for agentic workflows
 
   Usage:
-    npx mnemos              Open Mnemos in your browser
-    npx mnemos serve-mcp    Start the MCP server for Claude Code
-    npx mnemos help         Show this help
+    npx mnemos-capture              Open Mnemos in your browser
+    npx mnemos-capture serve-mcp    Start the MCP server for Claude Code
+    npx mnemos-capture help         Show this help
 
   Get started:
-    1. Run: npx mnemos
+    1. Run: npx mnemos-capture
     2. Sign in with GitHub (creates your knowledge repo automatically)
     3. Set a PIN for quick mobile access
     4. Start capturing!
 
   Connect to Claude Code:
-    claude mcp add mnemos -- npx mnemos serve-mcp
+    claude mcp add mnemos -- npx mnemos-capture serve-mcp --key YOUR_API_KEY
   `);
 }
 
