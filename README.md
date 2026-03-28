@@ -1,6 +1,10 @@
-# Mnemos
+<p align="center">
+  <img src="public/logo.png" alt="Mnemos" width="120" />
+</p>
 
-**Stop saving things you'll never apply.**
+<h1 align="center">Mnemos</h1>
+
+<p align="center"><strong>Stop saving things you'll never apply.</strong></p>
 
 Mnemos is a knowledge capture tool for builders who use AI agents. Paste any resource — an article, thread, transcript, or your own notes — and an LLM extracts the insight, tags where it applies, and commits it to a GitHub repo you own. Your AI tools (Claude Code, Codex, or any MCP-compatible agent) can then pull from that repo directly.
 
