@@ -74,7 +74,7 @@ async function createKnowledgeRepo(token: string, username: string, repoName: st
   });
 
   // Create folder structure
-  const folders = ["inbox", "career", "work", "founder", "life"];
+  const folders = ["inbox"];
   for (const folder of folders) {
     await githubApiPut(token, `/repos/${fullRepo}/contents/${folder}/.gitkeep`, {
       message: `Create ${folder}/`,
@@ -86,7 +86,7 @@ async function createKnowledgeRepo(token: string, username: string, repoName: st
   const readmeRes = await githubApiGet(token, `/repos/${fullRepo}/contents/README.md`);
   const readmeSha = readmeRes.ok ? ((readmeRes.data as { sha: string }).sha) : undefined;
 
-  const readmeContent = `# My Knowledge Hub\n\nCaptures from [Mnemos](https://github.com/Soph20/mnemos-capture) land here automatically.\n\n- \`inbox/\` — unprocessed captures\n- \`career/\`, \`work/\`, \`founder/\`, \`life/\` — processed by context\n`;
+  const readmeContent = `# My Knowledge Hub\n\nCaptures from [Mnemos](https://github.com/Soph20/mnemos-capture) land here automatically.\n\nAll captures go to \`inbox/\` as structured Markdown files. Each file contains the core idea, key takeaways, quotes, tags, and an "Applied to" field linking the insight to something actionable.\n`;
 
   const readmeBody: Record<string, unknown> = {
     message: "Add knowledge hub README",

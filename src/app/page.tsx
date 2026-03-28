@@ -2,27 +2,18 @@
 
 import { useState, useEffect, useRef } from "react";
 
-type CaptureMode = "work" | "career" | "founder" | "life";
-
 interface CaptureResult {
   capture: {
     inferredTitle: string;
     coreIdea: string;
     takeaways: string[];
     quotes: string[];
-    modes: CaptureMode[];
+    tags: string[];
     appliedTo: string | null;
     inferredType: string;
   };
   filename: string;
 }
-
-const MODE_CLASSES: Record<CaptureMode, string> = {
-  work: "mode-tag-work",
-  career: "mode-tag-career",
-  founder: "mode-tag-founder",
-  life: "mode-tag-life",
-};
 
 const TYPE_LABELS: Record<string, string> = {
   article: "Article",
@@ -251,17 +242,20 @@ export default function CapturePage() {
             </span>
           </div>
 
-          {/* Mode tags */}
-          <div className="flex flex-wrap gap-1.5">
-            {result.capture.modes.map((mode) => (
-              <span
-                key={mode}
-                className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${MODE_CLASSES[mode]}`}
-              >
-                {mode}
-              </span>
-            ))}
-          </div>
+          {/* Tags */}
+          {result.capture.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {result.capture.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+                  style={{ background: "var(--gold-faint)", color: "var(--gold)", border: "1px solid var(--gold-low)" }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Core idea */}
           <div className="rounded-2xl p-4" style={CARD_STYLE}>

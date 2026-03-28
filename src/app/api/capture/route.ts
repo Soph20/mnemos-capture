@@ -2,8 +2,6 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 
-type CaptureMode = "work" | "career" | "founder" | "life";
-
 interface ExtractedCapture {
   slug: string;
   inferredTitle: string;
@@ -13,13 +11,13 @@ interface ExtractedCapture {
   coreIdea: string;
   takeaways: string[];
   quotes: string[];
-  modes: CaptureMode[];
+  tags: string[];
   appliedTo: string | null;
   lowConfidence: boolean;
 }
 
 const SYSTEM_PROMPT_TEXT = `You are a knowledge extraction engine for a personal PKM system. Process the input and return ONLY valid JSON — no markdown, no text, no wrapping.
-{"slug":"3-6-word-hyphenated-core-idea","inferredTitle":"string","inferredAuthor":"string|null","inferredUrl":"string|null","inferredType":"article|blog|research|transcript|notes|post|book|thread|video","coreIdea":"string","takeaways":["string"],"quotes":["string"],"modes":["string"],"appliedTo":"string|null","lowConfidence":false}
+{"slug":"3-6-word-hyphenated-core-idea","inferredTitle":"string","inferredAuthor":"string|null","inferredUrl":"string|null","inferredType":"article|blog|research|transcript|notes|post|book|thread|video","coreIdea":"string","takeaways":["string"],"quotes":["string"],"tags":["string"],"appliedTo":"string|null","lowConfidence":false}
 RULES
 slug: lowercase hyphenated, derive from insight not headline, strip articles
 inferredUrl: only if explicit in content, never construct
@@ -27,13 +25,13 @@ inferredType: research=citations/methodology; transcript=spoken→text; thread=s
 coreIdea: 1-2 sentences. "X because Y, therefore Z." Not what the piece covers. Not "this article argues."
 takeaways: 3–5 specific opinionated assertions. Must pass "so what?" test. Bad: "Consistency matters." Good: "Consistency compounds only when feedback closes within 24h."
 quotes: verbatim only, only if phrasing is irreplaceable. [] if none. Never fabricate.
-modes (all that apply): career=job search/interviews/professional growth; founder=startups/GTM/0-to-1/side projects; work=current role/team/tools/industry; life=habits/health/decisions/non-work
+tags: 2-5 lowercase topic tags relevant to the content (e.g. "product-discovery", "ai-agents", "pricing", "user-research"). Descriptive, not categorical.
 appliedTo: one sentence connecting this insight to something the reader could act on right now. null if forced or unclear.
 lowConfidence: true if <100 words, URL-only, unprocessable, or coreIdea uncertain.
 EDGE CASES: URL-only→extract from path+lowConfidence:true | non-English→return in same language | multiple authors→"A, B" | thread→OP as primary source
 EXAMPLE
 Input: "The mom test — Rob Fitzpatrick. Don't ask if your idea is good. Ask about their life. 'Would you use this?' measures politeness. Ask: 'Walk me through the last time you dealt with this.' No recent instance = not urgent enough to build."
-Output: {"slug":"mom-test-past-behavior-not-validation","inferredTitle":"The Mom Test — Validating Without Leading","inferredAuthor":"Rob Fitzpatrick","inferredUrl":null,"inferredType":"book","coreIdea":"People lie about future behavior to be kind. The only reliable signal is past behavior — so questions must be about their life, not your idea.","takeaways":["'Would you use this?' measures politeness, not demand","Recency is a proxy for urgency — no recent instance means no pressing need","Interviews yield signal only when the subject doesn't know they're evaluating your idea"],"quotes":["Walk me through the last time you dealt with this."],"modes":["founder","career"],"appliedTo":"Structure discovery calls around past failures and workarounds, not hypothetical product interest.","lowConfidence":false}`;
+Output: {"slug":"mom-test-past-behavior-not-validation","inferredTitle":"The Mom Test — Validating Without Leading","inferredAuthor":"Rob Fitzpatrick","inferredUrl":null,"inferredType":"book","coreIdea":"People lie about future behavior to be kind. The only reliable signal is past behavior — so questions must be about their life, not your idea.","takeaways":["'Would you use this?' measures politeness, not demand","Recency is a proxy for urgency — no recent instance means no pressing need","Interviews yield signal only when the subject doesn't know they're evaluating your idea"],"quotes":["Walk me through the last time you dealt with this."],"tags":["product-discovery","user-research","validation","interviews"],"appliedTo":"Structure discovery calls around past failures and workarounds, not hypothetical product interest.","lowConfidence":false}`;
 
 // Max input characters to send to the LLM (~1500 tokens, covers 95% of captures)
 const MAX_INPUT_CHARS = 6000;
@@ -57,7 +55,7 @@ date: ${date}
 source: ${capture.inferredTitle}${capture.inferredAuthor ? ` — ${capture.inferredAuthor}` : ""}
 url: ${capture.inferredUrl ?? "none"}
 type: ${capture.inferredType}
-modes: ${capture.modes.join(", ")}
+tags: ${capture.tags.join(", ")}
 status: inbox
 ---
 
@@ -197,7 +195,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   await githubPut(user.github_token, user.github_repo, `inbox/${filename}`, markdown, `capture: add ${filename}`);
 
   // Update INDEX.md
-  const row = `| ${date} | [${capture.slug}](inbox/${filename}) | ${capture.coreIdea.slice(0, 80)}... | ${capture.modes.join(", ")} |\n`;
+  const row = `| ${date} | [${capture.slug}](inbox/${filename}) | ${capture.coreIdea.slice(0, 80)}... | ${capture.tags.join(", ")} |\n`;
 
   const existing = await githubGet(user.github_token, user.github_repo, "INDEX.md");
   if (existing) {
@@ -211,7 +209,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       existing.sha
     );
   } else {
-    const header = `# Knowledge Hub — Master Index\n\n| Date | Resource | Keywords | Modes |\n|------|----------|----------|-------|\n`;
+    const header = `# Knowledge Hub — Master Index\n\n| Date | Resource | Keywords | Tags |\n|------|----------|----------|------|\n`;
     await githubPut(user.github_token, user.github_repo, "INDEX.md", header + row, "capture: initialize index");
   }
 

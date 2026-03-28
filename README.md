@@ -6,7 +6,7 @@
 
 <p align="center"><strong>Capture knowledge. Apply it through your agents.</strong></p>
 
-Mnemos is a knowledge pipeline for builders who work with AI agents. You learn something — an article, a thread, a transcript, your own notes, an idea on the go — and instead of bookmarking it or letting it rot in a tab, you paste it into Mnemos. An LLM extracts the core insight, tags where it applies, and commits it to a GitHub repo you own.
+Mnemos is a knowledge pipeline for builders who work with AI agents. You learn something — an article, a thread, a transcript, your own notes, an idea on the go — and instead of bookmarking it or letting it rot in a tab, you paste it into Mnemos. An LLM extracts the core insight, tags it by topic, and commits it to a GitHub repo you own.
 
 That repo becomes your personal knowledge base. Your AI agents — Claude Code, Codex, or any MCP-compatible tool — pull from it directly. The knowledge you captured on your phone during lunch is available to your coding agent by the time you sit down to work.
 
@@ -17,7 +17,7 @@ That repo becomes your personal knowledge base. Your AI agents — Claude Code, 
 Most knowledge tools stop at "save it." Mnemos closes the loop:
 
 1. **You capture** — paste anything: articles, threads, transcripts, meeting notes, ideas, voice memo transcripts, book highlights
-2. **AI extracts** — an LLM pulls the actual insight (not a summary), tags it by context, and connects it to what you're building right now
+2. **AI extracts** — an LLM pulls the actual insight (not a summary), tags it by topic, and connects it to what you're building right now
 3. **Your agents apply it** — Claude Code, Codex, or any agentic tool reads your knowledge repo via MCP or Git and uses it in real workflows
 
 Every capture includes an **"Applied to"** field — a concrete sentence linking what you learned to what you're building. This is the difference between a saved-for-later graveyard and a knowledge system that compounds.
@@ -25,29 +25,21 @@ Every capture includes an **"Applied to"** field — a concrete sentence linking
 ## How it works
 
 ```mermaid
-flowchart TD
-    A["You learn something valuable\n(article, thread, transcript, idea, notes)"] --> B["Open Mnemos\n(phone, tablet, desktop)"]
-    B --> C["Paste content → hit Capture"]
-    C --> D["LLM extracts structured insights"]
-    D --> E["Core idea"]
-    D --> F["Key takeaways"]
-    D --> G["Mode tags"]
-    D --> H["Applied to"]
-    E & F & G & H --> I["Structured Markdown\ncommitted to your GitHub repo"]
-    I --> J["Claude Code reads it via MCP"]
-    I --> K["Any agent reads the repo directly"]
+flowchart LR
+    A["Read an article,\nhear a podcast,\nhave an idea"] -->|paste| B["Mnemos\n(web / mobile)"]
+    B -->|extract| C["Core idea\nTakeaways\nApplied to"]
+    C -->|commit| D["Your GitHub repo\n(Markdown)"]
+    D -->|MCP| E["Claude Code"]
+    D -->|Git read| F["Codex"]
+    D -->|API / Git| G["Your agents"]
 
-    style A fill:#2A62C6,stroke:#1a4a9e,color:#fff
+    style A fill:#1a1a2e,stroke:#444,color:#fff
     style B fill:#2A62C6,stroke:#1a4a9e,color:#fff
-    style C fill:#2A62C6,stroke:#1a4a9e,color:#fff
-    style D fill:#d4a843,stroke:#b8912e,color:#fff
-    style E fill:#f5e6b8,stroke:#d4a843,color:#333
-    style F fill:#f5e6b8,stroke:#d4a843,color:#333
-    style G fill:#f5e6b8,stroke:#d4a843,color:#333
-    style H fill:#f5e6b8,stroke:#d4a843,color:#333
-    style I fill:#2d8a4e,stroke:#1e6b3a,color:#fff
-    style J fill:#1a1a2e,stroke:#333,color:#fff
-    style K fill:#1a1a2e,stroke:#333,color:#fff
+    style C fill:#d4a843,stroke:#b8912e,color:#fff
+    style D fill:#2d8a4e,stroke:#1e6b3a,color:#fff
+    style E fill:#1a1a2e,stroke:#444,color:#fff
+    style F fill:#1a1a2e,stroke:#444,color:#fff
+    style G fill:#1a1a2e,stroke:#444,color:#fff
 ```
 
 ## What you can capture
@@ -70,13 +62,13 @@ Every capture produces a structured Markdown file with:
 - **Core idea** — the actual insight, not "this article discusses X"
 - **Key takeaways** — 3-5 specific, opinionated assertions that pass the "so what?" test
 - **Quotes** — only verbatim lines worth keeping. None if nothing is genuinely quotable
-- **Mode tags** — where this applies (career, work, founder, life)
+- **Tags** — 2-5 topic tags relevant to the content (e.g. `product-discovery`, `ai-agents`, `pricing`)
 - **Applied to** — one sentence connecting this to something you're building right now
 - **Low confidence flag** — alerts you when input is too short or ambiguous for reliable extraction
 
 ## Cost
 
-Mnemos uses your own Anthropic API key (BYOK model — you bring your own key, Mnemos never charges you).
+Mnemos uses your own Anthropic API key (BYOK — you bring your own key, Mnemos never charges you).
 
 Extraction runs on **Claude Haiku 4.5** with prompt caching and input truncation, optimized for minimal token usage:
 
@@ -86,7 +78,7 @@ Extraction runs on **Claude Haiku 4.5** with prompt caching and input truncation
 | 100 captures/month (regular) | ~$0.30 |
 | 200 captures/month (heavy) | ~$0.60 |
 
-That's less than $1/month for heavy use. For comparison, the same workload on a larger model without optimization would cost 5-6x more.
+Less than $1/month for heavy use. For comparison, the same workload on a larger model without optimization would cost 5-6x more.
 
 ## Get started
 
@@ -146,7 +138,7 @@ Next.js · TypeScript (strict) · Anthropic SDK · GitHub OAuth · Vercel Postgr
 - [ ] Batch capture (multiple resources at once)
 - [ ] Browser extension for one-click capture
 - [ ] Full-text search across knowledge hub
-- [ ] Custom user-defined modes
+- [ ] Custom user-defined categories
 - [ ] Settings page (change API key, repo, regenerate MCP key)
 - [ ] Team knowledge hubs (shared captures)
 
