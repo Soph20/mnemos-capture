@@ -33,10 +33,10 @@ const SYSTEM_PROMPT = `You are processing a captured resource for a personal kno
 }
 
 Mode routing rules — include all that apply:
-- PM craft, product frameworks, interviews, job search, career narrative, company research → "career"
-- Promix, AI-native products, startup, B2B ops, digital agencies, founder thinking, 0-to-1 → "founder"
-- Well-being, habits, books (non-work), life decisions, mental health, energy, ADHD → "life"
-- Telecom, B2B SaaS, campaigns, routing API, messaging platforms, work stakeholders → "work"
+- Career growth, skill building, interviews, job search, professional development, networking → "career"
+- Startups, side projects, product ideas, entrepreneurship, business models, 0-to-1 thinking → "founder"
+- Well-being, habits, books (non-work), life decisions, mental health, energy, relationships → "life"
+- Day job, current role, team processes, tools, industry knowledge, stakeholder management → "work"
 
 Rules:
 - takeaways: 3–5 max, specific and opinionated, not restatements of the headline
