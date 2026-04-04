@@ -239,9 +239,21 @@ Next.js · TypeScript · Claude Haiku 4.5 · Anthropic SDK · GitHub OAuth · Ve
 
 ## Built by
 
-[Soph](https://github.com/Soph20) — builder, AI systems architect. 
+[Sofía Padrón Valdez](https://github.com/Soph20) — builder, AI systems architect. 
 
+## Citation
+
+If you use this repository in your agentic workflows, please consider citing as follows:
+
+@misc{2026mnemos,
+    title        = {Mnemos: A Knowledge Pipeline for AI Agents},
+    author       = {Sofia Padron Valdez},
+    year         = 2026,
+    journal      = {GitHub repository},
+    publisher    = {GitHub},
+    howpublished = {\url{https://github.com/Soph20/mnemos-capture}}
+}
 
 ## License
 
-[MIT](./LICENSE)
+[MIT License - see LICENSE file for details](./LICENSE)
