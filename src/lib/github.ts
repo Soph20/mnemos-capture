@@ -69,6 +69,28 @@ export async function githubPut(
   }
 }
 
+export async function githubDelete(
+  token: string,
+  repo: string,
+  filePath: string,
+  sha: string,
+  message: string,
+): Promise<void> {
+  const res = await fetch(
+    `${GITHUB_API}/repos/${repo}/contents/${filePath}`,
+    {
+      method: "DELETE",
+      headers: { ...authHeaders(token), "Content-Type": "application/json" },
+      body: JSON.stringify({ message, sha, branch: "main" }),
+    },
+  );
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`GitHub DELETE ${filePath}: HTTP ${res.status} — ${errText}`);
+  }
+}
+
 // ── High-level helpers ──
 
 /** Read a file's decoded UTF-8 content and sha from a repo. */
@@ -99,4 +121,28 @@ export async function appendToIndex(
       "# Knowledge Hub — Master Index\n\n| Date | Resource | Keywords | Tags |\n|------|----------|----------|------|\n";
     await githubPut(token, repo, "INDEX.md", header + row, "capture: initialize index");
   }
+}
+
+/** Update or remove an entry in INDEX.md when a capture is moved or deleted. */
+export async function updateIndexEntry(
+  token: string,
+  repo: string,
+  filename: string,
+  action: "apply" | "archive" | "delete",
+): Promise<void> {
+  const existing = await readFile(token, repo, "INDEX.md");
+  if (!existing) return;
+
+  let updated: string;
+  if (action === "delete") {
+    updated = existing.content
+      .split("\n")
+      .filter((line) => !line.includes(filename))
+      .join("\n");
+  } else {
+    const target = action === "apply" ? "applied" : "archived";
+    updated = existing.content.replace(`inbox/${filename}`, `${target}/${filename}`);
+  }
+
+  await githubPut(token, repo, "INDEX.md", updated, `${action}: update index for ${filename}`, existing.sha);
 }
