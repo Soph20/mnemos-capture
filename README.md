@@ -1,20 +1,24 @@
-![Mnemos](./public/logo.png)
+<p align="center">
+  <img src="public/logo.png" alt="Mnemos" width="120" />
+</p>
 
-# Mnemos
+<h1 align="center">Mnemos</h1>
 
-![npm](https://img.shields.io/npm/v/mnemos-capture) ![License](https://img.shields.io/badge/license-MIT-blue) ![MCP](https://img.shields.io/badge/MCP-compatible-green)
+<p align="center">
+  <img src="https://img.shields.io/npm/v/mnemos-capture" alt="npm" />
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
+  <img src="https://img.shields.io/badge/MCP-compatible-green" alt="MCP" />
+</p>
 
-**Feed your agents real knowledge from the world.**
-
-Mnemos is a knowledge pipeline you wire directly into your agents. Feed it anything from the external world — research, frameworks, transcripts, ideas — and your agents can retrieve and apply it in real time, not just what they were trained on.
-
-**This is not a note-taking app. It's infrastructure for agents that need to know things — and actually apply them.**
+<p align="center"><strong>A knowledge pipeline for AI agents.<br />Capture anything — your agents retrieve and apply it.</strong></p>
 
 ---
 
 ## The problem
 
-Your agents know what you've trained them on. They don't know what you read this morning, what framework you found last week, or what idea you had about your workflow at midnight. Mnemos is the layer that fixes that — a knowledge base that grows in real time and plugs directly into any agent via MCP.
+Your agents only know what they were trained on. They don't know what you read this morning, what framework you found last week, or what idea you had at midnight.
+
+Mnemos bridges that gap. It's a knowledge base that grows in real time and plugs directly into any agent via MCP — so every insight you capture is immediately available to every agent you use.
 
 ---
 
@@ -26,8 +30,8 @@ Go to **[mnemos-capture.vercel.app](https://mnemos-capture.vercel.app)** → **S
 
 During setup, Mnemos will:
 
-- Create a knowledge repo in your GitHub account (you own it — plain Markdown files, no proprietary format)
-- Ask for your Anthropic API key (your key, stored per-user — Mnemos never pays for your API calls)
+- Create a knowledge repo in your GitHub account — plain Markdown files, no proprietary format
+- Ask for your Anthropic API key — your key, stored per-user, Mnemos never pays for your API calls
 - Set a PIN so you can unlock the app quickly on mobile
 
 No config files. No repos to clone. No CLI setup required.
@@ -36,7 +40,7 @@ No config files. No repos to clone. No CLI setup required.
 
 Open the app on any device — phone, tablet, or desktop. Paste any content and hit **Capture**.
 
-The result is auto-committed to your GitHub knowledge repo as a structured Markdown file, immediately available to your agents.
+The result is a structured Markdown file, auto-committed to your GitHub knowledge repo and immediately available to your agents.
 
 ### 3. Connect to Claude Code
 
@@ -46,43 +50,26 @@ After signing up, you get an MCP API key. Run this once in your project:
 claude mcp add mnemos -- npx mnemos-capture serve-mcp --key <your-api-key>
 ```
 
-Here's what a real session looks like:
+Your agent confirms the connection and can immediately access your knowledge base.
 
-```
-mnemos - list_inbox (MCP)
-
-Mnemos MCP is connected and working.
-It returned 25 captures in your inbox, ranging from March 14 to today (April 2).
-```
-
-**Under the hood:** `npx mnemos-capture serve-mcp` runs a lightweight local process that bridges Claude Code's stdio MCP protocol to the Mnemos HTTP API. No data stored locally — everything lives in your GitHub repo.
+> `npx mnemos-capture serve-mcp` runs a lightweight local process that bridges Claude Code to the Mnemos API. No data is stored locally — everything lives in your GitHub repo.
 
 ### 4. Connect to any MCP-compatible agent
 
-Because your knowledge lives in a standard GitHub repo, any agent that can read Git or speak MCP can access it. No lock-in, no custom integration required.
-
----
-
-## How it fits into your workflow
-
-AI moves fast. Every day there's a new model, a new optimization, a new pattern worth knowing. Most of it is noise — but when something is relevant, you need it available to your agents at the moment they need it, not buried in a tab you'll never reopen.
-
-Mnemos sits between the world and your agents as a filter you control. When you find something worth keeping, you capture it. The curator agent extracts the insight and tags where it applies. It queues up in your knowledge base. When you sit down to work, your agent surfaces what's waiting: "You have 3 new captures — want to apply any of them?" You review, you decide, it executes. The knowledge becomes a skill, a hook, a rule — embedded in your workflow, not forgotten in your bookmarks.
-
-The "Applied to" field is the filter. It forces a concrete decision: where exactly does this belong in your system? That question is what separates knowledge that compounds from knowledge that rots.
+Your knowledge lives in a standard GitHub repo. Any agent that can read Git or speak MCP can access it — no lock-in, no custom integration required.
 
 ---
 
 ## How it works
 
 ```mermaid
-flowchart LR
+flowchart TD
     A["Article / research /\ntranscript / idea"] -->|paste| B["Mnemos\n(web / mobile / CLI)"]
-    B -->|curator agent extracts| C["Structured knowledge\n+ where to apply it"]
+    B -->|extracts insights| C["Structured knowledge\n+ where to apply it"]
     C -->|auto-commit| D["Your GitHub repo\n(Markdown)"]
     D -->|MCP| E["Agent retrieves\n& surfaces to you"]
     E -->|you decide| F{"Apply?"}
-    F -->|yes| G["Saved as skill /\nhook / rule in workflow"]
+    F -->|yes| G["Applied to\nyour workflow"]
     F -->|no| H["Stays in\nknowledge base"]
 
     style A fill:#1a1a2e,stroke:#444,color:#fff
@@ -95,16 +82,14 @@ flowchart LR
     style H fill:#1a1a2e,stroke:#444,color:#fff
 ```
 
-1. **You capture** — paste anything: articles, research papers, threads, transcripts, framework docs, your own ideas for your workflow
-2. **Mnemos extracts** — a curator agent pulls the real insight (not a summary), tags it by topic, and flags where it applies in your agent workflows
-3. **Your agents retrieve it** — Claude Code, Codex, or any MCP-compatible agent reads your knowledge base and surfaces the right knowledge at the right moment
-4. **You decide what gets applied** — the agent surfaces what's in your inbox: "You have 3 new captures, want to see them?" You review. It asks: "Want to apply this?" If yes, it takes the source knowledge and saves it into your workflow as a skill, hook, or rule. If no, it stays in the knowledge base for later. The decision is always yours.
-
-Every capture includes an **"Applied to"** field — a concrete sentence linking what you learned to where it fits in your system. This is what separates a queryable knowledge base from a graveyard of saved content.
+1. **You paste content** — an article, a research paper, a thread, a transcript, your own ideas. Anything text-based.
+2. **Mnemos extracts the insight** — Claude Haiku 4.5 pulls the core idea (not a summary), identifies key takeaways, and tags where it could apply in your work. All automatic.
+3. **It's committed to your repo** — a structured Markdown file lands in your GitHub knowledge repo, searchable and version-controlled.
+4. **Your agents retrieve it** — Claude Code or any MCP-compatible agent can search your knowledge base and surface the right insight when it's relevant. You review, you decide what gets applied.
 
 ### Example output
 
-Paste a research post about a new agentic framework. This is what gets committed to your repo:
+Paste a research post about multi-agent systems. This is what gets committed to your repo:
 
 ```markdown
 ---
@@ -129,66 +114,112 @@ consistently outperforms one generalist agent handling everything sequentially.
 - Orchestrator-subagent patterns improve error isolation — one agent failing doesn't
   collapse the entire workflow
 
+## Quotes
+> "The bottleneck in complex agentic tasks is not model capability — it's
+> error propagation across sequential steps."
+
 ## Applied to
 Evaluate your current single-agent workflows for tasks that could be decomposed
 into parallel subagent calls — prioritize anything with 3+ sequential steps.
 ```
 
-The raw input is preserved in a collapsible block. The curator agent extracts the insight, not a summary. The "Applied to" field is the decision — where exactly this belongs in your system.
+Every field is designed to help your agents find and apply the right knowledge at the right time. The **"Applied to"** field is the most important — it connects the insight to a concrete action in your work.
 
 ---
 
 ## What you can feed it
 
-Mnemos handles any text-based input. Paste it, and the curator agent figures out the format and extracts accordingly.
+If it's text, Mnemos can extract insight from it. You don't need to categorize or tag anything yourself — that happens automatically.
 
 - **Research papers and preprints** — new models, architectures, evaluation methods
 - **Framework and library docs** — patterns, APIs, integration approaches worth keeping
 - **Optimization techniques** — prompt engineering, caching strategies, latency improvements
 - **Technical threads and writeups** — the argument or finding, not the noise
-- **Your own ideas** — workflow expansions, agent improvements, architecture decisions you want your agents to act on later
+- **Your own ideas** — workflow improvements, architecture decisions, things you want your agents to act on later
 - **Transcripts and talks** — the signal extracted, ready to apply
 
 ---
 
-## MCP tools reference
+## Knowledge lifecycle
 
-Mnemos exposes 3 tools via MCP:
+Knowledge that sits unreviewed rots. Mnemos forces a decision: apply it, save it for later, or discard it.
+
+```
+  ┌─────────┐
+  │  Capture │
+  └────┬─────┘
+       ▼
+  ┌─────────┐     ┌──────────┐
+  │  Inbox   │────▶│  Applied  │   You used the insight in your workflow
+  └────┬─────┘     └──────────┘
+       │
+       ├──────────▶┌──────────┐
+       │           │ Archived  │   Reviewed, not actionable right now
+       │           └──────────┘
+       │
+       └──────────▶┌──────────┐
+                   │ Deleted   │   Not useful, permanently removed
+                   └──────────┘
+```
+
+**How it works in practice:**
+
+1. **Capture** — every new capture lands in `inbox/`. After each capture, Mnemos tells you how many items are waiting for review.
+2. **Review** — use `list_inbox` to see what's in your inbox (with summaries), and `read_capture` to read the full content of any capture.
+3. **Apply** — when you've used an insight (added it to a project file, changed a workflow, created a rule), use `apply_capture` to move it to `applied/`. This closes the loop — the knowledge is now part of your system.
+4. **Archive** — reviewed it but it's not actionable right now? Use `archive_capture` to move it to `archived/`. It stays searchable but out of your inbox.
+5. **Delete** — not useful? Use `delete_capture` to permanently remove it.
+
+All captures are tracked in `INDEX.md` — a master table your agents use to search across your entire knowledge base.
+
+---
+
+## MCP tools
+
+Mnemos exposes 7 tools via MCP, organized by what you're doing:
+
+### Capture
 
 | Tool | What it does |
 |------|-------------|
-| `capture` | Runs the full extraction pipeline — curator agent extracts insight, commits to your GitHub repo |
-| `search_captures` | Search your knowledge base by keyword or tag |
-| `list_inbox` | List all unprocessed captures waiting in your inbox |
+| `capture` | Extracts insight from any pasted content and commits a structured Markdown file to your repo. This is the entry point — everything starts here. |
 
-The web UI and MCP access the same pipeline. The web UI is for you. MCP is for your agents — they call it programmatically, without you touching the browser.
+### Discover
 
-```bash
-# Your agent calls these directly
-"Capture this paper on KV cache optimization into my knowledge base"
-"Search my captures for anything tagged prompt-engineering"
-"List what's in my inbox"
-```
+| Tool | What it does |
+|------|-------------|
+| `list_inbox` | Shows your unprocessed captures with summaries — title, type, tags, and core idea. Up to 10 at a time. Use this to see what's waiting for your review. |
+| `search_captures` | Searches your knowledge base by keyword or tag. Finds relevant captures across inbox, applied, and archived — so your agent can pull the right knowledge when it's needed. |
+| `read_capture` | Reads the full Markdown of any capture. Use this to see the complete insight, takeaways, and context before deciding what to do with it. |
 
----
+### Manage
 
-## Mobile access
+| Tool | What it does |
+|------|-------------|
+| `apply_capture` | Moves a capture from inbox to applied. Marks it as used — you can add a note about where you applied it (e.g., "Added as a rule in CLAUDE.md"). |
+| `archive_capture` | Moves a capture from inbox to archived. It's been reviewed but isn't actionable right now. Stays searchable, out of your inbox. |
+| `delete_capture` | Permanently removes a capture and its index entry. For mistakes or captures that aren't useful. |
 
-Mnemos is a PWA. On your phone: open the app URL → Share → **Add to Home Screen**. Capture from anywhere — your knowledge is available to your agents by the time you sit down to work.
-
----
-
-## Why GitHub as storage?
-
-Your knowledge lives in a repo you own. No proprietary database, no vendor lock-in. Version-controlled, portable, readable as plain Markdown. Clone it, search it, back it up — it's just files. Any MCP-compatible agent or tool can read from it directly without going through Mnemos.
+The web UI and MCP use the same pipeline. The web UI is for capturing on the go. MCP is for your agents — they retrieve and manage captures without you touching the browser.
 
 ---
 
-## Your data, your agents
+## Mobile
 
-Everything Mnemos produces belongs to you and your agents — not to Mnemos. Your knowledge base is a GitHub repo under your account. Your captured insights are plain Markdown files you can read, clone, move, or delete at any time. Mnemos never trains on your data, never reads your captures for any purpose other than serving them back to you and your agents.
+Open Mnemos in your phone's browser, tap **Share → Add to Home Screen**. It runs full-screen like a native app.
 
-When you stop using Mnemos, your knowledge base stays exactly where it is.
+Capture on the go — reading an article on your phone at lunch? Capture it. Your agents have it by the time you sit down to work.
+
+---
+
+## Your data, your storage
+
+Your knowledge lives in a GitHub repo you own. Plain Markdown files, version-controlled, portable.
+
+- **No lock-in** — clone it, search it, move it, delete Mnemos tomorrow and your repo stays exactly where it is
+- **No proprietary format** — every capture is a readable `.md` file
+- **No training on your data** — Mnemos never reads your captures for any purpose other than serving them back to you and your agents
+- **Any tool can access it** — anything that reads Git or speaks MCP works with your knowledge base
 
 ---
 
@@ -196,7 +227,7 @@ When you stop using Mnemos, your knowledge base stays exactly where it is.
 
 Mnemos uses your own Anthropic API key (BYOK). You bring your key, Mnemos never charges you for API calls.
 
-Extraction runs on **Claude Haiku** with prompt caching and input truncation, optimized for minimal token usage:
+Extraction runs on **Claude Haiku 4.5** with prompt caching and input truncation, optimized for minimal token usage:
 
 | Usage | Estimated monthly cost |
 |-------|----------------------|
@@ -210,7 +241,7 @@ Less than $1/month for heavy use.
 
 ## Tech stack
 
-Next.js · TypeScript (strict) · Anthropic SDK · GitHub OAuth · Vercel Postgres · GitHub Content API · MCP protocol · Tailwind CSS
+Next.js · TypeScript · Claude Haiku 4.5 · Anthropic SDK · GitHub OAuth · Vercel Postgres · GitHub Content API · MCP protocol · Tailwind CSS
 
 ---
 
