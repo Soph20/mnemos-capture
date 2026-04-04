@@ -12,10 +12,9 @@
 
 <p align="center"><strong>A knowledge pipeline for AI agents.<br />Capture anything — your agents retrieve and apply it.</strong></p>
 
+Your agents only know what they were trained on. They don't know what you read this morning, what framework you found last week, or what idea you had at midnight.
 
-<p align="center">Your agents only know what they were trained on. They don't know what you read this morning, what framework you found last week, or what idea you had at midnight.
-
-Mnemos bridges that gap. It's a knowledge base that grows in real time and plugs directly into any agent via MCP — so every insight you capture is immediately available to every agent you use.</p>
+Mnemos bridges that gap. It's a knowledge base that grows in real time and plugs directly into any agent via MCP — so every insight you capture is immediately available to every agent you use.
 
 
 ## Get started
