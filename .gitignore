@@ -4,6 +4,10 @@ node_modules/
 # Build outputs
 .next/
 dist/
+*.tsbuildinfo
+
+# Auto-generated
+next-env.d.ts
 
 # Environment
 .env.local
@@ -12,6 +16,11 @@ dist/
 # OS artifacts
 .DS_Store
 Thumbs.db
+
+# Editor / tooling
+.claude/
+.vscode/
+.idea/
 
 # Logs
 *.log
