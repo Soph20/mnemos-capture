@@ -244,7 +244,7 @@ Next.js · TypeScript · Claude Haiku 4.5 · Anthropic SDK · GitHub OAuth · Ve
 ## Citation
 
 If you use this repository in your agentic workflows, please consider citing as follows:
-
+```
 @misc{2026mnemos,
     title        = {Mnemos: A Knowledge Pipeline for AI Agents},
     author       = {Sofia Padron Valdez},
@@ -252,7 +252,8 @@ If you use this repository in your agentic workflows, please consider citing as 
     journal      = {GitHub repository},
     publisher    = {GitHub},
     howpublished = {\url{https://github.com/Soph20/mnemos-capture}}
-}
+    }
+```
 
 ## License
 
