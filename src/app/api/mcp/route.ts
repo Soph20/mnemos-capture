@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserByApiKey } from "@/lib/db";
 import type { User } from "@/lib/db";
 import { githubGet, githubPut, githubDelete, readFile, updateIndexEntry } from "@/lib/github";
-import { extractCapture, formatDate, buildIndexRow } from "@/lib/llm";
+import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions } from "@/lib/llm";
+import { linkCapture } from "@/lib/linking";
+import { synthesizeTopic } from "@/lib/synthesis";
 import type { ExtractedCapture } from "@/lib/types";
 
 // ── Types ──
@@ -60,12 +62,14 @@ const TOOLS = [
   },
   {
     name: "apply_capture",
-    description: "Mark a capture as applied. Moves from inbox/ to applied/, updates status and index. The agent should apply the insight to the target (CLAUDE.md, project file, etc.) separately — this tool handles bookkeeping.",
+    description: "Mark a capture as applied. Records how and where the knowledge was used. Moves from inbox/ to applied/, updates status, index, and triggers rule re-synthesis.",
     inputSchema: {
       type: "object" as const,
       properties: {
         filename: { type: "string", description: "Filename in inbox (e.g. '2026-04-02-some-slug.md')" },
         applied_note: { type: "string", description: "Brief note on how/where the capture was applied (e.g. 'Added as CLAUDE.md rule for error handling')" },
+        target_file: { type: "string", description: "File path where the knowledge was applied (e.g. 'CLAUDE.md', 'src/utils/pricing.ts')" },
+        outcome: { type: "string", description: "What changed as a result (e.g. 'Reduced error rate by rewriting retry logic per capture advice')" },
       },
       required: ["filename"],
     },
@@ -90,6 +94,69 @@ const TOOLS = [
         filename: { type: "string", description: "Filename in inbox (e.g. '2026-04-02-some-slug.md')" },
       },
       required: ["filename"],
+    },
+  },
+  {
+    name: "recall",
+    description: "Describe your current task or problem, and get back the most relevant knowledge from your capture library. More powerful than keyword search — understands semantic relevance.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        context: { type: "string", description: "What you're working on or thinking about (1-3 sentences)" },
+        max_results: { type: "number", description: "Max captures to return (default 5, max 10)" },
+      },
+      required: ["context"],
+    },
+  },
+  {
+    name: "synthesize",
+    description: "Synthesize accumulated knowledge on a topic into actionable rules. Updates RULES.md in your knowledge repo. Can target a specific tag or synthesize all knowledge.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        tag: { type: "string", description: "Tag to synthesize (e.g. 'product-discovery'). Required." },
+      },
+      required: ["tag"],
+    },
+  },
+  {
+    name: "get_rules",
+    description: "Get the synthesized knowledge rules file. Use to populate a project's CLAUDE.md or system prompt with accumulated knowledge. Returns RULES.md content.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        tag: { type: "string", description: "Filter to rules for a specific tag/topic. Omit for all rules." },
+      },
+    },
+  },
+  {
+    name: "briefing",
+    description: "Get a session-start briefing of relevant knowledge for your current project. Combines relevant rules, recent captures, and applicable insights into a concise summary.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        project_context: { type: "string", description: "Describe the project you're working on (tech stack, domain, current focus area)" },
+        include_rules: { type: "boolean", description: "Include synthesized rules in the briefing (default true)" },
+      },
+      required: ["project_context"],
+    },
+  },
+  {
+    name: "apply_to_context",
+    description: "Describe your current task, stack, and optionally paste code — get back concrete, code-level suggestions for applying captured knowledge. Translates insights into specific guidance for your codebase.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        task: { type: "string", description: "What you're building or fixing" },
+        stack: { type: "string", description: "Tech stack (e.g. 'Next.js, TypeScript, Stripe')" },
+        files: {
+          type: "array" as const,
+          items: { type: "string" },
+          description: "File paths you're working on (e.g. ['src/api/payments.ts'])",
+        },
+        code_snippet: { type: "string", description: "Relevant code snippet for targeted suggestions" },
+      },
+      required: ["task"],
     },
   },
 ];
@@ -142,6 +209,17 @@ async function handleCapture(user: User, args: { content: string; title?: string
     await githubPut(user.github_token, user.github_repo, "INDEX.md", existing.content + row, "capture: update index", existing.sha);
   }
 
+  // Auto-link to related captures
+  let linkedCount = 0;
+  if (existing) {
+    try {
+      const related = await linkCapture(user.llm_api_key!, user.github_token, user.github_repo, capture, filename, "inbox", existing.content);
+      linkedCount = related.length;
+    } catch {
+      // Linking is best-effort — don't fail the capture
+    }
+  }
+
   // Append inbox count as a nudge
   const inboxRes = await githubGet<Array<{ name: string }>>(user.github_token, user.github_repo, "inbox");
   const inboxCount = inboxRes.ok && inboxRes.data
@@ -149,6 +227,9 @@ async function handleCapture(user: User, args: { content: string; title?: string
     : 0;
 
   let result = `Captured: ${capture.inferredTitle}\nFile: inbox/${filename}\nTags: ${capture.tags.join(", ")}`;
+  if (linkedCount > 0) {
+    result += `\nLinked to ${linkedCount} related capture(s).`;
+  }
   if (inboxCount > 0) {
     result += `\n\n---\n📬 You have ${inboxCount} item(s) in your inbox. Use list_inbox to review and apply them.`;
   }
@@ -216,7 +297,7 @@ async function handleReadCapture(user: User, args: { filename: string }): Promis
   return file.content;
 }
 
-async function handleApplyCapture(user: User, args: { filename: string; applied_note?: string }): Promise<string> {
+async function handleApplyCapture(user: User, args: { filename: string; applied_note?: string; target_file?: string; outcome?: string }): Promise<string> {
   if (!user.github_repo) return "Knowledge repo not configured.";
   const inboxPath = `inbox/${args.filename}`;
   const file = await readFile(user.github_token, user.github_repo, inboxPath);
@@ -230,9 +311,41 @@ async function handleApplyCapture(user: User, args: { filename: string; applied_
     );
   }
 
+  // Add application log
+  const today = new Date().toISOString().split("T")[0];
+  const logLines = [`- **Applied:** ${today}`];
+  if (args.target_file) logLines.push(`- **Target:** ${args.target_file}`);
+  if (args.applied_note) logLines.push(`- **Note:** ${args.applied_note}`);
+  logLines.push(`- **Outcome:** ${args.outcome ?? "_pending_"}`);
+
+  // Insert application log before "Links to memory" or at the end
+  const appLogSection = `\n## Application log\n${logLines.join("\n")}\n`;
+  if (content.includes("## Links to memory")) {
+    content = content.replace("## Links to memory", `${appLogSection}\n## Links to memory`);
+  } else {
+    content = content.trimEnd() + `\n${appLogSection}`;
+  }
+
   await githubPut(user.github_token, user.github_repo, `applied/${args.filename}`, content, `apply: ${args.filename}`);
   await githubDelete(user.github_token, user.github_repo, inboxPath, file.sha, `apply: remove ${args.filename} from inbox`);
   await updateIndexEntry(user.github_token, user.github_repo, args.filename, "apply");
+
+  // Trigger re-synthesis for the capture's tags (best-effort)
+  if (user.llm_api_key) {
+    try {
+      const tagsMatch = content.match(/^tags:\s*(.+)$/m);
+      if (tagsMatch?.[1]) {
+        const tags = tagsMatch[1].split(",").map((t) => t.trim()).filter(Boolean);
+        const indexFile = await readFile(user.github_token, user.github_repo, "INDEX.md");
+        if (indexFile && tags.length > 0) {
+          // Re-synthesize the first tag (limit API calls)
+          await synthesizeTopic(user.llm_api_key, user.github_token, user.github_repo, tags[0]!, indexFile.content);
+        }
+      }
+    } catch {
+      // Re-synthesis is best-effort
+    }
+  }
 
   return `Applied: ${args.filename} → applied/${args.filename}`;
 }
@@ -262,6 +375,150 @@ async function handleDeleteCapture(user: User, args: { filename: string }): Prom
   await updateIndexEntry(user.github_token, user.github_repo, args.filename, "delete");
 
   return `Deleted: ${args.filename}`;
+}
+
+async function handleRecall(user: User, args: { context: string; max_results?: number }): Promise<string> {
+  if (!user.github_repo) return "Knowledge repo not configured.";
+  if (!user.llm_api_key) return "API key not configured.";
+
+  const existing = await readFile(user.github_token, user.github_repo, "INDEX.md");
+  if (!existing) return "No captures yet. Use the capture tool to build your knowledge base.";
+
+  const maxResults = Math.min(args.max_results ?? 5, 10);
+  const ranked = await rankByRelevance(user.llm_api_key, args.context, existing.content, maxResults);
+
+  if (ranked.length === 0) return `No relevant captures found for: "${args.context}"`;
+
+  // Read top captures in parallel
+  const captures = await Promise.all(
+    ranked.map(async (r) => {
+      const file = await readFile(user.github_token, user.github_repo!, r.filename);
+      if (!file) return null;
+
+      // Extract core idea and takeaways for a compact summary
+      const coreMatch = file.content.match(/## Core idea\n([\s\S]*?)(?=\n##)/);
+      const takeawaysMatch = file.content.match(/## Key takeaways\n([\s\S]*?)(?=\n##)/);
+      const coreIdea = coreMatch?.[1]?.trim() ?? "";
+      const takeaways = takeawaysMatch?.[1]?.trim() ?? "";
+
+      return `### ${r.filename} (relevance: ${Math.round(r.score * 100)}%)\n**Why relevant:** ${r.reason}\n**Core idea:** ${coreIdea}\n**Takeaways:**\n${takeaways}`;
+    }),
+  );
+
+  const validCaptures = captures.filter((c): c is string => c !== null);
+  return `Found ${validCaptures.length} relevant capture(s) for: "${args.context}"\n\n${validCaptures.join("\n\n---\n\n")}`;
+}
+
+async function handleSynthesize(user: User, args: { tag: string }): Promise<string> {
+  if (!user.github_repo) return "Knowledge repo not configured.";
+  if (!user.llm_api_key) return "API key not configured.";
+
+  const existing = await readFile(user.github_token, user.github_repo, "INDEX.md");
+  if (!existing) return "No captures yet.";
+
+  const result = await synthesizeTopic(user.llm_api_key, user.github_token, user.github_repo, args.tag, existing.content);
+
+  if (result.rules.length === 0) {
+    return `No captures found matching tag "${args.tag}". Use search_captures to find available tags.`;
+  }
+
+  return `Synthesized ${result.rules.length} rule(s) for "${result.topic}" and updated RULES.md:\n\n${result.rules.map((r, i) => `${i + 1}. ${r}`).join("\n")}`;
+}
+
+async function handleGetRules(user: User, args: { tag?: string }): Promise<string> {
+  if (!user.github_repo) return "Knowledge repo not configured.";
+
+  const file = await readFile(user.github_token, user.github_repo, "RULES.md");
+  if (!file) return "No rules generated yet. Use the synthesize tool to create rules from your captures.";
+
+  if (!args.tag) return file.content;
+
+  // Extract the section for the requested tag
+  const sectionRegex = new RegExp(
+    `## ${args.tag}[^\n]*\n((?:- [^\n]+\n?)*)`,
+    "im",
+  );
+  const match = file.content.match(sectionRegex);
+  if (!match) return `No rules found for "${args.tag}". Available topics are listed in RULES.md.`;
+
+  return `## ${args.tag}\n${match[1]}`;
+}
+
+async function handleBriefing(user: User, args: { project_context: string; include_rules?: boolean }): Promise<string> {
+  if (!user.github_repo) return "Knowledge repo not configured.";
+  if (!user.llm_api_key) return "API key not configured.";
+
+  const existing = await readFile(user.github_token, user.github_repo, "INDEX.md");
+  if (!existing) return "No captures yet. Build your knowledge base with the capture tool first.";
+
+  // 1. Find relevant captures
+  const ranked = await rankByRelevance(user.llm_api_key, args.project_context, existing.content, 5);
+
+  // 2. Read relevant capture contents in parallel
+  const relevantCaptures = await Promise.all(
+    ranked.map(async (r) => {
+      const file = await readFile(user.github_token, user.github_repo!, r.filename);
+      return file?.content ?? null;
+    }),
+  );
+  const validCaptures = relevantCaptures.filter((c): c is string => c !== null);
+
+  // 3. Read rules (if requested)
+  let rules = "";
+  if (args.include_rules !== false) {
+    const rulesFile = await readFile(user.github_token, user.github_repo, "RULES.md");
+    rules = rulesFile?.content ?? "";
+  }
+
+  // 4. Read recent inbox
+  const inboxRes = await githubGet<Array<{ name: string }>>(user.github_token, user.github_repo, "inbox");
+  const recentInbox: string[] = [];
+  if (inboxRes.ok && inboxRes.data) {
+    const mdFiles = inboxRes.data.filter((f) => f.name.endsWith(".md")).slice(-3);
+    const inboxContents = await Promise.all(
+      mdFiles.map(async (f) => {
+        const file = await readFile(user.github_token, user.github_repo!, `inbox/${f.name}`);
+        return file?.content ?? null;
+      }),
+    );
+    recentInbox.push(...inboxContents.filter((c): c is string => c !== null));
+  }
+
+  // 5. Compose briefing via LLM
+  return composeBriefing(user.llm_api_key, args.project_context, validCaptures, rules, recentInbox);
+}
+
+async function handleApplyToContext(user: User, args: { task: string; stack?: string; files?: string[]; code_snippet?: string }): Promise<string> {
+  if (!user.github_repo) return "Knowledge repo not configured.";
+  if (!user.llm_api_key) return "API key not configured.";
+
+  const existing = await readFile(user.github_token, user.github_repo, "INDEX.md");
+  if (!existing) return "No captures yet.";
+
+  // Build a rich task context from all provided info
+  const contextParts = [`Task: ${args.task}`];
+  if (args.stack) contextParts.push(`Stack: ${args.stack}`);
+  if (args.files?.length) contextParts.push(`Files: ${args.files.join(", ")}`);
+  if (args.code_snippet) contextParts.push(`Code:\n\`\`\`\n${args.code_snippet}\n\`\`\``);
+  const taskContext = contextParts.join("\n");
+
+  // Find relevant captures
+  const ranked = await rankByRelevance(user.llm_api_key, taskContext, existing.content, 7);
+  if (ranked.length === 0) return `No relevant captures found for this task context.`;
+
+  // Read capture contents
+  const contents = await Promise.all(
+    ranked.map(async (r) => {
+      const file = await readFile(user.github_token, user.github_repo!, r.filename);
+      return file?.content ?? null;
+    }),
+  );
+  const validContents = contents.filter((c): c is string => c !== null);
+
+  if (validContents.length === 0) return "Could not read relevant captures.";
+
+  // Generate application suggestions
+  return generateApplicationSuggestions(user.llm_api_key, taskContext, validContents);
 }
 
 // ── MCP HTTP handler ──
@@ -323,13 +580,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             result = await handleReadCapture(user, toolArgs as { filename: string });
             break;
           case "apply_capture":
-            result = await handleApplyCapture(user, toolArgs as { filename: string; applied_note?: string });
+            result = await handleApplyCapture(user, toolArgs as { filename: string; applied_note?: string; target_file?: string; outcome?: string });
             break;
           case "archive_capture":
             result = await handleArchiveCapture(user, toolArgs as { filename: string });
             break;
           case "delete_capture":
             result = await handleDeleteCapture(user, toolArgs as { filename: string });
+            break;
+          case "recall":
+            result = await handleRecall(user, toolArgs as { context: string; max_results?: number });
+            break;
+          case "synthesize":
+            result = await handleSynthesize(user, toolArgs as { tag: string });
+            break;
+          case "get_rules":
+            result = await handleGetRules(user, toolArgs as { tag?: string });
+            break;
+          case "briefing":
+            result = await handleBriefing(user, toolArgs as { project_context: string; include_rules?: boolean });
+            break;
+          case "apply_to_context":
+            result = await handleApplyToContext(user, toolArgs as { task: string; stack?: string; files?: string[]; code_snippet?: string });
             break;
           default:
             return NextResponse.json({
