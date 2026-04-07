@@ -27,3 +27,29 @@ export interface ExtractedCapture {
   appliedTo: string | null;
   lowConfidence: boolean;
 }
+
+/** A related capture identified by the auto-linking system. */
+export interface RelatedCapture {
+  filename: string;
+  reason: string;
+}
+
+/** A capture ranked by semantic relevance to a task context. */
+export interface RelevanceResult {
+  filename: string;
+  score: number;
+  reason: string;
+}
+
+/** Output from the knowledge synthesis LLM call. */
+export interface SynthesisResult {
+  topic: string;
+  rules: string[];
+}
+
+/** A concrete suggestion for applying knowledge to the agent's current context. */
+export interface ApplicationSuggestion {
+  filename: string;
+  insight: string;
+  suggestion: string;
+}
