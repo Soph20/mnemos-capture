@@ -60,7 +60,7 @@ Your agent sees this before the conversation begins and can proactively surface 
 **Upgrade to a full session briefing (optional).** If you want more than a count — an LLM-composed briefing grounded in your current git branch, recent commits, and `CLAUDE.md` — run:
 
 ```bash
-npx mnemos-capture setup-hooks --key <your-api-key> --briefing
+npx -y mnemos-capture@latest setup-hooks --key <your-api-key> --briefing
 ```
 
 Each session now starts with a focused summary: which captures are relevant to what you're working on right now, which synthesized rules apply, and what's waiting in your inbox. Adds ~5s to session start (calls `briefing` on the hosted API, uses your Anthropic key).
