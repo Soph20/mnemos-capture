@@ -5,12 +5,17 @@ import { execSync } from "child_process";
 
 const HOSTED_URL = "https://mnemos-capture.vercel.app/api/mcp";
 const CLAUDE_SETTINGS_PATH = join(homedir(), ".claude", "settings.json");
-const HOOK_MARKER = "mnemos-capture inbox-check";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Settings = Record<string, any>;
 type HookGroup = { hooks?: HookEntry[] };
 type HookEntry = { type: string; command: string };
+
+// Matches both legacy ("mnemos-capture inbox-check") and modern
+// ("mnemos-capture@latest inbox-check") hook command forms.
+function isMnemosHook(cmd: string): boolean {
+  return cmd.includes("mnemos-capture") && cmd.includes("inbox-check");
+}
 
 function readSettings(): Settings {
   if (!existsSync(CLAUDE_SETTINGS_PATH)) return {};
@@ -35,26 +40,37 @@ export function setupHooks(
   const hooks = settings.hooks ?? {};
   const sessionStart: HookGroup[] = hooks.SessionStart ?? [];
 
-  const alreadyInstalled = sessionStart.some((group: HookGroup) =>
-    (group.hooks ?? []).some(
-      (h: HookEntry) => typeof h.command === "string" && h.command.includes(HOOK_MARKER),
-    ),
-  );
+  // Inspect any existing mnemos hook so we can either skip, migrate, or replace
+  let existingCmd: string | null = null;
+  for (const group of sessionStart) {
+    for (const h of group.hooks ?? []) {
+      if (typeof h.command === "string" && isMnemosHook(h.command)) {
+        existingCmd = h.command;
+        break;
+      }
+    }
+    if (existingCmd) break;
+  }
 
-  // skipIfExists: used by serve-mcp auto-setup so it never overwrites a
-  // user-configured hook (e.g. one that was upgraded to --briefing)
-  if (alreadyInstalled && opts.skipIfExists) return;
+  // skipIfExists (serve-mcp auto-install): preserve user-configured hooks but
+  // silently migrate legacy hooks that don't use @latest so they always stay fresh.
+  if (existingCmd && opts.skipIfExists) {
+    const alreadyLatest = existingCmd.includes("mnemos-capture@latest");
+    if (alreadyLatest) return;
+    // Migration: preserve the existing --briefing flag when upgrading to @latest
+    opts = { ...opts, briefing: existingCmd.includes("--briefing") };
+  }
 
   const command = opts.briefing
-    ? `npx mnemos-capture inbox-check --key ${apiKey} --briefing`
-    : `npx mnemos-capture inbox-check --key ${apiKey}`;
+    ? `npx -y mnemos-capture@latest inbox-check --key ${apiKey} --briefing`
+    : `npx -y mnemos-capture@latest inbox-check --key ${apiKey}`;
 
   // Remove any existing mnemos inbox-check hook (handles key rotation too)
   const filtered = sessionStart
     .map((group: HookGroup) => ({
       ...group,
       hooks: (group.hooks ?? []).filter(
-        (h: HookEntry) => !(typeof h.command === "string" && h.command.includes(HOOK_MARKER)),
+        (h: HookEntry) => !(typeof h.command === "string" && isMnemosHook(h.command)),
       ),
     }))
     .filter((group: HookGroup) => (group.hooks ?? []).length > 0);

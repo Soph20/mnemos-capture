@@ -45,9 +45,19 @@ export async function serveMcp(): Promise<void> {
 
   if (!apiKey) {
     process.stderr.write("\nMnemos MCP server requires an API key.\n");
-    process.stderr.write("Usage: npx mnemos-capture serve-mcp --key <your-api-key>\n\n");
+    process.stderr.write("Usage: npx -y mnemos-capture@latest serve-mcp --key <your-api-key>\n\n");
     process.stderr.write("Get your API key at: https://mnemos-capture.vercel.app/onboard\n\n");
     process.exit(1);
+  }
+
+  // Self-upgrade: if a newer version exists on npm, respawn via npx @latest.
+  // Handled before anything else so stdio isn't yet owned by the MCP loop.
+  try {
+    const { maybeSelfUpgrade } = await import("./version-check.js");
+    const upgrading = await maybeSelfUpgrade();
+    if (upgrading) return; // child has taken over; parent will exit when child does
+  } catch {
+    // Version check must never block startup
   }
 
   // Auto-install the inbox hook the first time the MCP server is registered.

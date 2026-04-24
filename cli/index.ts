@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   console.log("  First time? Sign in with GitHub — setup takes 30 seconds.");
   console.log("");
   console.log("  Connect to Claude Code:");
-  console.log("  claude mcp add mnemos -- npx mnemos-capture serve-mcp --key YOUR_API_KEY");
+  console.log("  claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY");
   console.log("");
 
   // Try to open the URL in the default browser
@@ -74,7 +74,11 @@ function printHelp(): void {
     4. Start capturing!
 
   Connect to Claude Code:
-    claude mcp add mnemos -- npx mnemos-capture serve-mcp --key YOUR_API_KEY
+    claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+
+  The @latest tag ensures every Claude Code session uses the most recent
+  published version. serve-mcp also self-upgrades on startup as a safety net
+  for users who registered without @latest.
 
   The hook is installed automatically when you start the MCP server.
   To upgrade to a full project briefing at session start:

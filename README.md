@@ -42,12 +42,12 @@ The result is a structured Markdown file, auto-committed to your GitHub knowledg
 After signing up, you get an MCP API key. Run this once on your machine:
 
 ```bash
-claude mcp add mnemos -- npx mnemos-capture serve-mcp --key <your-api-key>
+claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key <your-api-key>
 ```
 
 Your agent confirms the connection and can immediately access your knowledge base.
 
-> `npx mnemos-capture serve-mcp` runs a lightweight local process that bridges Claude Code to the Mnemos API. No data is stored locally — everything lives in your GitHub repo.
+> `npx -y mnemos-capture@latest serve-mcp` runs a lightweight local process that bridges Claude Code to the Mnemos API. The `@latest` tag guarantees you always run the most recently published version. As a safety net, the MCP server also self-upgrades on startup: if a newer version is on npm, it respawns under `npx @latest` automatically — so existing users who registered without `@latest` pick up updates on their next session. No data is stored locally — everything lives in your GitHub repo.
 
 **Proactive inbox notifications (automatic).** The first time the MCP server starts, Mnemos silently installs a `SessionStart` hook in `~/.claude/settings.json`. From then on, every new Claude Code session opens with a short reminder:
 
