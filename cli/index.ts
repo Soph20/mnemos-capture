@@ -18,6 +18,27 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === "setup-hooks") {
+    const { setupHooks } = await import("./hooks.js");
+    const keyIdx = args.indexOf("--key");
+    const apiKey = keyIdx !== -1 ? args[keyIdx + 1] : undefined;
+    if (!apiKey) {
+      console.error("Usage: npx mnemos-capture setup-hooks --key YOUR_API_KEY");
+      process.exit(1);
+    }
+    setupHooks(apiKey);
+    return;
+  }
+
+  if (command === "inbox-check") {
+    const { inboxCheck } = await import("./hooks.js");
+    const keyIdx = args.indexOf("--key");
+    const apiKey = keyIdx !== -1 ? args[keyIdx + 1] : undefined;
+    if (!apiKey) process.exit(0); // silent fail in hook context
+    await inboxCheck(apiKey);
+    return;
+  }
+
   // Default: open the hosted app
   console.log("");
   console.log("  Mnemos — Knowledge capture for agentic workflows\n");
@@ -27,6 +48,7 @@ async function main(): Promise<void> {
   console.log("");
   console.log("  Connect to Claude Code:");
   console.log("  claude mcp add mnemos -- npx mnemos-capture serve-mcp --key YOUR_API_KEY");
+  console.log("  npx mnemos-capture setup-hooks --key YOUR_API_KEY");
   console.log("");
 
   // Try to open the URL in the default browser
@@ -40,9 +62,10 @@ function printHelp(): void {
   Mnemos — Knowledge capture for agentic workflows
 
   Usage:
-    npx mnemos-capture              Open Mnemos in your browser
-    npx mnemos-capture serve-mcp    Start the MCP server for Claude Code
-    npx mnemos-capture help         Show this help
+    npx mnemos-capture                          Open Mnemos in your browser
+    npx mnemos-capture serve-mcp --key KEY      Start the MCP server for Claude Code
+    npx mnemos-capture setup-hooks --key KEY    Install inbox notification hook
+    npx mnemos-capture help                     Show this help
 
   Get started:
     1. Run: npx mnemos-capture
@@ -52,6 +75,10 @@ function printHelp(): void {
 
   Connect to Claude Code:
     claude mcp add mnemos -- npx mnemos-capture serve-mcp --key YOUR_API_KEY
+    npx mnemos-capture setup-hooks --key YOUR_API_KEY
+
+  The setup-hooks command installs a SessionStart hook in ~/.claude/settings.json.
+  At the start of each Claude Code session you'll see how many captures are waiting.
   `);
 }
 
