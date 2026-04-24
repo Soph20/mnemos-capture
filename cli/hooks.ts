@@ -29,11 +29,21 @@ function writeSettings(settings: Settings): void {
 
 export function setupHooks(
   apiKey: string,
-  opts: { briefing?: boolean; silent?: boolean } = {},
+  opts: { briefing?: boolean; silent?: boolean; skipIfExists?: boolean } = {},
 ): void {
   const settings = readSettings();
   const hooks = settings.hooks ?? {};
   const sessionStart: HookGroup[] = hooks.SessionStart ?? [];
+
+  const alreadyInstalled = sessionStart.some((group: HookGroup) =>
+    (group.hooks ?? []).some(
+      (h: HookEntry) => typeof h.command === "string" && h.command.includes(HOOK_MARKER),
+    ),
+  );
+
+  // skipIfExists: used by serve-mcp auto-setup so it never overwrites a
+  // user-configured hook (e.g. one that was upgraded to --briefing)
+  if (alreadyInstalled && opts.skipIfExists) return;
 
   const command = opts.briefing
     ? `npx mnemos-capture inbox-check --key ${apiKey} --briefing`

@@ -54,7 +54,7 @@ export async function serveMcp(): Promise<void> {
   // Uses silent mode so it never prints to stdout (which is reserved for MCP protocol).
   try {
     const { setupHooks } = await import("./hooks.js");
-    setupHooks(apiKey, { silent: true });
+    setupHooks(apiKey, { silent: true, skipIfExists: true });
   } catch {
     // Non-fatal — hook setup should never block the MCP server from starting
   }
