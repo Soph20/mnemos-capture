@@ -39,13 +39,22 @@ The result is a structured Markdown file, auto-committed to your GitHub knowledg
 
 ### 3. Connect to Claude Code
 
-After signing up, you get an MCP API key. Run this once on your machine:
+When you finish onboarding (step 1), Mnemos generates a personal **MCP API key** and displays it on the success screen — copy it. This key authenticates your Claude Code sessions to the hosted Mnemos API; treat it like a password.
+
+Then, on your local machine:
 
 ```bash
-claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key <your-api-key>
+claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key <your-mcp-key>
 ```
 
-`serve-mcp` is a local stdio proxy to the hosted Mnemos API — no data stored on disk. On first run it writes a `SessionStart` hook to `~/.claude/settings.json` so every new session opens with your inbox count. See [CLI](#cli) and [Session-start hooks](#session-start-hooks) for the optional `--briefing` upgrade and surface compatibility.
+What this does:
+
+- `claude mcp add` registers a launcher command with Claude Code's MCP runtime.
+- `npx -y mnemos-capture@latest` ensures every session pulls the current version from npm.
+- `serve-mcp` is a local stdio proxy: it forwards your agent's MCP tool calls (`capture`, `list_inbox`, `recall`, …) to the hosted Mnemos API. Nothing is stored on disk locally — your data lives in your GitHub knowledge repo.
+- On first run it also writes a `SessionStart` hook to `~/.claude/settings.json` so every new Claude Code session opens with your inbox count.
+
+See [CLI](#cli) and [Session-start hooks](#session-start-hooks) for the `--briefing` upgrade and surface compatibility.
 
 ### 4. Connect to any MCP-compatible agent
 
