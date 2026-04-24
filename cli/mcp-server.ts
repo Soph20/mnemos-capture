@@ -50,6 +50,15 @@ export async function serveMcp(): Promise<void> {
     process.exit(1);
   }
 
+  // Auto-install the inbox hook the first time the MCP server is registered.
+  // Uses silent mode so it never prints to stdout (which is reserved for MCP protocol).
+  try {
+    const { setupHooks } = await import("./hooks.js");
+    setupHooks(apiKey, { silent: true });
+  } catch {
+    // Non-fatal — hook setup should never block the MCP server from starting
+  }
+
   process.stderr.write("Mnemos MCP server starting (proxying to hosted instance)...\n");
 
   let buffer = "";
