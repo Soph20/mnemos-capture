@@ -65,30 +65,44 @@ export function setupHooks(
   }
 }
 
+function run(cmd: string): string {
+  return execSync(cmd, { timeout: 2000, stdio: ["pipe", "pipe", "pipe"] }).toString().trim();
+}
+
 function detectProjectContext(): string {
+  const parts: string[] = [];
+
+  // Repo name
   try {
-    const remote = execSync("git remote get-url origin", {
-      timeout: 2000,
-      stdio: ["pipe", "pipe", "pipe"],
-    })
-      .toString()
-      .trim();
+    const remote = run("git remote get-url origin");
     const match = remote.match(/\/([^/]+?)(?:\.git)?$/);
-    if (match?.[1]) return match[1];
-  } catch {}
+    const repo = match?.[1] ?? run("git rev-parse --show-toplevel").split("/").pop();
+    if (repo) parts.push(`Project: ${repo}`);
+  } catch {
+    const dir = process.cwd().split("/").pop();
+    if (dir) parts.push(`Project: ${dir}`);
+  }
 
+  // Current branch
   try {
-    const dir = execSync("git rev-parse --show-toplevel", {
-      timeout: 2000,
-      stdio: ["pipe", "pipe", "pipe"],
-    })
-      .toString()
-      .trim();
-    const name = dir.split("/").pop();
-    if (name) return name;
+    const branch = run("git branch --show-current");
+    if (branch) parts.push(`Branch: ${branch}`);
   } catch {}
 
-  return process.cwd().split("/").pop() ?? "current project";
+  // Recent commits (last 5)
+  try {
+    const log = run("git log --oneline -5");
+    if (log) parts.push(`Recent commits:\n${log}`);
+  } catch {}
+
+  // CLAUDE.md — first 800 chars gives the model real project intent
+  try {
+    const root = run("git rev-parse --show-toplevel");
+    const claudeMd = readFileSync(join(root, "CLAUDE.md"), "utf-8").slice(0, 800).trim();
+    if (claudeMd) parts.push(`Project instructions (CLAUDE.md excerpt):\n${claudeMd}`);
+  } catch {}
+
+  return parts.length > 0 ? parts.join("\n\n") : "current project";
 }
 
 async function callMcp(
