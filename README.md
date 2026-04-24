@@ -39,7 +39,7 @@ The result is a structured Markdown file, auto-committed to your GitHub knowledg
 
 ### 3. Connect to Claude Code
 
-After signing up, you get an MCP API key. Run this once in your project:
+After signing up, you get an MCP API key. Run this once on your machine:
 
 ```bash
 claude mcp add mnemos -- npx mnemos-capture serve-mcp --key <your-api-key>
@@ -48,6 +48,24 @@ claude mcp add mnemos -- npx mnemos-capture serve-mcp --key <your-api-key>
 Your agent confirms the connection and can immediately access your knowledge base.
 
 > `npx mnemos-capture serve-mcp` runs a lightweight local process that bridges Claude Code to the Mnemos API. No data is stored locally — everything lives in your GitHub repo.
+
+**Proactive inbox notifications (automatic).** The first time the MCP server starts, Mnemos silently installs a `SessionStart` hook in `~/.claude/settings.json`. From then on, every new Claude Code session opens with a short reminder:
+
+```
+Mnemos: 3 captures in inbox — run list_inbox to review
+```
+
+Your agent sees this before the conversation begins and can proactively surface pending captures instead of waiting for you to ask. The hook is skipped if one already exists, so rotating keys or upgrading modes is always safe — your configuration is never overwritten silently.
+
+**Upgrade to a full session briefing (optional).** If you want more than a count — an LLM-composed briefing grounded in your current git branch, recent commits, and `CLAUDE.md` — run:
+
+```bash
+npx mnemos-capture setup-hooks --key <your-api-key> --briefing
+```
+
+Each session now starts with a focused summary: which captures are relevant to what you're working on right now, which synthesized rules apply, and what's waiting in your inbox. Adds ~5s to session start (calls `briefing` on the hosted API, uses your Anthropic key).
+
+**Where the hook runs.** `SessionStart` hooks fire anywhere Claude Code reads your local settings — CLI, VS Code / JetBrains extensions, and the desktop app. For Claude Code on the web or other MCP clients (Cursor, etc.), the MCP tools (`list_inbox`, `briefing`, `recall`, …) still work — you just won't get the proactive nudge automatically. Add a line to that project's `CLAUDE.md` like `"At session start, call list_inbox to surface pending captures"` for a portable alternative.
 
 ### 4. Connect to any MCP-compatible agent
 
