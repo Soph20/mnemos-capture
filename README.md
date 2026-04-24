@@ -45,27 +45,7 @@ After signing up, you get an MCP API key. Run this once on your machine:
 claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key <your-api-key>
 ```
 
-Your agent confirms the connection and can immediately access your knowledge base.
-
-> `npx -y mnemos-capture@latest serve-mcp` runs a lightweight local process that bridges Claude Code to the Mnemos API. The `@latest` tag guarantees you always run the most recently published version. As a safety net, the MCP server also self-upgrades on startup: if a newer version is on npm, it respawns under `npx @latest` automatically — so existing users who registered without `@latest` pick up updates on their next session. No data is stored locally — everything lives in your GitHub repo.
-
-**Proactive inbox notifications (automatic).** The first time the MCP server starts, Mnemos silently installs a `SessionStart` hook in `~/.claude/settings.json`. From then on, every new Claude Code session opens with a short reminder:
-
-```
-Mnemos: 3 captures in inbox — run list_inbox to review
-```
-
-Your agent sees this before the conversation begins and can proactively surface pending captures instead of waiting for you to ask. The hook is skipped if one already exists, so rotating keys or upgrading modes is always safe — your configuration is never overwritten silently.
-
-**Upgrade to a full session briefing (optional).** If you want more than a count — an LLM-composed briefing grounded in your current git branch, recent commits, and `CLAUDE.md` — run:
-
-```bash
-npx -y mnemos-capture@latest setup-hooks --key <your-api-key> --briefing
-```
-
-Each session now starts with a focused summary: which captures are relevant to what you're working on right now, which synthesized rules apply, and what's waiting in your inbox. Adds ~5s to session start (calls `briefing` on the hosted API, uses your Anthropic key).
-
-**Where the hook runs.** `SessionStart` hooks fire anywhere Claude Code reads your local settings — CLI, VS Code / JetBrains extensions, and the desktop app. For Claude Code on the web or other MCP clients (Cursor, etc.), the MCP tools (`list_inbox`, `briefing`, `recall`, …) still work — you just won't get the proactive nudge automatically. Add a line to that project's `CLAUDE.md` like `"At session start, call list_inbox to surface pending captures"` for a portable alternative.
+`serve-mcp` is a local stdio proxy to the hosted Mnemos API — no data stored on disk. On first run it writes a `SessionStart` hook to `~/.claude/settings.json` so every new session opens with your inbox count. See [CLI](#cli) and [Session-start hooks](#session-start-hooks) for the optional `--briefing` upgrade and surface compatibility.
 
 ### 4. Connect to any MCP-compatible agent
 
@@ -181,6 +161,81 @@ Knowledge that sits unreviewed rots. Mnemos forces a decision: apply it, save it
 5. **Delete** — not useful? Use `delete_capture` to permanently remove it.
 
 All captures are tracked in `INDEX.md` — a master table your agents use to search across your entire knowledge base.
+
+
+## CLI
+
+All commands run via `npx -y mnemos-capture@latest <subcommand>`. The `@latest` tag forces npm to resolve against the registry on every invocation; `serve-mcp` also self-upgrades on startup as a safety net.
+
+```
+mnemos-capture                                       Open hosted app
+mnemos-capture serve-mcp --key KEY                   Run local MCP proxy (auto-installs hook, self-upgrades)
+mnemos-capture setup-hooks --key KEY [--briefing]    Install SessionStart hook
+mnemos-capture inbox-check --key KEY [--briefing]    What the hook runs (debug)
+mnemos-capture help                                  Show help
+```
+
+
+## Session-start hooks
+
+`serve-mcp` writes a `SessionStart` hook to `~/.claude/settings.json` on first run:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx -y mnemos-capture@latest inbox-check --key <key>"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Every Claude Code session then opens with:
+
+```
+Mnemos: 4 captures in inbox — run list_inbox to review
+```
+
+### Briefing mode
+
+Opt in for an LLM-composed briefing instead of a count:
+
+```bash
+npx -y mnemos-capture@latest setup-hooks --key YOUR_KEY --briefing
+```
+
+`inbox-check` collects shell context:
+
+```
+Project: mnemos-capture
+Branch: feat/payments-rewrite
+Recent commits:
+  c0ffee2 feat: add Stripe webhook signing
+  bada551 fix: handle 3DS challenge timeout
+Project instructions (CLAUDE.md excerpt):
+  Always wrap route handlers in try/catch and return JSON…
+```
+
+…sends it as `project_context` to the `briefing` MCP tool, and prints the result on stdout (which Claude Code injects into the session as context). ~5s overhead, uses your Anthropic key.
+
+### Compatibility
+
+| Surface | Hook fires |
+|---|---|
+| Claude Code CLI, VS Code / JetBrains extensions, desktop app | Yes |
+| Claude Code on the web | No — `~/.claude/settings.json` is local only |
+| Cursor / other MCP clients | No — distinct hook systems |
+
+MCP tools work everywhere; only the hook is local-Claude-Code specific. For unsupported surfaces, add to `CLAUDE.md`:
+
+> At session start, call `list_inbox` to surface pending captures.
 
 
 ## MCP tools
