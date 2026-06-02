@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserByApiKey } from "@/lib/db";
 import type { User } from "@/lib/db";
 import { githubGet, githubPut, githubDelete, readFile, updateIndexEntry } from "@/lib/github";
-import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions } from "@/lib/llm";
+import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
 import { synthesizeTopic } from "@/lib/synthesis";
 import type { ExtractedCapture } from "@/lib/types";
@@ -159,6 +159,54 @@ const TOOLS = [
       required: ["task"],
     },
   },
+  {
+    name: "generate_plan",
+    description: "Generate a structured implementation plan from selected knowledge captures. Reads full capture content, optionally reads codebase files, and produces a Markdown plan saved to plans/ in your knowledge repo. Use after briefing to turn insights into actionable steps.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        selected_captures: {
+          type: "array" as const,
+          items: { type: "string" },
+          description: "Filenames of captures to include (e.g. ['inbox/2026-05-14-slug.md', 'applied/2026-04-02-slug.md'])",
+        },
+        project_context: { type: "string", description: "Description of current project context (branch, what you're working on)" },
+        codebase_files: {
+          type: "array" as const,
+          items: { type: "string" },
+          description: "Optional repo-relative file paths to read and include as context (e.g. ['src/app/api/capture/route.ts'])",
+        },
+      },
+      required: ["selected_captures", "project_context"],
+    },
+  },
+  {
+    name: "vault_scan",
+    description: "Scan the full knowledge vault for captures relevant to your current activity. Searches inbox, applied, and archived captures. Returns matches with score >= 0.7 not already surfaced this session.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        activity_context: { type: "string", description: "What you're about to do — include the file path and operation (e.g. 'editing src/api/capture/route.ts to add error handling')" },
+        session_surfaced: {
+          type: "array" as const,
+          items: { type: "string" },
+          description: "Filenames already surfaced this session — excluded from results to avoid repetition",
+        },
+      },
+      required: ["activity_context"],
+    },
+  },
+  {
+    name: "curate",
+    description: "Validate knowledge captures: check for stale URLs (404/410), flag low-confidence extractions, and optionally auto-archive stale ones. Returns a curation report.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        filename: { type: "string", description: "Single inbox file to curate (e.g. '2026-05-14-slug.md'). Omit to curate the entire inbox." },
+        auto_archive: { type: "boolean", description: "If true, automatically archive captures flagged as stale or low-confidence (default false)" },
+      },
+    },
+  },
 ];
 
 // ── Tool handlers ──
@@ -167,6 +215,7 @@ async function handleCapture(user: User, args: { content: string; title?: string
   if (!user.llm_api_key) throw new Error("API key not configured. Complete onboarding at mnemos-capture.vercel.app");
   if (!user.github_repo) throw new Error("Knowledge repo not configured");
 
+  const sourceType = detectSourceType(args.content);
   const capture: ExtractedCapture = await extractCapture(user.llm_api_key, args.content, args.title);
 
   const date = formatDate();
@@ -178,6 +227,7 @@ async function handleCapture(user: User, args: { content: string; title?: string
     `date: ${date}`,
     `source: ${capture.inferredTitle}`,
     `type: ${capture.inferredType}`,
+    `source_type: ${sourceType}`,
     `tags: ${capture.tags.join(", ")}`,
     `status: inbox`,
     `---`,
@@ -451,17 +501,19 @@ async function handleBriefing(user: User, args: { project_context: string; inclu
   const existing = await readFile(user.github_token, user.github_repo, "INDEX.md");
   if (!existing) return "No captures yet. Build your knowledge base with the capture tool first.";
 
-  // 1. Find relevant captures
-  const ranked = await rankByRelevance(user.llm_api_key, args.project_context, existing.content, 5);
+  // 1. Find relevant captures (top 7 to give the briefing more candidates for the 0.7 threshold)
+  const ranked = await rankByRelevance(user.llm_api_key, args.project_context, existing.content, 7);
 
-  // 2. Read relevant capture contents in parallel
+  // 2. Read relevant capture contents in parallel, keeping filename + score for the briefing prompt
   const relevantCaptures = await Promise.all(
     ranked.map(async (r) => {
       const file = await readFile(user.github_token, user.github_repo!, r.filename);
-      return file?.content ?? null;
+      return file ? { content: file.content, filename: r.filename, score: r.score } : null;
     }),
   );
-  const validCaptures = relevantCaptures.filter((c): c is string => c !== null);
+  const validCaptures = relevantCaptures.filter(
+    (c): c is { content: string; filename: string; score: number } => c !== null,
+  );
 
   // 3. Read rules (if requested)
   let rules = "";
@@ -484,8 +536,9 @@ async function handleBriefing(user: User, args: { project_context: string; inclu
     recentInbox.push(...inboxContents.filter((c): c is string => c !== null));
   }
 
-  // 5. Compose briefing via LLM
-  return composeBriefing(user.llm_api_key, args.project_context, validCaptures, rules, recentInbox);
+  // 5. Compose briefing via LLM — return the full text (JSON block + Markdown narrative)
+  const briefingOutput = await composeBriefing(user.llm_api_key, args.project_context, validCaptures, rules, recentInbox);
+  return briefingOutput.text;
 }
 
 async function handleApplyToContext(user: User, args: { task: string; stack?: string; files?: string[]; code_snippet?: string }): Promise<string> {
@@ -519,6 +572,179 @@ async function handleApplyToContext(user: User, args: { task: string; stack?: st
 
   // Generate application suggestions
   return generateApplicationSuggestions(user.llm_api_key, taskContext, validContents);
+}
+
+async function handleGeneratePlan(
+  user: User,
+  args: { selected_captures: string[]; project_context: string; codebase_files?: string[] },
+): Promise<string> {
+  if (!user.github_repo) return "Knowledge repo not configured.";
+  if (!user.llm_api_key) return "API key not configured.";
+  if (!args.selected_captures.length) return "No captures selected.";
+
+  // Read selected captures in full
+  const captureResults = await Promise.all(
+    args.selected_captures.map(async (path) => {
+      const normalised = path.includes("/") ? path : `inbox/${path}`;
+      const file = await readFile(user.github_token, user.github_repo!, normalised);
+      return file ? { filename: normalised, content: file.content } : null;
+    }),
+  );
+  const selectedCaptures = captureResults.filter(
+    (c): c is { filename: string; content: string } => c !== null,
+  );
+
+  if (selectedCaptures.length === 0) return "None of the specified captures could be found.";
+
+  // Optionally read codebase files (treated as repo-relative paths)
+  const codebaseFiles: Array<{ path: string; content: string }> = [];
+  if (args.codebase_files?.length) {
+    const fileResults = await Promise.all(
+      args.codebase_files.slice(0, 5).map(async (path) => {
+        const file = await readFile(user.github_token, user.github_repo!, path);
+        return file ? { path, content: file.content } : null;
+      }),
+    );
+    codebaseFiles.push(
+      ...fileResults.filter((f): f is { path: string; content: string } => f !== null),
+    );
+  }
+
+  const planText = await generatePlan(
+    user.llm_api_key,
+    selectedCaptures,
+    args.project_context,
+    codebaseFiles.length > 0 ? codebaseFiles : undefined,
+  );
+
+  // Save plan to plans/ folder in knowledge repo
+  const date = formatDate();
+  const firstSlug = (args.selected_captures[0] ?? "plan")
+    .split("/").pop()
+    ?.replace(/\.md$/, "")
+    .replace(/^\d{4}-\d{2}-\d{2}-/, "") ?? "plan";
+  const planFilename = `${date}-plan-${firstSlug}.md`;
+
+  try {
+    await githubPut(user.github_token, user.github_repo, `plans/${planFilename}`, planText, `plan: ${planFilename}`);
+  } catch {
+    // Plan save is best-effort — return the plan text regardless
+  }
+
+  return `${planText}\n\n---\nPlan saved to \`plans/${planFilename}\`\n\nImplement this myself or hand off to your agents?`;
+}
+
+async function handleVaultScan(
+  user: User,
+  args: { activity_context: string; session_surfaced?: string[] },
+): Promise<string> {
+  if (!user.github_repo) return "";
+  if (!user.llm_api_key) return "";
+
+  const existing = await readFile(user.github_token, user.github_repo, "INDEX.md");
+  if (!existing) return "";
+
+  // Search all captures — INDEX.md covers inbox, applied, and archived
+  const ranked = await rankByRelevance(user.llm_api_key, args.activity_context, existing.content, 3);
+
+  // Filter: score >= 0.7 and not already surfaced this session
+  const surfaced = new Set(args.session_surfaced ?? []);
+  const matches = ranked.filter((r) => r.score >= 0.7 && !surfaced.has(r.filename));
+
+  if (matches.length === 0) return "";
+
+  // Surface the top match only — vault is ambient, not a flood
+  const topMatch = matches[0]!;
+  const file = await readFile(user.github_token, user.github_repo, topMatch.filename);
+  if (!file) return "";
+
+  const coreMatch = file.content.match(/## Core idea\n([\s\S]*?)(?=\n##)/);
+  const takeawaysMatch = file.content.match(/## Key takeaways\n([\s\S]*?)(?=\n##)/);
+  const coreIdea = coreMatch?.[1]?.trim() ?? "";
+  const firstTakeaway = takeawaysMatch?.[1]?.split("\n").find((l) => l.startsWith("- ")) ?? "";
+  const basename = topMatch.filename.split("/").pop() ?? topMatch.filename;
+
+  return `Mnemos vault match (score: ${Math.round(topMatch.score * 100)}%):
+
+**${basename.replace(/\.md$/, "")}**
+${coreIdea}
+${firstTakeaway}
+
+Apply it? Run: \`apply_capture\` with filename: \`${basename}\``;
+}
+
+async function handleCurate(
+  user: User,
+  args: { filename?: string; auto_archive?: boolean },
+): Promise<string> {
+  if (!user.github_repo) return "Knowledge repo not configured.";
+
+  async function checkUrl(url: string): Promise<number | null> {
+    try {
+      const res = await fetch(url, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(5000),
+        redirect: "follow",
+      });
+      return res.status;
+    } catch {
+      return null;
+    }
+  }
+
+  async function curateFile(
+    filename: string,
+  ): Promise<{ filename: string; status: string; httpStatus: number | null; reason: string; archived: boolean }> {
+    const path = `inbox/${filename}`;
+    const file = await readFile(user.github_token, user.github_repo!, path);
+    if (!file) return { filename, status: "not_found", httpStatus: null, reason: "File not found in inbox.", archived: false };
+
+    const fmMatch = file.content.match(/^---\n([\s\S]*?)\n---/);
+    const fm = fmMatch?.[1] ?? "";
+    const urlField = fm.match(/^url:\s*(.+)$/m)?.[1]?.trim() ?? "";
+    const url = urlField && urlField !== "none" ? urlField : null;
+    const isLowConfidence = /^lowConfidence:\s*true$/m.test(fm);
+
+    const httpStatus = url ? await checkUrl(url) : null;
+    const { status, reason } = curateSingle(httpStatus, isLowConfidence);
+
+    let archived = false;
+    if (args.auto_archive && status !== "ok") {
+      try {
+        await handleArchiveCapture(user, { filename });
+        archived = true;
+      } catch {
+        // archive best-effort
+      }
+    }
+
+    return { filename, status, httpStatus, reason, archived };
+  }
+
+  if (args.filename) {
+    const result = await curateFile(args.filename);
+    const archivedNote = result.archived ? " (auto-archived)" : "";
+    return `Curation: ${result.filename}\nStatus: ${result.status}${archivedNote}\nURL status: ${result.httpStatus ?? "no URL"}\nReason: ${result.reason}`;
+  }
+
+  // Scan entire inbox (cap at 20)
+  const res = await githubGet<Array<{ name: string }>>(user.github_token, user.github_repo, "inbox");
+  if (!res.ok || !res.data) return "Inbox is empty.";
+  const mdFiles = res.data.filter((f) => f.name.endsWith(".md")).slice(0, 20);
+  if (mdFiles.length === 0) return "Inbox is empty.";
+
+  const results = await Promise.all(mdFiles.map((f) => curateFile(f.name)));
+
+  const rows = results.map((r) => {
+    const action = r.archived ? "archived" : r.status !== "ok" ? "flagged" : "—";
+    return `| ${r.filename} | ${r.status} | ${r.httpStatus ?? "—"} | ${action} |`;
+  });
+
+  const staleCount = results.filter((r) => r.status === "stale" || r.status === "stale_and_low_confidence").length;
+  const lcCount = results.filter((r) => r.status === "low_confidence" || r.status === "stale_and_low_confidence").length;
+  const okCount = results.filter((r) => r.status === "ok").length;
+
+  return `Curation report — ${results.length} file(s) checked\n\n| File | Status | URL Status | Action |\n|------|--------|------------|--------|\n${rows.join("\n")}\n\n${staleCount} stale, ${lcCount} low-confidence, ${okCount} ok.`;
 }
 
 // ── MCP HTTP handler ──
@@ -602,6 +828,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             break;
           case "apply_to_context":
             result = await handleApplyToContext(user, toolArgs as { task: string; stack?: string; files?: string[]; code_snippet?: string });
+            break;
+          case "generate_plan":
+            result = await handleGeneratePlan(user, toolArgs as { selected_captures: string[]; project_context: string; codebase_files?: string[] });
+            break;
+          case "vault_scan":
+            result = await handleVaultScan(user, toolArgs as { activity_context: string; session_surfaced?: string[] });
+            break;
+          case "curate":
+            result = await handleCurate(user, toolArgs as { filename?: string; auto_archive?: boolean });
             break;
           default:
             return NextResponse.json({

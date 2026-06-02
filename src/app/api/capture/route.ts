@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { githubPut, appendToIndex, readFile } from "@/lib/github";
-import { extractCapture, formatDate, buildMarkdown, buildIndexRow } from "@/lib/llm";
+import { extractCapture, formatDate, buildMarkdown, buildIndexRow, detectSourceType } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -31,6 +31,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
 
+  const sourceType = detectSourceType(content);
+
   // Extract insights via LLM
   let capture;
   try {
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Build Markdown and commit to user's repo
   const date = formatDate();
   const filename = `${date}-${capture.slug}.md`;
-  const markdown = buildMarkdown(date, capture, content);
+  const markdown = buildMarkdown(date, capture, content, sourceType);
 
   await githubPut(
     user.github_token,

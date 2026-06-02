@@ -4,7 +4,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import type { ExtractedCapture, RelatedCapture, RelevanceResult, SynthesisResult, ApplicationSuggestion } from "./types";
+import type { ExtractedCapture, RelatedCapture, RelevanceResult, SynthesisResult, ApplicationSuggestion, BriefingSuggestion, BriefingOutput, SourceType } from "./types";
 
 // ── Config ──
 
@@ -34,6 +34,13 @@ Input: "The mom test — Rob Fitzpatrick. Don't ask if your idea is good. Ask ab
 Output: {"slug":"mom-test-past-behavior-not-validation","inferredTitle":"The Mom Test — Validating Without Leading","inferredAuthor":"Rob Fitzpatrick","inferredUrl":null,"inferredType":"book","coreIdea":"People lie about future behavior to be kind. The only reliable signal is past behavior — so questions must be about their life, not your idea.","takeaways":["'Would you use this?' measures politeness, not demand","Recency is a proxy for urgency — no recent instance means no pressing need","Interviews yield signal only when the subject doesn't know they're evaluating your idea"],"quotes":["Walk me through the last time you dealt with this."],"tags":["product-discovery","user-research","validation","interviews"],"appliedTo":"Structure discovery calls around past failures and workarounds, not hypothetical product interest.","lowConfidence":false}`;
 
 // ── Extraction ──
+
+/** Detect how a capture was submitted based on its content shape. */
+export function detectSourceType(content: string): SourceType {
+  if (/^https?:\/\/\S+$/.test(content.trim())) return "url";
+  if (content.trim().length < 500) return "note";
+  return "paste";
+}
 
 /** Build the user message from content + optional title hint, with truncation. */
 export function buildInput(content: string, title?: string): string {
@@ -88,6 +95,7 @@ export function buildMarkdown(
   date: string,
   capture: ExtractedCapture,
   rawContent: string,
+  sourceType?: SourceType,
 ): string {
   const quotesSection =
     capture.quotes.length > 0
@@ -103,6 +111,7 @@ date: ${date}
 source: ${capture.inferredTitle}${capture.inferredAuthor ? ` — ${capture.inferredAuthor}` : ""}
 url: ${capture.inferredUrl ?? "none"}
 type: ${capture.inferredType}
+source_type: ${sourceType ?? "paste"}
 tags: ${capture.tags.join(", ")}
 status: inbox
 ---
@@ -279,36 +288,48 @@ ${captureContents.map((c, i) => `--- Capture ${i + 1} ---\n${c}`).join("\n\n")}`
 
 // ── Agent briefing ──
 
-const BRIEFING_PROMPT = `You compose concise knowledge briefings for AI agents starting a work session. Given a PROJECT CONTEXT, relevant captures, synthesized rules, and recent inbox items, produce a structured briefing.
+const BRIEFING_PROMPT = `You compose structured knowledge briefings for AI agents starting a work session. Given PROJECT CONTEXT, ranked captures (with scores and filenames), synthesized rules, and recent inbox items, produce a two-part response.
 
-Return a well-formatted Markdown briefing (NOT JSON) with these sections:
+PART 1 — JSON suggestions block (must come first, before any Markdown):
+Output a JSON array wrapped in \`\`\`json...\`\`\` fences. Each item represents a capture to surface:
+{"filename":"path/to/file.md","why":"one sentence — how this specifically relates to the current branch/task","benefit":"one sentence — what applying this concretely achieves","where":"specific file or module (e.g. src/api/capture/route.ts, CLAUDE.md)","applyNow":true}
+
+applyNow rules:
+- true if capture score >= 0.70 AND insight is directly actionable for the current work
+- false if score is 0.30–0.69 (relevant but not urgent)
+Return [] if no captures qualify.
+
+PART 2 — Markdown briefing (immediately after the JSON block):
 ## Relevant Rules
-## Key Insights for This Context
-## Recent Captures (unreviewed)
-## Suggested Actions
+## Apply Now (N insights)
+## Knowledge Vault (relevant but not urgent)
+## Suggested Next Step
 
 RULES:
-- Keep it concise — agents need signal, not noise
-- Rules section: only include rules relevant to the project context
-- Key Insights: for each, explain WHY it's relevant to THIS specific project
-- Suggested Actions: concrete next steps (e.g. "Review inbox/... — highly relevant to your retry logic")
-- If a section has no content, write "None applicable." — don't omit the heading`;
+- JSON must be valid — no trailing commas, no comments, no extra text before the opening \`\`\`json
+- "why" must reference specifics from the project context (branch name, recent commit messages, CLAUDE.md content)
+- "where" must name a specific file or module — never "the codebase" or "your project"
+- "benefit" must be concrete — not "improves code quality"
+- Markdown briefing: concise, ≤ 400 words — agents need signal, not essays
+- If a section has nothing to say, write "None applicable." — don't omit the heading`;
 
 /** Compose a session-start briefing for an agent. */
 export async function composeBriefing(
   apiKey: string,
   projectContext: string,
-  relevantCaptures: string[],
+  relevantCaptures: Array<{ content: string; filename: string; score: number }>,
   rules: string,
   recentInbox: string[],
-): Promise<string> {
+): Promise<BriefingOutput> {
   const client = new Anthropic({ apiKey });
 
   const userMessage = `PROJECT CONTEXT:
 ${projectContext}
 
-RELEVANT CAPTURES:
-${relevantCaptures.length > 0 ? relevantCaptures.map((c, i) => `--- Capture ${i + 1} ---\n${c}`).join("\n\n") : "None found."}
+RANKED CAPTURES (with relevance scores):
+${relevantCaptures.length > 0
+    ? relevantCaptures.map((c, i) => `--- Capture ${i + 1} (score: ${c.score.toFixed(2)}, file: ${c.filename}) ---\n${c.content}`).join("\n\n")
+    : "None found."}
 
 SYNTHESIZED RULES:
 ${rules || "No rules generated yet."}
@@ -318,12 +339,25 @@ ${recentInbox.length > 0 ? recentInbox.map((c, i) => `--- Recent ${i + 1} ---\n$
 
   const message = await client.messages.create({
     model: MODEL,
-    max_tokens: 1000,
+    max_tokens: 1500,
     system: [{ type: "text", text: BRIEFING_PROMPT, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: userMessage }],
   });
 
-  return message.content[0]?.type === "text" ? message.content[0].text : "Briefing could not be generated.";
+  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "Briefing could not be generated.";
+
+  // Parse JSON suggestions block from the response
+  const jsonMatch = rawText.match(/```json\n([\s\S]*?)\n```/);
+  let suggestions: BriefingSuggestion[] = [];
+  if (jsonMatch?.[1]) {
+    try {
+      suggestions = JSON.parse(jsonMatch[1]) as BriefingSuggestion[];
+    } catch {
+      suggestions = [];
+    }
+  }
+
+  return { text: rawText, suggestions };
 }
 
 // ── Context-aware application ──
@@ -365,6 +399,104 @@ ${captureContents.map((c, i) => `--- Capture ${i + 1} ---\n${c}`).join("\n\n")}`
   });
 
   return message.content[0]?.type === "text" ? message.content[0].text : "No applicable suggestions could be generated.";
+}
+
+// ── Implementation plan generation ──
+
+const PLAN_PROMPT = `You generate implementation plans that translate knowledge captures into actionable codebase changes. Given selected captures and project context, produce a structured Markdown plan.
+
+Structure your response exactly as follows:
+
+# Implementation Plan: [short descriptive title]
+
+## Context
+Why these captures are relevant now. Ground it in the project context (branch, recent commits, CLAUDE.md).
+
+## Captures Being Applied
+For each: \`- **[slug]** — [core idea in ≤ 20 words]\`
+
+## Codebase Mapping
+| File | Capture | Change |
+|------|---------|--------|
+List every file to be changed, which capture slug drives it, and what specifically changes.
+
+## Implementation Steps
+For each affected file:
+### N. [path/to/file.ts]
+**Capture:** [slug]
+**Change:** [exact description — function names, what to add/modify/remove]
+**Why:** [one sentence connecting the insight to this specific change]
+
+## Architecture Notes
+Only include if captures involve architectural decisions. Use ADR format: Status / Context / Decision / Consequences. Omit this section otherwise.
+
+## Product Notes
+Only include if captures involve user-facing changes. Omit this section otherwise.
+
+## Verification Checklist
+- [ ] [specific, independently verifiable check for each step]
+
+RULES:
+- Implementation steps must be specific enough to execute without re-reading the captures
+- Reference exact function names and file paths from any codebase files provided
+- Omit Architecture Notes and Product Notes if not applicable — do not include empty sections
+- Verification items must describe observable outcomes, not subjective assessments`;
+
+/** Generate a structured implementation plan from selected captures and project context. */
+export async function generatePlan(
+  apiKey: string,
+  selectedCaptures: Array<{ filename: string; content: string }>,
+  projectContext: string,
+  codebaseFiles?: Array<{ path: string; content: string }>,
+): Promise<string> {
+  const client = new Anthropic({ apiKey });
+
+  const captureSection = selectedCaptures
+    .map((c, i) => `--- Capture ${i + 1}: ${c.filename} ---\n${c.content}`)
+    .join("\n\n");
+
+  const codebaseSection = codebaseFiles && codebaseFiles.length > 0
+    ? `\n\nCODEBASE FILES:\n${codebaseFiles.map((f) => `--- File: ${f.path} ---\n${f.content.slice(0, 4000)}${f.content.length > 4000 ? "\n[truncated]" : ""}`).join("\n\n")}`
+    : "";
+
+  const userMessage = `PROJECT CONTEXT:
+${projectContext}
+
+SELECTED CAPTURES (${selectedCaptures.length} total):
+${captureSection}${codebaseSection}`;
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 3000,
+    system: [{ type: "text", text: PLAN_PROMPT, cache_control: { type: "ephemeral" } }],
+    messages: [{ role: "user", content: userMessage }],
+  });
+
+  return message.content[0]?.type === "text" ? message.content[0].text : "Plan could not be generated.";
+}
+
+// ── Capture curation ──
+
+/** Determine curation status for a capture based on URL check and confidence flag. */
+export function curateSingle(
+  urlStatus: number | null,
+  isLowConfidence: boolean,
+): { status: "ok" | "stale" | "low_confidence" | "stale_and_low_confidence"; reason: string } {
+  const isStale = urlStatus !== null && (urlStatus === 404 || urlStatus === 410);
+
+  if (isStale && isLowConfidence) {
+    return {
+      status: "stale_and_low_confidence",
+      reason: `Source URL is gone (HTTP ${urlStatus}) and extraction was low-confidence.`,
+    };
+  }
+  if (isStale) {
+    return { status: "stale", reason: `Source URL returned HTTP ${urlStatus} — content is no longer available.` };
+  }
+  if (isLowConfidence) {
+    return { status: "low_confidence", reason: "Extraction was low-confidence (short input or ambiguous content) — review before acting." };
+  }
+  return { status: "ok", reason: "Source is live and extraction is well-formed." };
 }
 
 // ── Markdown formatting ──

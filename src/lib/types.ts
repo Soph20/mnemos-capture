@@ -1,6 +1,9 @@
 /** Status of a capture in the knowledge repo. */
 export type CaptureStatus = "inbox" | "applied" | "archived";
 
+/** How the capture was originally submitted. */
+export type SourceType = "url" | "note" | "paste";
+
 /** Content types supported by the knowledge extraction engine. */
 export type ContentType =
   | "article"
@@ -26,6 +29,7 @@ export interface ExtractedCapture {
   tags: string[];
   appliedTo: string | null;
   lowConfidence: boolean;
+  source_type?: SourceType;
 }
 
 /** A related capture identified by the auto-linking system. */
@@ -52,4 +56,29 @@ export interface ApplicationSuggestion {
   filename: string;
   insight: string;
   suggestion: string;
+}
+
+/** One capture surfaced in an active briefing. */
+export interface BriefingSuggestion {
+  filename: string;
+  why: string;
+  benefit: string;
+  where: string;
+  applyNow: boolean;
+}
+
+/** Structured output from composeBriefing — text for display + parsed suggestions. */
+export interface BriefingOutput {
+  text: string;
+  suggestions: BriefingSuggestion[];
+}
+
+/** Result of curating a single capture (URL check + confidence check). */
+export interface CurationResult {
+  filename: string;
+  status: "ok" | "stale" | "low_confidence" | "stale_and_low_confidence";
+  url: string | null;
+  httpStatus: number | null;
+  reason: string;
+  archived?: boolean;
 }

@@ -22,10 +22,10 @@ async function main(): Promise<void> {
     const keyIdx = args.indexOf("--key");
     const apiKey = keyIdx !== -1 ? args[keyIdx + 1] : undefined;
     if (!apiKey) {
-      console.error("Usage: npx mnemos-capture setup-hooks --key YOUR_API_KEY [--briefing]");
+      console.error("Usage: npx mnemos-capture setup-hooks --key YOUR_API_KEY [--briefing] [--vault]");
       process.exit(1);
     }
-    setupHooks(apiKey, { briefing: args.includes("--briefing") });
+    setupHooks(apiKey, { briefing: args.includes("--briefing"), vault: args.includes("--vault") });
     return;
   }
 
@@ -35,6 +35,15 @@ async function main(): Promise<void> {
     const apiKey = keyIdx !== -1 ? args[keyIdx + 1] : undefined;
     if (!apiKey) process.exit(0); // silent fail in hook context
     await inboxCheck(apiKey, { briefing: args.includes("--briefing") });
+    return;
+  }
+
+  if (command === "vault-check") {
+    const { vaultCheck } = await import("./hooks.js");
+    const keyIdx = args.indexOf("--key");
+    const apiKey = keyIdx !== -1 ? args[keyIdx + 1] : undefined;
+    if (!apiKey) process.exit(0); // silent fail in hook context
+    await vaultCheck(apiKey);
     return;
   }
 
@@ -61,11 +70,19 @@ function printHelp(): void {
   Mnemos — Knowledge capture for agentic workflows
 
   Usage:
-    npx mnemos-capture                                   Open Mnemos in your browser
-    npx mnemos-capture serve-mcp --key KEY               Start the MCP server for Claude Code
-    npx mnemos-capture setup-hooks --key KEY             Install inbox count hook (fast)
-    npx mnemos-capture setup-hooks --key KEY --briefing  Install full briefing hook (uses LLM)
-    npx mnemos-capture help                              Show this help
+    npx mnemos-capture                                         Open Mnemos in your browser
+    npx mnemos-capture serve-mcp --key KEY                     Start the MCP server for Claude Code
+    npx mnemos-capture setup-hooks --key KEY                   Install inbox count hook (fast)
+    npx mnemos-capture setup-hooks --key KEY --briefing        Install full briefing hook (uses LLM)
+    npx mnemos-capture setup-hooks --key KEY --vault           Install vault hook (PreToolCall)
+    npx mnemos-capture setup-hooks --key KEY --briefing --vault  Install both hooks
+    npx mnemos-capture help                                    Show this help
+
+  MCP tools (via Claude Code):
+    briefing          — Session-start briefing with ranked insights to apply
+    generate_plan     — Turn selected captures into a full implementation plan
+    vault_scan        — Scan all captures for relevance to current activity
+    curate            — Validate URLs and flag stale captures
 
   Get started:
     1. Run: npx mnemos-capture
@@ -83,6 +100,9 @@ function printHelp(): void {
   The hook is installed automatically when you start the MCP server.
   To upgrade to a full project briefing at session start:
     npx mnemos-capture setup-hooks --key YOUR_API_KEY --briefing
+
+  To enable the vault (surfaces captures as you edit files — opt-in):
+    npx mnemos-capture setup-hooks --key YOUR_API_KEY --vault
   `);
 }
 
