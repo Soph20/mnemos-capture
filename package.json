@@ -11,7 +11,9 @@
     "build": "next build",
     "start": "next start",
     "build:cli": "tsc -p cli/tsconfig.json",
-    "prepublishOnly": "npm run build:cli"
+    "prepublishOnly": "npm run build:cli",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "ai",
@@ -51,7 +53,8 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   },
   "engines": {
     "node": ">=18"
