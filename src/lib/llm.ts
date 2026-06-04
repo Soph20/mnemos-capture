@@ -114,6 +114,7 @@ type: ${capture.inferredType}
 source_type: ${sourceType ?? "paste"}
 tags: ${capture.tags.join(", ")}
 status: inbox
+lowConfidence: ${capture.lowConfidence}
 ---
 
 # ${capture.inferredTitle}
@@ -506,6 +507,7 @@ export function buildIndexRow(
   date: string,
   capture: ExtractedCapture,
   filename: string,
+  sourceType?: SourceType,
 ): string {
-  return `| ${date} | [${capture.slug}](inbox/${filename}) | ${capture.coreIdea.slice(0, 80)}... | ${capture.tags.join(", ")} |\n`;
+  return `| ${date} | [${capture.slug}](inbox/${filename}) | ${capture.coreIdea.slice(0, 80)}... | ${capture.tags.join(", ")} | ${sourceType ?? "—"} |\n`;
 }

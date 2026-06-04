@@ -128,6 +128,17 @@ describe("buildMarkdown", () => {
     expect(md).toContain("Low confidence extraction");
   });
 
+  it("writes lowConfidence: true in frontmatter when lowConfidence is true", () => {
+    const capture = { ...baseCapture, lowConfidence: true };
+    const md = buildMarkdown("2026-06-04", capture, "raw");
+    expect(md).toContain("lowConfidence: true");
+  });
+
+  it("writes lowConfidence: false in frontmatter when lowConfidence is false", () => {
+    const md = buildMarkdown("2026-06-04", baseCapture, "raw");
+    expect(md).toContain("lowConfidence: false");
+  });
+
   it("omits low-confidence warning when lowConfidence is false", () => {
     const md = buildMarkdown("2026-06-04", baseCapture, "raw");
     expect(md).not.toContain("Low confidence extraction");
@@ -185,8 +196,17 @@ describe("buildIndexRow", () => {
   it("truncates coreIdea to 80 chars", () => {
     const longCapture = { ...baseCapture, coreIdea: "A".repeat(100) };
     const row = buildIndexRow("2026-06-04", longCapture, "2026-06-04-test-slug.md");
-    // The row should contain the truncated (80 char) version with ellipsis
     expect(row).toContain("A".repeat(80));
+  });
+
+  it("includes source_type when provided", () => {
+    const row = buildIndexRow("2026-06-04", baseCapture, "2026-06-04-test-slug.md", "url");
+    expect(row).toContain("url");
+  });
+
+  it("uses em dash placeholder when source_type is omitted", () => {
+    const row = buildIndexRow("2026-06-04", baseCapture, "2026-06-04-test-slug.md");
+    expect(row).toContain("—");
   });
 });
 
