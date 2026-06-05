@@ -324,7 +324,7 @@ Next.js · TypeScript · Vercel Postgres · GitHub OAuth · GitHub Content API �
 
 [Sofía Padrón Valdez](https://github.com/Soph20) — builder, AI systems architect.
 
-Designed by Sofía, implemented by Claude Code.
+Generated with promiX Labs AI by SPV Technology Inc., all rights reserved.
 
 
 ## Citation
