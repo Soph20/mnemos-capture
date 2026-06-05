@@ -228,7 +228,7 @@ function detectProjectContext(): string {
   return parts.length > 0 ? parts.join("\n\n") : "current project";
 }
 
-async function callMcp(
+export async function callMcp(
   apiKey: string,
   toolName: string,
   toolArgs: Record<string, unknown>,

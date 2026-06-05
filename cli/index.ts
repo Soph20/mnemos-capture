@@ -47,6 +47,27 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === "config") {
+    const { runConfigCommand } = await import("./config.js");
+    runConfigCommand(args.slice(1));
+    return;
+  }
+
+  if (command === "kos") {
+    const { kos } = await import("./kos.js");
+    const { readConfig } = await import("./config.js");
+    const keyIdx = args.indexOf("--key");
+    const apiKey = keyIdx !== -1 ? args[keyIdx + 1] : readConfig().key;
+    if (!apiKey) {
+      console.error("No API key. Pass --key YOUR_KEY or store it: mnemos config set key YOUR_KEY");
+      process.exit(1);
+    }
+    const planIdx = args.indexOf("--plan");
+    const plan = planIdx !== -1 ? args[planIdx + 1] : undefined;
+    await kos(apiKey, { plan });
+    return;
+  }
+
   // Default: open the hosted app
   console.log("");
   console.log("  Mnemos — Knowledge capture for agentic workflows\n");
@@ -76,13 +97,24 @@ function printHelp(): void {
     npx mnemos-capture setup-hooks --key KEY --briefing        Install full briefing hook (uses LLM)
     npx mnemos-capture setup-hooks --key KEY --vault           Install vault hook (PreToolCall)
     npx mnemos-capture setup-hooks --key KEY --briefing --vault  Install both hooks
+    npx mnemos-capture config set agent "claude -p"            Set which AI assistant kos drives
+    npx mnemos-capture kos --key KEY [--plan FILE]             Implement a plan in an isolated worktree
     npx mnemos-capture help                                    Show this help
 
-  MCP tools (via Claude Code):
+  MCP tools (via your AI assistant):
     briefing          — Session-start briefing with ranked insights to apply
     generate_plan     — Turn selected captures into a full implementation plan
+    list_plans        — List or read saved implementation plans
     vault_scan        — Scan all captures for relevance to current activity
     curate            — Validate URLs and flag stale captures
+
+  kos — implement plans with your own AI assistant (model-agnostic):
+    1. Tell Mnemos which assistant to drive (once):
+         mnemos config set agent "claude -p"      # or "codex exec", "aider --yes --message"
+    2. Generate a plan via the generate_plan MCP tool.
+    3. Run: mnemos kos --key YOUR_KEY
+       kos creates an isolated git worktree, hands the plan to your assistant,
+       and reports the branch + the plan's Verification Checklist when done.
 
   Get started:
     1. Run: npx mnemos-capture
