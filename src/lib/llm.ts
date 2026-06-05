@@ -4,15 +4,108 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import type { ExtractedCapture, RelatedCapture, RelevanceResult, SynthesisResult, ApplicationSuggestion, BriefingSuggestion, BriefingOutput, SourceType } from "./types";
+import type { ExtractedCapture, RelatedCapture, RelevanceResult, SynthesisResult, ApplicationSuggestion, BriefingSuggestion, BriefingOutput, SourceType, LlmProvider } from "./types";
 
 // ── Config ──
 
-const MODEL = "claude-haiku-4-5-20251001";
 const MAX_TOKENS = 800;
+
+/** Default model per provider for Mnemos' server-side extraction/briefing/plan work.
+ *  Tuned for low cost — these are fast, cheap models. BYOK: the user's key, the user's bill. */
+const MODELS: Record<LlmProvider, string> = {
+  anthropic: "claude-haiku-4-5-20251001",
+  openai: "gpt-4o-mini",
+  google: "gemini-2.0-flash",
+};
 
 /** Max input characters sent to the LLM (~1500 tokens, covers 95% of captures). */
 export const MAX_INPUT_CHARS = 6000;
+
+// ── Provider adapter ──
+// A single entry point for every server-side LLM call. Branches by provider so
+// the rest of this file is provider-agnostic. Anthropic keeps the SDK (prompt
+// caching via cache_control); OpenAI and Google use their REST APIs over fetch.
+
+interface LlmCallOptions {
+  provider: LlmProvider;
+  apiKey: string;
+  system: string;
+  user: string;
+  maxTokens: number;
+  /** Optional model override; defaults to the provider's entry in MODELS. */
+  model?: string;
+}
+
+/** Call the configured provider and return the raw text response (empty string on no content). */
+async function callLlm(opts: LlmCallOptions): Promise<string> {
+  const model = opts.model ?? MODELS[opts.provider];
+  switch (opts.provider) {
+    case "anthropic":
+      return callAnthropic(opts, model);
+    case "openai":
+      return callOpenAI(opts, model);
+    case "google":
+      return callGoogle(opts, model);
+    default:
+      throw new Error(`[llm] Unsupported provider: ${opts.provider as string}`);
+  }
+}
+
+async function callAnthropic(opts: LlmCallOptions, model: string): Promise<string> {
+  const client = new Anthropic({ apiKey: opts.apiKey });
+  const message = await client.messages.create({
+    model,
+    max_tokens: opts.maxTokens,
+    system: [{ type: "text", text: opts.system, cache_control: { type: "ephemeral" } }],
+    messages: [{ role: "user", content: opts.user }],
+  });
+  return message.content[0]?.type === "text" ? message.content[0].text : "";
+}
+
+async function callOpenAI(opts: LlmCallOptions, model: string): Promise<string> {
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${opts.apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: opts.maxTokens,
+      messages: [
+        { role: "system", content: opts.system },
+        { role: "user", content: opts.user },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`[llm:openai] HTTP ${res.status} — ${await res.text()}`);
+  }
+  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
+async function callGoogle(opts: LlmCallOptions, model: string): Promise<string> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(opts.apiKey)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: opts.system }] },
+        contents: [{ role: "user", parts: [{ text: opts.user }] }],
+        generationConfig: { maxOutputTokens: opts.maxTokens },
+      }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`[llm:google] HTTP ${res.status} — ${await res.text()}`);
+  }
+  const data = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
 
 // ── System prompt ──
 
@@ -53,24 +146,18 @@ export async function extractCapture(
   apiKey: string,
   content: string,
   title?: string,
+  provider: LlmProvider = "anthropic",
 ): Promise<ExtractedCapture> {
-  const client = new Anthropic({ apiKey });
   const input = buildInput(content, title);
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: [{ role: "user", content: input }],
+  const rawText = await callLlm({
+    provider,
+    apiKey,
+    system: SYSTEM_PROMPT,
+    user: input,
+    maxTokens: MAX_TOKENS,
   });
 
-  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "";
   const rawJson = rawText
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "")
@@ -164,9 +251,8 @@ export async function findRelatedCaptures(
   apiKey: string,
   capture: ExtractedCapture,
   indexContent: string,
+  provider: LlmProvider = "anthropic",
 ): Promise<RelatedCapture[]> {
-  const client = new Anthropic({ apiKey });
-
   const userMessage = `NEW CAPTURE:
 Title: ${capture.inferredTitle}
 Core idea: ${capture.coreIdea}
@@ -177,14 +263,13 @@ ${capture.takeaways.map((t) => `- ${t}`).join("\n")}
 INDEX OF EXISTING CAPTURES:
 ${indexContent}`;
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 500,
-    system: [{ type: "text", text: LINKING_PROMPT, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "[]";
+  const rawText = (await callLlm({
+    provider,
+    apiKey,
+    system: LINKING_PROMPT,
+    user: userMessage,
+    maxTokens: 500,
+  })) || "[]";
   const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
 
   try {
@@ -214,9 +299,8 @@ export async function rankByRelevance(
   taskContext: string,
   indexContent: string,
   maxResults: number = 5,
+  provider: LlmProvider = "anthropic",
 ): Promise<RelevanceResult[]> {
-  const client = new Anthropic({ apiKey });
-
   const userMessage = `TASK CONTEXT:
 ${taskContext}
 
@@ -225,14 +309,13 @@ Return the top ${maxResults} most relevant captures.
 INDEX OF CAPTURES:
 ${indexContent}`;
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 600,
-    system: [{ type: "text", text: RANKING_PROMPT, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "[]";
+  const rawText = (await callLlm({
+    provider,
+    apiKey,
+    system: RANKING_PROMPT,
+    user: userMessage,
+    maxTokens: 600,
+  })) || "[]";
   const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
 
   try {
@@ -262,22 +345,20 @@ export async function synthesizeRules(
   apiKey: string,
   topic: string,
   captureContents: string[],
+  provider: LlmProvider = "anthropic",
 ): Promise<SynthesisResult> {
-  const client = new Anthropic({ apiKey });
-
   const userMessage = `TOPIC: ${topic}
 
 CAPTURES TO SYNTHESIZE:
 ${captureContents.map((c, i) => `--- Capture ${i + 1} ---\n${c}`).join("\n\n")}`;
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 1200,
-    system: [{ type: "text", text: SYNTHESIS_PROMPT, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "{}";
+  const rawText = (await callLlm({
+    provider,
+    apiKey,
+    system: SYNTHESIS_PROMPT,
+    user: userMessage,
+    maxTokens: 1200,
+  })) || "{}";
   const rawJson = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
 
   try {
@@ -321,9 +402,8 @@ export async function composeBriefing(
   relevantCaptures: Array<{ content: string; filename: string; score: number }>,
   rules: string,
   recentInbox: string[],
+  provider: LlmProvider = "anthropic",
 ): Promise<BriefingOutput> {
-  const client = new Anthropic({ apiKey });
-
   const userMessage = `PROJECT CONTEXT:
 ${projectContext}
 
@@ -338,14 +418,13 @@ ${rules || "No rules generated yet."}
 RECENT INBOX (unreviewed):
 ${recentInbox.length > 0 ? recentInbox.map((c, i) => `--- Recent ${i + 1} ---\n${c}`).join("\n\n") : "Inbox is empty."}`;
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 1500,
-    system: [{ type: "text", text: BRIEFING_PROMPT, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  const rawText = message.content[0]?.type === "text" ? message.content[0].text : "Briefing could not be generated.";
+  const rawText = (await callLlm({
+    provider,
+    apiKey,
+    system: BRIEFING_PROMPT,
+    user: userMessage,
+    maxTokens: 1500,
+  })) || "Briefing could not be generated.";
 
   // Parse JSON suggestions block from the response
   const jsonMatch = rawText.match(/```json\n([\s\S]*?)\n```/);
@@ -383,23 +462,21 @@ export async function generateApplicationSuggestions(
   apiKey: string,
   taskContext: string,
   captureContents: string[],
+  provider: LlmProvider = "anthropic",
 ): Promise<string> {
-  const client = new Anthropic({ apiKey });
-
   const userMessage = `TASK CONTEXT:
 ${taskContext}
 
 RELEVANT CAPTURES:
 ${captureContents.map((c, i) => `--- Capture ${i + 1} ---\n${c}`).join("\n\n")}`;
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 1200,
-    system: [{ type: "text", text: APPLICATION_PROMPT, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  return message.content[0]?.type === "text" ? message.content[0].text : "No applicable suggestions could be generated.";
+  return (await callLlm({
+    provider,
+    apiKey,
+    system: APPLICATION_PROMPT,
+    user: userMessage,
+    maxTokens: 1200,
+  })) || "No applicable suggestions could be generated.";
 }
 
 // ── Implementation plan generation ──
@@ -417,14 +494,21 @@ Why these captures are relevant now. Ground it in the project context (branch, r
 For each: \`- **[slug]** — [core idea in ≤ 20 words]\`
 
 ## Codebase Mapping
-| File | Capture | Change |
-|------|---------|--------|
-List every file to be changed, which capture slug drives it, and what specifically changes.
+| File | Capture | Change | Complexity | Effort |
+|------|---------|--------|------------|--------|
+List every file to be changed, which capture slug drives it, what specifically changes, its complexity, and the thinking effort the implementing agent should apply.
+
+Complexity + Effort are a contract for whatever AI assistant implements this plan — they are model-agnostic. Each harness maps them to its own model/reasoning budget:
+- \`simple\` → \`low\` effort: mechanical changes — renaming, moving code, adding a field, updating a string
+- \`complex\` → \`medium\` effort: new functions, logic changes, refactors within a file
+- \`architectural\` → \`high\` effort: design decisions, multi-file/multi-system changes, risky rewrites
 
 ## Implementation Steps
 For each affected file:
 ### N. [path/to/file.ts]
 **Capture:** [slug]
+**Complexity:** [simple | complex | architectural]
+**Effort:** [low | medium | high]
 **Change:** [exact description — function names, what to add/modify/remove]
 **Why:** [one sentence connecting the insight to this specific change]
 
@@ -449,9 +533,8 @@ export async function generatePlan(
   selectedCaptures: Array<{ filename: string; content: string }>,
   projectContext: string,
   codebaseFiles?: Array<{ path: string; content: string }>,
+  provider: LlmProvider = "anthropic",
 ): Promise<string> {
-  const client = new Anthropic({ apiKey });
-
   const captureSection = selectedCaptures
     .map((c, i) => `--- Capture ${i + 1}: ${c.filename} ---\n${c.content}`)
     .join("\n\n");
@@ -466,14 +549,13 @@ ${projectContext}
 SELECTED CAPTURES (${selectedCaptures.length} total):
 ${captureSection}${codebaseSection}`;
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 3000,
-    system: [{ type: "text", text: PLAN_PROMPT, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  return message.content[0]?.type === "text" ? message.content[0].text : "Plan could not be generated.";
+  return (await callLlm({
+    provider,
+    apiKey,
+    system: PLAN_PROMPT,
+    user: userMessage,
+    maxTokens: 3000,
+  })) || "Plan could not be generated.";
 }
 
 // ── Capture curation ──
