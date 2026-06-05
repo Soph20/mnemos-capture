@@ -13,16 +13,42 @@ const CARD_STYLE: React.CSSProperties = {
   border: "1px solid var(--gold-faint)",
 };
 
+type Provider = "anthropic" | "openai" | "google";
+
+const PROVIDERS: Record<Provider, { label: string; placeholder: string; keysUrl: string; blurb: string }> = {
+  anthropic: {
+    label: "Anthropic",
+    placeholder: "sk-ant-...",
+    keysUrl: "https://console.anthropic.com/settings/keys",
+    blurb: "Powers Claude extraction.",
+  },
+  openai: {
+    label: "OpenAI",
+    placeholder: "sk-...",
+    keysUrl: "https://platform.openai.com/api-keys",
+    blurb: "Powers GPT extraction.",
+  },
+  google: {
+    label: "Google",
+    placeholder: "AIza...",
+    keysUrl: "https://aistudio.google.com/app/apikey",
+    blurb: "Powers Gemini extraction.",
+  },
+};
+
 export default function OnboardPage() {
   const [repoName, setRepoName] = useState("mnemos-knowledge");
-  const [anthropicKey, setAnthropicKey] = useState("");
+  const [provider, setProvider] = useState<Provider>("anthropic");
+  const [apiKey, setApiKey] = useState("");
   const [pin, setPin] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [result, setResult] = useState<{ repo: string; repoUrl: string; apiKey: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const providerInfo = PROVIDERS[provider];
+
   async function handleSubmit() {
-    if (!repoName.trim() || !anthropicKey.trim() || !pin.trim()) return;
+    if (!repoName.trim() || !apiKey.trim() || !pin.trim()) return;
     setStatus("loading");
     setErrorMsg("");
 
@@ -30,7 +56,7 @@ export default function OnboardPage() {
       const res = await fetch("/api/onboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoName: repoName.trim(), anthropicKey: anthropicKey.trim(), pin }),
+        body: JSON.stringify({ repoName: repoName.trim(), provider, apiKey: apiKey.trim(), pin }),
       });
 
       if (!res.ok) {
@@ -111,23 +137,47 @@ export default function OnboardPage() {
           </p>
         </div>
 
-        {/* Step 1: Anthropic key */}
+        {/* Step 1: Provider + API key */}
         <div className="rounded-2xl p-4 space-y-2" style={CARD_STYLE}>
           <label className="text-[10px] font-medium uppercase tracking-widest" style={{ color: "var(--gold)" }}>
-            Anthropic API key
+            LLM provider
+          </label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {(Object.keys(PROVIDERS) as Provider[]).map((p) => {
+              const selected = provider === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setProvider(p)}
+                  className="rounded-xl py-2 text-xs font-medium transition-all"
+                  style={{
+                    background: selected ? "#2A62C6" : "var(--input-bg)",
+                    color: selected ? "#FFFCEB" : "var(--fg-muted)",
+                    border: `1px solid ${selected ? "#2A62C6" : "var(--gold-low)"}`,
+                  }}
+                >
+                  {PROVIDERS[p].label}
+                </button>
+              );
+            })}
+          </div>
+
+          <label className="text-[10px] font-medium uppercase tracking-widest pt-1 block" style={{ color: "var(--gold)" }}>
+            {providerInfo.label} API key
           </label>
           <input
             type="password"
-            value={anthropicKey}
-            onChange={(e) => setAnthropicKey(e.target.value)}
-            placeholder="sk-ant-..."
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={providerInfo.placeholder}
             className="w-full rounded-xl px-3 py-2.5 text-sm transition-colors focus:outline-none font-mono"
             style={INPUT_STYLE}
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--gold-low)"; }}
           />
           <p className="text-[11px]" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
-            Powers Claude extraction. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "underline" }}>Get yours here</a> — free tier available.
+            {providerInfo.blurb} <a href={providerInfo.keysUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "underline" }}>Get yours here</a>. Your key, your cost — BYOK.
           </p>
         </div>
 
@@ -173,7 +223,7 @@ export default function OnboardPage() {
 
         <button
           onClick={() => void handleSubmit()}
-          disabled={!repoName.trim() || !anthropicKey.trim() || !pin.trim() || status === "loading"}
+          disabled={!repoName.trim() || !apiKey.trim() || !pin.trim() || status === "loading"}
           className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all disabled:opacity-25 disabled:cursor-not-allowed"
           style={{ background: "#2A62C6", color: "#FFFCEB" }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#3570d4"; }}
