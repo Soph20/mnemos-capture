@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSession } from "@/lib/session";
 import { updateUserRepo, updateUserPin, updateUserApiKey, updateUserLlmKey } from "@/lib/db";
+import type { LlmProvider } from "@/lib/types";
 
 interface GithubRepoResponse {
   full_name: string;
@@ -104,10 +105,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const body = (await req.json()) as { repoName: string; pin: string; anthropicKey: string };
+  const body = (await req.json()) as {
+    repoName: string;
+    pin: string;
+    apiKey?: string;
+    provider?: LlmProvider;
+    anthropicKey?: string; // legacy field — kept for backward compatibility
+  };
 
-  if (!body.repoName?.trim() || !body.pin?.trim() || !body.anthropicKey?.trim()) {
-    return NextResponse.json({ error: "Repo name, PIN, and Anthropic API key are required" }, { status: 400 });
+  // Accept either the new { apiKey, provider } shape or the legacy { anthropicKey }.
+  const llmKey = (body.apiKey ?? body.anthropicKey ?? "").trim();
+  const provider: LlmProvider = body.provider ?? "anthropic";
+
+  if (!body.repoName?.trim() || !body.pin?.trim() || !llmKey) {
+    return NextResponse.json({ error: "Repo name, PIN, and an LLM API key are required" }, { status: 400 });
+  }
+
+  if (!["anthropic", "openai", "google"].includes(provider)) {
+    return NextResponse.json({ error: `Unsupported provider: ${provider}` }, { status: 400 });
   }
 
   try {
@@ -125,8 +140,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const pinHash = crypto.createHash("sha256").update(body.pin).digest("hex");
     await updateUserPin(user.id, pinHash);
 
-    // Save LLM key (Anthropic for now, multi-provider ready)
-    await updateUserLlmKey(user.id, "anthropic", body.anthropicKey.trim());
+    // Save LLM key + provider (BYOK — Anthropic, OpenAI, or Google)
+    await updateUserLlmKey(user.id, provider, llmKey);
 
     // Generate API key for MCP / CLI access
     const apiKey = `mnemos_${crypto.randomBytes(24).toString("hex")}`;

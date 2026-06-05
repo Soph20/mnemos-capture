@@ -1,0 +1,358 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { mkdtempSync, rmSync, readFileSync, existsSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Capture stdout writes during a callback. */
+async function captureStdout(fn: () => Promise<void>): Promise<string> {
+  const chunks: string[] = [];
+  const orig = process.stdout.write.bind(process.stdout);
+  process.stdout.write = (chunk: unknown) => {
+    chunks.push(String(chunk));
+    return true;
+  };
+  try {
+    await fn();
+  } finally {
+    process.stdout.write = orig;
+  }
+  return chunks.join("");
+}
+
+// ── setupHooks / setupPreToolHook ────────────────────────────────────────────
+
+describe("setupHooks", () => {
+  let tmpDir: string;
+  let settingsPath: string;
+  let origHome: string | undefined;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "mnemos-test-"));
+    settingsPath = join(tmpDir, ".claude", "settings.json");
+    origHome = process.env["HOME"];
+    process.env["HOME"] = tmpDir;
+    // Clear module cache so CLAUDE_SETTINGS_PATH is recomputed with the new HOME
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+    process.env["HOME"] = origHome;
+  });
+
+  it("installs a SessionStart hook with the provided API key", async () => {
+    const { setupHooks } = await import("../hooks.js");
+    setupHooks("my-api-key", { silent: true });
+    const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as {
+      hooks: { SessionStart: Array<{ hooks: Array<{ command: string }> }> };
+    };
+    const cmd = settings.hooks.SessionStart[0]?.hooks[0]?.command ?? "";
+    expect(cmd).toContain("inbox-check");
+    expect(cmd).toContain("my-api-key");
+  });
+
+  it("includes --briefing flag when briefing option is true", async () => {
+    const { setupHooks } = await import("../hooks.js");
+    setupHooks("key123", { silent: true, briefing: true });
+    const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as {
+      hooks: { SessionStart: Array<{ hooks: Array<{ command: string }> }> };
+    };
+    const cmd = settings.hooks.SessionStart[0]?.hooks[0]?.command ?? "";
+    expect(cmd).toContain("--briefing");
+  });
+
+  it("omits --briefing flag when briefing option is false", async () => {
+    const { setupHooks } = await import("../hooks.js");
+    setupHooks("key123", { silent: true, briefing: false });
+    const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as {
+      hooks: { SessionStart: Array<{ hooks: Array<{ command: string }> }> };
+    };
+    const cmd = settings.hooks.SessionStart[0]?.hooks[0]?.command ?? "";
+    expect(cmd).not.toContain("--briefing");
+  });
+
+  it("also installs PreToolCall hook when vault option is true", async () => {
+    const { setupHooks } = await import("../hooks.js");
+    setupHooks("vault-key", { silent: true, vault: true });
+    const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as {
+      hooks: { SessionStart: unknown; PreToolCall: Array<{ hooks: Array<{ command: string }> }> };
+    };
+    expect(settings.hooks.PreToolCall).toBeDefined();
+    const cmd = settings.hooks.PreToolCall[0]?.hooks[0]?.command ?? "";
+    expect(cmd).toContain("vault-check");
+    expect(cmd).toContain("vault-key");
+  });
+
+  it("does NOT install PreToolCall hook when vault option is false", async () => {
+    const { setupHooks } = await import("../hooks.js");
+    setupHooks("no-vault-key", { silent: true, vault: false });
+    const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as {
+      hooks: Record<string, unknown>;
+    };
+    expect(settings.hooks["PreToolCall"]).toBeUndefined();
+  });
+
+  it("replaces an existing mnemos hook rather than duplicating it", async () => {
+    const { setupHooks } = await import("../hooks.js");
+    setupHooks("old-key", { silent: true });
+    setupHooks("new-key", { silent: true });
+    const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as {
+      hooks: { SessionStart: Array<{ hooks: Array<{ command: string }> }> };
+    };
+    const cmds = settings.hooks.SessionStart.flatMap((g) => g.hooks.map((h) => h.command));
+    const mnemosHooks = cmds.filter((c) => c.includes("inbox-check"));
+    expect(mnemosHooks).toHaveLength(1);
+    expect(mnemosHooks[0]).toContain("new-key");
+  });
+
+  it("skipIfExists: keeps exactly one mnemos hook when called twice", async () => {
+    const { setupHooks } = await import("../hooks.js");
+    setupHooks("original-key", { silent: true });
+    setupHooks("different-key", { silent: true, skipIfExists: true });
+    const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as {
+      hooks: { SessionStart: Array<{ hooks: Array<{ command: string }> }> };
+    };
+    const cmds = settings.hooks.SessionStart.flatMap((g) => g.hooks.map((h) => h.command));
+    expect(cmds.filter((c) => c.includes("inbox-check"))).toHaveLength(1);
+  });
+});
+
+// ── inboxCheck — briefing mode parsing ───────────────────────────────────────
+
+describe("inboxCheck — briefing mode", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch");
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  function makeMcpResponse(text: string) {
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({ result: { content: [{ text }] } }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  }
+
+  it("strips the JSON block from display output", async () => {
+    fetchSpy.mockReturnValue(makeMcpResponse(`\`\`\`json
+[{"filename":"inbox/a.md","why":"x","benefit":"y","where":"z.ts","applyNow":true}]
+\`\`\`
+
+## Relevant Rules
+None applicable.`));
+
+    const { inboxCheck } = await import("../hooks.js");
+    const output = await captureStdout(() => inboxCheck("key", { briefing: true }));
+    expect(output).not.toContain("```json");
+    expect(output).toContain("## Relevant Rules");
+  });
+
+  it("appends generate_plan prompt when there are applyNow suggestions", async () => {
+    fetchSpy.mockReturnValue(makeMcpResponse(`\`\`\`json
+[{"filename":"inbox/a.md","why":"x","benefit":"y","where":"z.ts","applyNow":true}]
+\`\`\`
+
+## Apply Now
+One insight.`));
+
+    const { inboxCheck } = await import("../hooks.js");
+    const output = await captureStdout(() => inboxCheck("key", { briefing: true }));
+    expect(output).toContain("generate_plan");
+    expect(output).toContain("inbox/a.md");
+  });
+
+  it("does NOT append generate_plan prompt when all suggestions have applyNow=false", async () => {
+    fetchSpy.mockReturnValue(makeMcpResponse(`\`\`\`json
+[{"filename":"inbox/b.md","why":"x","benefit":"y","where":"z.ts","applyNow":false}]
+\`\`\`
+
+## Knowledge Vault
+One vault item.`));
+
+    const { inboxCheck } = await import("../hooks.js");
+    const output = await captureStdout(() => inboxCheck("key", { briefing: true }));
+    expect(output).not.toContain("generate_plan");
+  });
+
+  it("does NOT append generate_plan prompt when JSON block is missing", async () => {
+    fetchSpy.mockReturnValue(makeMcpResponse(`## Relevant Rules
+None applicable.`));
+
+    const { inboxCheck } = await import("../hooks.js");
+    const output = await captureStdout(() => inboxCheck("key", { briefing: true }));
+    expect(output).not.toContain("generate_plan");
+  });
+
+  it("shows inbox count in non-briefing mode when count > 0", async () => {
+    fetchSpy.mockReturnValue(makeMcpResponse("3 capture(s) in inbox:\n\n1. file.md"));
+
+    const { inboxCheck } = await import("../hooks.js");
+    const output = await captureStdout(() => inboxCheck("key"));
+    expect(output).toContain("3");
+    expect(output).toContain("inbox");
+  });
+
+  it("shows nothing in non-briefing mode when inbox is empty", async () => {
+    fetchSpy.mockReturnValue(makeMcpResponse("Inbox is empty."));
+
+    const { inboxCheck } = await import("../hooks.js");
+    const output = await captureStdout(() => inboxCheck("key"));
+    expect(output).toBe("");
+  });
+
+  it("silently fails when fetch throws", async () => {
+    fetchSpy.mockRejectedValue(new Error("Network error"));
+
+    const { inboxCheck } = await import("../hooks.js");
+    // Should not throw
+    await expect(inboxCheck("key", { briefing: true })).resolves.toBeUndefined();
+  });
+});
+
+// ── vaultCheck — stdin parsing ────────────────────────────────────────────────
+
+describe("vaultCheck", () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+  let origSessionId: string | undefined;
+
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, "fetch");
+    origSessionId = process.env["CLAUDE_SESSION_ID"];
+    // Use a unique session ID per test to avoid state pollution
+    process.env["CLAUDE_SESSION_ID"] = `test-${Date.now()}-${Math.random()}`;
+  });
+
+  afterEach(() => {
+    fetchSpy.mockRestore();
+    process.env["CLAUDE_SESSION_ID"] = origSessionId;
+  });
+
+  function makeMcpResponse(text: string) {
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({ result: { content: [{ text }] } }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+  }
+
+  it("outputs vault match when fetch returns a high-score match", async () => {
+    fetchSpy.mockReturnValue(makeMcpResponse(
+      "Mnemos vault match (score: 87%):\n\n**2026-05-01-error-ctx**\nCore idea here.\n- Key takeaway\n\nApply it? Run: `apply_capture` with filename: `inbox/2026-05-01-error-ctx.md`",
+    ));
+
+    const { vaultCheck } = await import("../hooks.js");
+
+    // Simulate piped stdin with an Edit tool call
+    const hookData = JSON.stringify({
+      tool_name: "Edit",
+      tool_input: { file_path: "src/api/capture/route.ts" },
+    });
+
+    // Temporarily replace stdin
+    const mockStdin = {
+      isTTY: false,
+      setEncoding: vi.fn(),
+      on: vi.fn((event: string, cb: (data?: string) => void) => {
+        if (event === "data") cb(hookData);
+        if (event === "end") cb();
+      }),
+    };
+    const origStdin = process.stdin;
+    Object.defineProperty(process, "stdin", { value: mockStdin, writable: true, configurable: true });
+
+    const output = await captureStdout(() => vaultCheck("key"));
+
+    Object.defineProperty(process, "stdin", { value: origStdin, writable: true, configurable: true });
+
+    expect(output).toContain("vault match");
+  });
+
+  it("outputs nothing when vault_scan returns empty", async () => {
+    fetchSpy.mockReturnValue(makeMcpResponse(""));
+
+    const { vaultCheck } = await import("../hooks.js");
+
+    const mockStdin = {
+      isTTY: false,
+      setEncoding: vi.fn(),
+      on: vi.fn((event: string, cb: (data?: string) => void) => {
+        if (event === "data") cb(JSON.stringify({ tool_name: "Edit", tool_input: { file_path: "src/foo.ts" } }));
+        if (event === "end") cb();
+      }),
+    };
+    const origStdin = process.stdin;
+    Object.defineProperty(process, "stdin", { value: mockStdin, writable: true, configurable: true });
+
+    const output = await captureStdout(() => vaultCheck("key"));
+
+    Object.defineProperty(process, "stdin", { value: origStdin, writable: true, configurable: true });
+
+    expect(output).toBe("");
+  });
+
+  it("outputs nothing and does not call fetch when tool is not an editing tool", async () => {
+    const { vaultCheck } = await import("../hooks.js");
+
+    const mockStdin = {
+      isTTY: false,
+      setEncoding: vi.fn(),
+      on: vi.fn((event: string, cb: (data?: string) => void) => {
+        if (event === "data") cb(JSON.stringify({ tool_name: "Bash", tool_input: { command: "ls" } }));
+        if (event === "end") cb();
+      }),
+    };
+    const origStdin = process.stdin;
+    Object.defineProperty(process, "stdin", { value: mockStdin, writable: true, configurable: true });
+
+    await vaultCheck("key");
+
+    Object.defineProperty(process, "stdin", { value: origStdin, writable: true, configurable: true });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("outputs nothing when stdin is a TTY (not piped)", async () => {
+    const { vaultCheck } = await import("../hooks.js");
+
+    const mockStdin = { isTTY: true };
+    const origStdin = process.stdin;
+    Object.defineProperty(process, "stdin", { value: mockStdin, writable: true, configurable: true });
+
+    const output = await captureStdout(() => vaultCheck("key"));
+
+    Object.defineProperty(process, "stdin", { value: origStdin, writable: true, configurable: true });
+
+    expect(output).toBe("");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("silently fails when fetch throws", async () => {
+    fetchSpy.mockRejectedValue(new Error("Network error"));
+
+    const { vaultCheck } = await import("../hooks.js");
+
+    const mockStdin = {
+      isTTY: false,
+      setEncoding: vi.fn(),
+      on: vi.fn((event: string, cb: (data?: string) => void) => {
+        if (event === "data") cb(JSON.stringify({ tool_name: "Edit", tool_input: { file_path: "src/foo.ts" } }));
+        if (event === "end") cb();
+      }),
+    };
+    const origStdin = process.stdin;
+    Object.defineProperty(process, "stdin", { value: mockStdin, writable: true, configurable: true });
+
+    await expect(vaultCheck("key")).resolves.toBeUndefined();
+
+    Object.defineProperty(process, "stdin", { value: origStdin, writable: true, configurable: true });
+  });
+});

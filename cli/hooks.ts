@@ -1,4 +1,4 @@
-import { homedir } from "os";
+import { homedir, tmpdir } from "os";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
@@ -17,6 +17,10 @@ function isMnemosHook(cmd: string): boolean {
   return cmd.includes("mnemos-capture") && cmd.includes("inbox-check");
 }
 
+function isMnemosPreToolHook(cmd: string): boolean {
+  return cmd.includes("mnemos-capture") && cmd.includes("vault-check");
+}
+
 function readSettings(): Settings {
   if (!existsSync(CLAUDE_SETTINGS_PATH)) return {};
   try {
@@ -32,9 +36,53 @@ function writeSettings(settings: Settings): void {
   writeFileSync(CLAUDE_SETTINGS_PATH, JSON.stringify(settings, null, 2) + "\n");
 }
 
+// ── Session state for vault deduplication ──
+
+function sessionStateFile(): string {
+  const sessionId = process.env["CLAUDE_SESSION_ID"] ?? new Date().toISOString().split("T")[0] ?? "default";
+  return join(tmpdir(), `mnemos-vault-${sessionId}.json`);
+}
+
+function readSessionSurfaced(): string[] {
+  try {
+    const file = sessionStateFile();
+    if (!existsSync(file)) return [];
+    return JSON.parse(readFileSync(file, "utf-8")) as string[];
+  } catch {
+    return [];
+  }
+}
+
+function appendSessionSurfaced(filenames: string[]): void {
+  try {
+    const file = sessionStateFile();
+    const existing = readSessionSurfaced();
+    const updated = [...new Set([...existing, ...filenames])];
+    writeFileSync(file, JSON.stringify(updated));
+  } catch {
+    // best-effort
+  }
+}
+
+// ── Stdin reader for hook context ──
+
+async function readStdin(): Promise<string> {
+  return new Promise((resolve) => {
+    if (process.stdin.isTTY) {
+      resolve("");
+      return;
+    }
+    let data = "";
+    process.stdin.setEncoding("utf-8");
+    process.stdin.on("data", (chunk: string) => { data += chunk; });
+    process.stdin.on("end", () => resolve(data));
+    setTimeout(() => resolve(data), 2000);
+  });
+}
+
 export function setupHooks(
   apiKey: string,
-  opts: { briefing?: boolean; silent?: boolean; skipIfExists?: boolean } = {},
+  opts: { briefing?: boolean; silent?: boolean; skipIfExists?: boolean; vault?: boolean } = {},
 ): void {
   const settings = readSettings();
   const hooks = settings.hooks ?? {};
@@ -89,6 +137,55 @@ export function setupHooks(
       console.log("At the start of each Claude Code session you'll see your inbox count.");
     }
   }
+
+  if (opts.vault) {
+    setupPreToolHook(apiKey, { silent: opts.silent, skipIfExists: opts.skipIfExists });
+  }
+}
+
+export function setupPreToolHook(
+  apiKey: string,
+  opts: { silent?: boolean; skipIfExists?: boolean } = {},
+): void {
+  const settings = readSettings();
+  const hooks = settings.hooks ?? {};
+  const preToolCall: HookGroup[] = hooks.PreToolCall ?? [];
+
+  let existingCmd: string | null = null;
+  for (const group of preToolCall) {
+    for (const h of group.hooks ?? []) {
+      if (typeof h.command === "string" && isMnemosPreToolHook(h.command)) {
+        existingCmd = h.command;
+        break;
+      }
+    }
+    if (existingCmd) break;
+  }
+
+  if (existingCmd && opts.skipIfExists) {
+    if (existingCmd.includes("mnemos-capture@latest")) return;
+  }
+
+  const command = `npx -y mnemos-capture@latest vault-check --key ${apiKey}`;
+
+  const filtered = preToolCall
+    .map((group: HookGroup) => ({
+      ...group,
+      hooks: (group.hooks ?? []).filter(
+        (h: HookEntry) => !(typeof h.command === "string" && isMnemosPreToolHook(h.command)),
+      ),
+    }))
+    .filter((group: HookGroup) => (group.hooks ?? []).length > 0);
+
+  filtered.push({ hooks: [{ type: "command", command }] });
+
+  settings.hooks = { ...hooks, PreToolCall: filtered };
+  writeSettings(settings);
+
+  if (!opts.silent) {
+    console.log("Mnemos vault hook installed (PreToolCall).");
+    console.log("Your knowledge vault will surface relevant captures as you edit files.");
+  }
 }
 
 function run(cmd: string): string {
@@ -131,10 +228,11 @@ function detectProjectContext(): string {
   return parts.length > 0 ? parts.join("\n\n") : "current project";
 }
 
-async function callMcp(
+export async function callMcp(
   apiKey: string,
   toolName: string,
   toolArgs: Record<string, unknown>,
+  timeoutMs = 15000,
 ): Promise<string | null> {
   const res = await fetch(HOSTED_URL, {
     method: "POST",
@@ -148,12 +246,53 @@ async function callMcp(
       params: { name: toolName, arguments: toolArgs },
       id: 1,
     }),
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   if (!res.ok) return null;
   const data = (await res.json()) as { result?: { content?: Array<{ text?: string }> } };
   return data.result?.content?.[0]?.text ?? null;
+}
+
+export async function vaultCheck(apiKey: string): Promise<void> {
+  try {
+    const inputJson = await readStdin();
+    if (!inputJson.trim()) return;
+
+    let hookData: { tool_name?: string; tool_input?: Record<string, unknown> };
+    try {
+      hookData = JSON.parse(inputJson) as typeof hookData;
+    } catch {
+      return;
+    }
+
+    // Only act on file-editing tool calls
+    const editingTools = ["Edit", "Write", "MultiEdit"];
+    if (!hookData.tool_name || !editingTools.includes(hookData.tool_name)) return;
+
+    const filePath = (hookData.tool_input?.["file_path"] as string | undefined) ??
+                     (hookData.tool_input?.["path"] as string | undefined);
+    if (!filePath) return;
+
+    const projectCtx = detectProjectContext();
+    const activityContext = `Editing file: ${filePath}\nProject context:\n${projectCtx}`;
+    const sessionSurfaced = readSessionSurfaced();
+
+    const text = await callMcp(apiKey, "vault_scan", {
+      activity_context: activityContext,
+      session_surfaced: sessionSurfaced,
+    }, 8000);
+
+    if (!text?.trim()) return;
+
+    // Track surfaced filenames to avoid repetition within the session
+    const filenameMatches = text.match(/(?:inbox|applied|archived)\/[\w-]+\.md/g) ?? [];
+    if (filenameMatches.length > 0) appendSessionSurfaced(filenameMatches);
+
+    process.stdout.write(text.trim() + "\n");
+  } catch {
+    // Silent fail — never interrupt a tool call
+  }
 }
 
 export async function inboxCheck(
@@ -164,7 +303,32 @@ export async function inboxCheck(
     if (opts.briefing) {
       const projectContext = detectProjectContext();
       const text = await callMcp(apiKey, "briefing", { project_context: projectContext });
-      if (text?.trim()) process.stdout.write(text.trim() + "\n");
+      if (!text?.trim()) return;
+
+      // Parse JSON suggestions block (captured before the Markdown narrative)
+      type SurfacedCapture = { filename: string; applyNow: boolean };
+      const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+      let applyNow: SurfacedCapture[] = [];
+      if (jsonMatch?.[1]) {
+        try {
+          const all = JSON.parse(jsonMatch[1]) as SurfacedCapture[];
+          applyNow = all.filter((s) => s.applyNow);
+        } catch {
+          applyNow = [];
+        }
+      }
+
+      // Strip the JSON block — display only the Markdown narrative
+      const displayText = text.replace(/```json[\s\S]*?```\n?/, "").trim();
+      process.stdout.write(displayText + "\n");
+
+      if (applyNow.length > 0) {
+        const filenames = applyNow.map((s) => `'${s.filename}'`).join(", ");
+        process.stdout.write(
+          `\n---\nMnemos: ${applyNow.length} insight${applyNow.length === 1 ? "" : "s"} ready to apply now.\n` +
+          `Run generate_plan with selected_captures: [${filenames}] to get a full implementation plan.\n`,
+        );
+      }
       return;
     }
 

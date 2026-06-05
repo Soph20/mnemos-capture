@@ -1,7 +1,7 @@
 {
   "name": "mnemos-capture",
-  "version": "1.1.0",
-  "description": "Zero-friction knowledge capture for agentic workflows. Paste anything → Claude extracts insights → auto-commits to your knowledge repo → your Claude Code workflow picks it up.",
+  "version": "1.2.0",
+  "description": "Capture anything. Your agents apply it. A knowledge pipeline that ingests the outside world and makes it directly actionable by any AI agent over MCP.",
   "type": "module",
   "bin": {
     "mnemos-capture": "./dist/cli/index.js"
@@ -11,7 +11,9 @@
     "build": "next build",
     "start": "next start",
     "build:cli": "tsc -p cli/tsconfig.json",
-    "prepublishOnly": "npm run build:cli"
+    "prepublishOnly": "npm run build:cli",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "ai",
@@ -51,7 +53,8 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   },
   "engines": {
     "node": ">=18"

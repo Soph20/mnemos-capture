@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { githubPut, appendToIndex, readFile } from "@/lib/github";
-import { extractCapture, formatDate, buildMarkdown, buildIndexRow } from "@/lib/llm";
+import { extractCapture, formatDate, buildMarkdown, buildIndexRow, detectSourceType } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -31,10 +31,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
 
+  const sourceType = detectSourceType(content);
+
   // Extract insights via LLM
   let capture;
   try {
-    capture = await extractCapture(user.llm_api_key, content, title);
+    capture = await extractCapture(user.llm_api_key, content, title, user.llm_provider);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Extraction failed";
     return NextResponse.json({ error: message }, { status: 502 });
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Build Markdown and commit to user's repo
   const date = formatDate();
   const filename = `${date}-${capture.slug}.md`;
-  const markdown = buildMarkdown(date, capture, content);
+  const markdown = buildMarkdown(date, capture, content, sourceType);
 
   await githubPut(
     user.github_token,
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   );
 
   // Update INDEX.md
-  const row = buildIndexRow(date, capture, filename);
+  const row = buildIndexRow(date, capture, filename, sourceType);
   await appendToIndex(user.github_token, user.github_repo, row, `capture: update index for ${filename}`);
 
   // Auto-link to related captures (best-effort)
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     try {
       const indexFile = await readFile(user.github_token, user.github_repo, "INDEX.md");
       if (indexFile) {
-        await linkCapture(user.llm_api_key, user.github_token, user.github_repo, capture, filename, "inbox", indexFile.content);
+        await linkCapture(user.llm_api_key, user.github_token, user.github_repo, capture, filename, "inbox", indexFile.content, user.llm_provider);
       }
     } catch {
       // Linking is best-effort

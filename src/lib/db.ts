@@ -1,6 +1,7 @@
 import { sql } from "@vercel/postgres";
+import type { LlmProvider } from "./types";
 
-export type LlmProvider = "anthropic" | "openai" | "google";
+export type { LlmProvider };
 
 export interface User {
   id: number;
