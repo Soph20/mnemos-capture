@@ -12,13 +12,26 @@
 
 <p align="center"><strong>Capture anything. Your agents apply it.</strong></p>
 
-<p align="center">A knowledge pipeline that ingests the outside world and makes it directly actionable by any AI agent — over MCP.</p>
+<p align="center">
+  Humans consume information. Agents execute information.<br/>
+  <em>Mnemos converts one into the other.</em>
+</p>
 
-Your agent only knows what it was trained on. It doesn't know the article you read this morning, the framework you found last week, or the decision you made last sprint. **Your AI agent finally knows what you've been reading.**
+<p align="center">A knowledge pipeline that turns what you learn into actionable context for AI agents.</p>
 
-Mnemos is the pipeline between the two. Capture any insight once — Mnemos extracts it, stores it as plain Markdown in your own GitHub repo, and serves it to your agent over MCP. Then it goes further: at session start it briefs your agent on what matters right now, turns insights into implementation plans, and hands them to whatever assistant you run — Claude Code, Codex, Cursor, Gemini, anything MCP-compatible.
+---
 
-It's not a second brain, a vault, or a note-taking app — those store knowledge for *you* to read later. Mnemos makes knowledge your **agent acts on now**.
+Your agent only knows what it was trained on. It doesn't know the article you read this morning, the framework you found last week, or the decision you made last sprint.
+
+**Mnemos bridges that gap.**
+
+Capture an insight once. Mnemos extracts it, stores it as plain Markdown in your own GitHub repository, indexes it, and serves it to any MCP-compatible agent.
+
+Then it goes further. At session start, Mnemos briefs your agent on what matters right now, surfaces relevant knowledge in context, synthesizes reusable rules, and turns insights into implementation plans.
+
+> **The result isn't another knowledge base.** It's a system that transforms what you learn into what your agents can execute.
+
+<p align="center"><sub>Works with <strong>Claude Code</strong> · <strong>Codex</strong> · <strong>Cursor</strong> · <strong>Gemini</strong> · and any MCP-compatible assistant.</sub></p>
 
 
 ## Get started
