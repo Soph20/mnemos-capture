@@ -20,6 +20,10 @@ const USER_AGENT =
   "Mozilla/5.0 (compatible; MnemosCapture/1.0; +https://github.com/Soph20/mnemos-capture)";
 /** Below this, the extracted text is treated as noise (nav-only page, error wall). */
 const MIN_USABLE_CHARS = 200;
+/** Cap on bytes read from a response. The 8s timeout alone doesn't bound size,
+ *  so a very large or slow-drip body could exhaust function memory. 5 MB is far
+ *  more than any article needs (we keep only ~6k chars). */
+const MAX_RESPONSE_BYTES = 5_000_000;
 
 /** True when the entire input is a single bare URL (no surrounding prose). */
 export function isBareUrl(content: string): boolean {
@@ -42,10 +46,14 @@ export function isBlockedHost(hostname: string): boolean {
   if (host === "localhost" || host.endsWith(".localhost")) return true;
 
   if (host.includes(":")) {
-    // IPv6 literal
-    if (host === "::1") return true; // loopback
-    if (host.startsWith("fc") || host.startsWith("fd")) return true; // unique local fc00::/7
+    // IPv6 literal (brackets already stripped)
+    if (host === "::1" || host === "::") return true; // loopback / unspecified
+    if (host.startsWith("fc") || host.startsWith("fd")) return true; // unique-local fc00::/7
     if (host.startsWith("fe80")) return true; // link-local
+    // IPv4-mapped/compatible (e.g. ::ffff:127.0.0.1) — re-check the embedded IPv4
+    // so an internal address can't be smuggled through the IPv6 form.
+    const embeddedV4 = host.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+    if (embeddedV4) return isBlockedHost(embeddedV4[1]!);
     return false;
   }
 
@@ -123,6 +131,39 @@ export function htmlToText(html: string): string {
 }
 
 /**
+ * Read a response body up to `maxBytes`, then stop and cancel the stream.
+ * Bounds memory against responses with no/incorrect `content-length` (the 8s
+ * timeout alone doesn't cap size). A partial multi-byte char at the cut is
+ * decoded leniently to the replacement char — harmless for text extraction.
+ */
+async function readCapped(res: Response, maxBytes: number): Promise<string> {
+  const reader = res.body?.getReader();
+  if (!reader) return "";
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    chunks.push(value);
+    total += value.length;
+    if (total >= maxBytes) {
+      await reader.cancel();
+      break;
+    }
+  }
+
+  const buf = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    buf.set(c, offset);
+    offset += c.length;
+  }
+  return new TextDecoder("utf-8", { fatal: false }).decode(buf);
+}
+
+/**
  * Fetch a URL and return cleaned article text, or `null` if it can't be used.
  * Never throws — failures resolve to `null` so the caller can fall back to
  * URL-only capture.
@@ -151,9 +192,13 @@ export async function fetchSourceContent(url: string): Promise<string | null> {
     if (!res.ok) return null;
 
     const contentType = res.headers.get("content-type") ?? "";
-    if (!contentType.includes("html") && !contentType.includes("text/")) return null;
+    // Only HTML / plain text — reject text/css, text/javascript, etc.
+    if (!contentType.includes("html") && !contentType.includes("text/plain")) return null;
 
-    const html = await res.text();
+    const declaredLength = Number(res.headers.get("content-length"));
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) return null;
+
+    const html = await readCapped(res, MAX_RESPONSE_BYTES);
     if (isChallengePage(html)) return null;
 
     const text = htmlToText(html);

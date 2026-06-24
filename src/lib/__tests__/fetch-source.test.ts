@@ -45,10 +45,21 @@ describe("isBlockedHost", () => {
     expect(isBlockedHost("169.254.169.254")).toBe(true);
   });
 
-  it("blocks IPv6 loopback and unique-local literals", () => {
+  it("blocks IPv6 loopback, unspecified, and unique-local literals", () => {
     expect(isBlockedHost("[::1]")).toBe(true);
+    expect(isBlockedHost("[::]")).toBe(true);
     expect(isBlockedHost("[fc00::1]")).toBe(true);
     expect(isBlockedHost("[fe80::1]")).toBe(true);
+  });
+
+  it("blocks IPv4-mapped IPv6 that smuggles an internal address", () => {
+    expect(isBlockedHost("[::ffff:127.0.0.1]")).toBe(true);
+    expect(isBlockedHost("[::ffff:169.254.169.254]")).toBe(true);
+    expect(isBlockedHost("[::ffff:10.0.0.1]")).toBe(true);
+  });
+
+  it("does not block IPv4-mapped IPv6 of a public address", () => {
+    expect(isBlockedHost("[::ffff:8.8.8.8]")).toBe(false);
   });
 
   it("does not block public hostnames", () => {
