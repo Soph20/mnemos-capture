@@ -39,7 +39,9 @@ The user sees the same phrase in both cases. Source B was repeatedly misdiagnose
 
 **The regex problem:** The original script-stripping regex `/<(script|style|...)[\s\S]*?<\/\1>/gi` uses a lazy quantifier that stops at the **first** closing tag it finds. Cloudflare's JavaScript often contains strings like `"</div>"` or `"</script>"` embedded in the JS code. The lazy regex stops early and leaves JavaScript fragments in the extracted text.
 
-**Fix:**
+> **Status (verified 2026-06-24):** The capture path does **not** currently fetch source URLs at all. `POST /api/capture` passes the raw pasted content — including a bare URL string — straight to the LLM via `extractCapture` → `buildInput`. There is no server-side page fetch, HTML stripping, or challenge detection in the capture flow, so the Cloudflare failure mode described here cannot occur today. This handling was either lost in the clean-architecture refactor or never landed. Treat the steps below as the **intended design** to restore if/when capture-time URL fetching is reintroduced.
+
+**Intended fix (not currently in code):**
 1. Detect challenge pages before extracting text by checking for known Cloudflare signatures (`cf-browser-verification`, `cf_chl_`, "Just a moment" + "Cloudflare").
 2. If a challenge page is detected, skip extraction entirely and fall back to URL-only mode (Claude uses training data).
 3. Use separate regex passes for `<script>` and `<style>` instead of a combined backreference regex.
@@ -83,7 +85,9 @@ This alone would have immediately shown whether the error was coming from the Gi
 
 **Important nuance:** Claude CAN produce insights from a bare URL when it has memorized that page from training data (pre-August 2025 crawl). This made the bug intermittent — worked for well-known pages, failed silently for obscure or recently published ones.
 
-**Fix:** Detect bare URL input server-side (`/^https?:\/\/\S+$/`), fetch the live page content (8s timeout), strip HTML noise (`<script>`, `<style>`, `<nav>`, `<header>`, `<footer>`), truncate to 15k chars, and prepend `Source URL: ...` before passing to Claude. Falls back silently to the raw URL string if the fetch fails.
+**Intended fix (not currently in code — verified 2026-06-24):** Detect bare URL input server-side (`/^https?:\/\/\S+$/`), fetch the live page content (8s timeout), strip HTML noise (`<script>`, `<style>`, `<nav>`, `<header>`, `<footer>`), truncate to 15k chars, and prepend `Source URL: ...` before passing to Claude. Falls back silently to the raw URL string if the fetch fails.
+
+> **Current behavior:** `POST /api/capture` does **none** of this — a bare URL is passed verbatim to the LLM (`extractCapture` → `buildInput` only slices to `MAX_INPUT_CHARS`). `detectSourceType` still tags the input as `"url"`, but nothing fetches the page, so the "Load failed" timeout risk described above remains live whenever the model has no memorized content for that URL. Open decision: reimplement server-side fetching, or accept URL-only capture and document it as intended.
 
 **Rule:** Never let an LLM compensate for missing input. If the model has no real content to reason over, it produces slow/speculative responses that can cause timeouts before any HTTP error reaches the client. Fetch early, on the server, before the LLM call.
 
