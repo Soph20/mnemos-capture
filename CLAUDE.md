@@ -39,10 +39,10 @@ The user sees the same phrase in both cases. Source B was repeatedly misdiagnose
 
 **The regex problem:** The original script-stripping regex `/<(script|style|...)[\s\S]*?<\/\1>/gi` uses a lazy quantifier that stops at the **first** closing tag it finds. Cloudflare's JavaScript often contains strings like `"</div>"` or `"</script>"` embedded in the JS code. The lazy regex stops early and leaves JavaScript fragments in the extracted text.
 
-**Fix:**
-1. Detect challenge pages before extracting text by checking for known Cloudflare signatures (`cf-browser-verification`, `cf_chl_`, "Just a moment" + "Cloudflare").
-2. If a challenge page is detected, skip extraction entirely and fall back to URL-only mode (Claude uses training data).
-3. Use separate regex passes for `<script>` and `<style>` instead of a combined backreference regex.
+**Fix (implemented in `src/lib/fetch-source.ts`):**
+1. `isChallengePage()` detects challenge pages before extraction via known Cloudflare signatures (`cf-browser-verification`, `cf_chl_`, `cf-chl-`, "Just a moment" + "Cloudflare", "enable javascript and cookies to continue").
+2. `fetchSourceContent()` returns `null` on a detected challenge (and on non-2xx, non-HTML content-type, or <200 chars of usable text); the capture route then falls back to URL-only mode (model uses training data).
+3. `htmlToText()` uses **separate** regex passes for `<script>` and `<style>` (not a combined backreference regex). Note: a lazy `</script>` match still stops at the first closing tag, mirroring how a browser parser terminates a script — pathological embedded `</script>` strings are rare in real pages and out of scope.
 
 **Rule:** Before using server-fetched HTML content, validate that it's real article content — not a bot challenge, login wall, or error page. `pageRes.ok === true` does not mean the content is usable.
 
@@ -83,7 +83,7 @@ This alone would have immediately shown whether the error was coming from the Gi
 
 **Important nuance:** Claude CAN produce insights from a bare URL when it has memorized that page from training data (pre-August 2025 crawl). This made the bug intermittent — worked for well-known pages, failed silently for obscure or recently published ones.
 
-**Fix:** Detect bare URL input server-side (`/^https?:\/\/\S+$/`), fetch the live page content (8s timeout), strip HTML noise (`<script>`, `<style>`, `<nav>`, `<header>`, `<footer>`), truncate to 15k chars, and prepend `Source URL: ...` before passing to Claude. Falls back silently to the raw URL string if the fetch fails.
+**Fix (implemented in `src/lib/fetch-source.ts`, wired into `POST /api/capture`):** When `detectSourceType` tags the input as a bare URL, `fetchSourceContent()` fetches the live page server-side (8s `AbortController` timeout, browser-like User-Agent), validates it (http/https only, SSRF host guard via `isBlockedHost`, HTML content-type, not a bot challenge), strips HTML noise (`<script>`, `<style>`, `<nav>`, `<header>`, `<footer>`, `<aside>`, comments) via `htmlToText()`, decodes entities, and truncates to `MAX_INPUT_CHARS`. The route prepends `Source URL: <url>\n\n` and passes the result to the LLM. Any failure returns `null` and the route silently falls back to the raw URL string (URL-only mode).
 
 **Rule:** Never let an LLM compensate for missing input. If the model has no real content to reason over, it produces slow/speculative responses that can cause timeouts before any HTTP error reaches the client. Fetch early, on the server, before the LLM call.
 
