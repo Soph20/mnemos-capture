@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { githubPut, appendToIndex, readFile } from "@/lib/github";
 import { extractCapture, formatDate, buildMarkdown, buildIndexRow, detectSourceType } from "@/lib/llm";
+import { fetchSourceContent } from "@/lib/fetch-source";
 import { linkCapture } from "@/lib/linking";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -33,10 +34,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const sourceType = detectSourceType(content);
 
+  // For a bare URL, fetch the live page server-side so the LLM reasons over the
+  // page's real content instead of guessing from training data (which risks
+  // fabricated insights or a timeout-driven "Load failed"). Best-effort: on any
+  // failure we fall back to URL-only mode and pass the raw URL string through.
+  let llmContent = content;
+  if (sourceType === "url") {
+    const fetched = await fetchSourceContent(content.trim());
+    if (fetched) {
+      llmContent = `Source URL: ${content.trim()}\n\n${fetched}`;
+    }
+  }
+
   // Extract insights via LLM
   let capture;
   try {
-    capture = await extractCapture(user.llm_api_key, content, title, user.llm_provider);
+    capture = await extractCapture(user.llm_api_key, llmContent, title, user.llm_provider);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Extraction failed";
     return NextResponse.json({ error: message }, { status: 502 });
