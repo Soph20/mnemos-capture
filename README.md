@@ -98,7 +98,7 @@ flowchart TD
 1. **Capture** — paste anything text-based. Mnemos extracts the core idea, key takeaways, where to apply it, and auto-detects whether it's a URL, short note, or long paste. Committed to your GitHub repo as structured Markdown.
 2. **Brief** — at session start, the `--briefing` flag sends your project context (branch, recent commits, CLAUDE.md) to Mnemos. It returns ranked suggestions — *why* each insight matters now, *what* applying it achieves, *where* in your codebase.
 3. **Plan** — `generate_plan` reads your selected captures and produces a structured Markdown plan: Codebase Mapping table, per-file steps with effort tiers (`simple` / `complex` / `architectural`), and a Verification Checklist.
-4. **Execute** — `mnemos kos` (coming) creates an isolated git worktree, launches your configured AI assistant with the plan as its contract, and runs the verification checklist when it's done.
+4. **Execute** — `mnemos kos` creates an isolated git worktree, launches your configured AI assistant with the plan as its contract, and runs the verification checklist when it's done.
 
 
 ## What you can feed it
@@ -331,10 +331,15 @@ Next.js · TypeScript · Vercel Postgres · GitHub OAuth · GitHub Content API �
 
 ## Roadmap
 
-- **`mnemos kos`** — CLI orchestrator: creates isolated git worktree, launches your configured AI assistant with the plan as its contract, runs the Verification Checklist, reports the branch
-- **Provider abstraction** — bring your OpenAI, Google, or any OpenAI-compatible key; Mnemos routes accordingly
+Shipped in 1.2: the `mnemos kos` orchestrator (isolated worktree, plan-as-contract, verification checklist) and provider-agnostic BYOK (Anthropic, OpenAI, Google).
+
+Next:
+
+- **Web + app access** — register Mnemos as a Claude account-level connector (OAuth + streamable HTTP) so your knowledge base works in the Claude web and desktop/mobile apps, not just the CLI
 - **Chrome extension** — one-click capture from anywhere in the browser
-- Voice memo capture
+- **One key → any provider** — a single gateway key that routes to any model, instead of per-provider BYOK
+- **Voice memo capture** — record a memo; Mnemos transcribes it and captures the insight
+- **`kos` enhancements** — per-step model switching within a run, and `--detach` for background execution
 
 
 ## Built by
