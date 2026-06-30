@@ -1,6 +1,6 @@
 {
   "name": "mnemos-capture",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Capture anything. Your agents apply it. A knowledge pipeline that ingests the outside world and makes it directly actionable by any AI agent over MCP.",
   "type": "module",
   "bin": {
