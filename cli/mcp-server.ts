@@ -11,8 +11,7 @@ interface JsonRpcMessage {
 }
 
 function sendMessage(msg: Record<string, unknown>): void {
-  const json = JSON.stringify(msg);
-  process.stdout.write(`Content-Length: ${Buffer.byteLength(json)}\r\n\r\n${json}`);
+  process.stdout.write(`${JSON.stringify(msg)}\n`);
 }
 
 async function proxyToHosted(apiKey: string, msg: JsonRpcMessage): Promise<void> {
@@ -77,34 +76,22 @@ export async function serveMcp(): Promise<void> {
   process.stdin.on("data", (chunk: string) => {
     buffer += chunk;
 
-    while (true) {
-      const headerEnd = buffer.indexOf("\r\n\r\n");
-      if (headerEnd === -1) break;
+    let newlineIdx: number;
+    while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
+      const line = buffer.slice(0, newlineIdx).trim();
+      buffer = buffer.slice(newlineIdx + 1);
 
-      const header = buffer.slice(0, headerEnd);
-      const match = header.match(/Content-Length:\s*(\d+)/i);
-      if (!match) {
-        buffer = buffer.slice(headerEnd + 4);
-        continue;
-      }
-
-      const contentLength = parseInt(match[1] as string, 10);
-      const bodyStart = headerEnd + 4;
-
-      if (buffer.length < bodyStart + contentLength) break;
-
-      const body = buffer.slice(bodyStart, bodyStart + contentLength);
-      buffer = buffer.slice(bodyStart + contentLength);
+      if (!line) continue;
 
       try {
-        const msg = JSON.parse(body) as JsonRpcMessage;
+        const msg = JSON.parse(line) as JsonRpcMessage;
 
         // Handle notifications/initialized locally (no response needed)
         if (msg.method === "notifications/initialized") continue;
 
         void proxyToHosted(apiKey, msg);
       } catch {
-        process.stderr.write(`Failed to parse: ${body}\n`);
+        process.stderr.write(`Failed to parse: ${line}\n`);
       }
     }
   });
