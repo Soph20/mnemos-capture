@@ -48,6 +48,13 @@ export default function CapturePage() {
   const [newVersionAvailable, setNewVersionAvailable] = useState(false);
   const initialBuildId = useRef<string | null>(null);
 
+  // MCP key management — lets an already-onboarded user mint/rotate their key
+  // without re-running the full onboarding form.
+  const [mcpKey, setMcpKey] = useState<string | null>(null);
+  const [keyStatus, setKeyStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [keyError, setKeyError] = useState("");
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     async function checkVersion() {
       try {
@@ -119,6 +126,45 @@ export default function CapturePage() {
     setStatus("idle");
     setResult(null);
     setError("");
+  }
+
+  function mcpCommand(key: string): string {
+    return `claude mcp add mnemos -s user -- npx -y mnemos-capture@latest serve-mcp --key ${key}`;
+  }
+
+  async function handleGenerateKey() {
+    if (!window.confirm("Generate a new MCP key? Any existing key will immediately stop working.")) return;
+    setKeyStatus("loading");
+    setKeyError("");
+    try {
+      const res = await fetch("/api/rotate-key", { method: "POST" });
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!res.ok) {
+        let errorMsg = `HTTP ${res.status}`;
+        try {
+          const data = await res.json() as { error?: string };
+          if (data.error) errorMsg = data.error;
+        } catch { /* response was not JSON */ }
+        throw new Error(errorMsg);
+      }
+      const data = await res.json() as { apiKey: string };
+      setMcpKey(data.apiKey);
+      setKeyStatus("idle");
+    } catch (err) {
+      setKeyError(err instanceof Error ? err.message : "Failed to generate key");
+      setKeyStatus("error");
+    }
+  }
+
+  async function handleCopy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard unavailable */ }
   }
 
   return (
@@ -314,6 +360,62 @@ export default function CapturePage() {
           </button>
         </div>
       )}
+
+      {/* MCP key management */}
+      <div className="w-full mt-12 pt-6" style={{ borderTop: "1px solid var(--gold-faint)" }}>
+        <p className="text-[10px] font-medium uppercase tracking-widest mb-2" style={{ color: "var(--gold)" }}>
+          Connect to Claude Code
+        </p>
+
+        {!mcpKey ? (
+          <>
+            <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--fg-muted)", opacity: 0.7 }}>
+              Generate an MCP key to use Mnemos from Claude Code and other agents.
+              This rotates your key — any existing one stops working.
+            </p>
+            <button
+              onClick={() => void handleGenerateKey()}
+              disabled={keyStatus === "loading"}
+              className="text-sm font-medium rounded-2xl px-4 py-2.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "transparent", border: "1px solid var(--gold-mid)", color: "var(--fg-muted)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--gold-high)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--gold-mid)"; }}
+            >
+              {keyStatus === "loading" ? "Generating..." : "Generate MCP key"}
+            </button>
+            {keyStatus === "error" && (
+              <p className="text-red-400 text-xs pt-2">{keyError}</p>
+            )}
+          </>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--gold)" }}>Your new API key</p>
+              <code className="text-xs block p-2 rounded-lg break-all" style={{ background: "var(--input-bg)", color: "var(--fg-muted)" }}>
+                {mcpKey}
+              </code>
+              <p className="text-[10px] mt-1" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
+                Save this — it won't be shown again. Any previous key has stopped working.
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--gold)" }}>Add to Claude Code</p>
+              <code className="text-xs block p-2 rounded-lg break-all" style={{ background: "var(--input-bg)", color: "var(--fg-muted)" }}>
+                {mcpCommand(mcpKey)}
+              </code>
+            </div>
+            <button
+              onClick={() => void handleCopy(mcpCommand(mcpKey))}
+              className="text-sm font-medium rounded-2xl px-4 py-2.5 transition-all"
+              style={{ background: "transparent", border: "1px solid var(--gold-mid)", color: "var(--fg-muted)" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--gold-high)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--gold-mid)"; }}
+            >
+              {copied ? "Copied ✓" : "Copy command"}
+            </button>
+          </div>
+        )}
+      </div>
     </main>
     </>
   );
