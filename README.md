@@ -349,10 +349,11 @@ Next.js · TypeScript · Vercel Postgres · GitHub OAuth · GitHub Content API �
 
 ## Roadmap
 
-Shipped in 1.2: the `mnemos kos` orchestrator (isolated worktree, plan-as-contract, verification checklist), provider-agnostic BYOK (Anthropic, OpenAI, Google), and **web + app access** — Mnemos is now an OAuth 2.1 remote MCP connector, so your knowledge base works in the Claude web and desktop/mobile apps, not just the CLI.
+Shipped in 1.2: the `mnemos kos` orchestrator (isolated worktree, plan-as-contract, verification checklist) and provider-agnostic BYOK (Anthropic, OpenAI, Google).
 
 Next:
 
+- **Web + app access** — register Mnemos as a Claude account-level connector (OAuth + streamable HTTP) so your knowledge base works in the Claude web and desktop/mobile apps, not just the CLI
 - **Chrome extension** — one-click capture from anywhere in the browser
 - **One key → any provider** — a single gateway key that routes to any model, instead of per-provider BYOK
 - **Voice memo capture** — record a memo; Mnemos transcribes it and captures the insight
