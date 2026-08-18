@@ -16,6 +16,28 @@ export interface User {
   created_at: Date;
 }
 
+// ── OAuth (MCP remote connector) types ──
+
+export interface OauthClient {
+  client_id: string;
+  client_name: string | null;
+  redirect_uris: string; // JSON-encoded string[]
+  created_at: Date;
+}
+
+export interface OauthCode {
+  code: string;
+  client_id: string;
+  user_id: number;
+  redirect_uri: string;
+  code_challenge: string;
+  code_challenge_method: string;
+  scope: string | null;
+  resource: string | null;
+  expires_at: Date;
+  created_at: Date;
+}
+
 // ── Schema initialization ──
 
 export async function initDb(): Promise<void> {
@@ -30,6 +52,34 @@ export async function initDb(): Promise<void> {
       api_key TEXT UNIQUE,
       llm_provider TEXT DEFAULT 'anthropic',
       llm_api_key TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  // OAuth 2.1 support for MCP remote connectors (Claude iOS / mobile / web).
+  // Clients register dynamically (RFC 7591); authorization codes are short-lived
+  // and single-use, carrying the PKCE challenge (RFC 7636). Access/refresh tokens
+  // are self-contained signed strings (see lib/oauth.ts) and need no table.
+  await sql`
+    CREATE TABLE IF NOT EXISTS oauth_clients (
+      client_id TEXT PRIMARY KEY,
+      client_name TEXT,
+      redirect_uris TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS oauth_codes (
+      code TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL,
+      user_id INTEGER NOT NULL,
+      redirect_uri TEXT NOT NULL,
+      code_challenge TEXT NOT NULL,
+      code_challenge_method TEXT NOT NULL,
+      scope TEXT,
+      resource TEXT,
+      expires_at TIMESTAMP NOT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;
@@ -100,4 +150,50 @@ export async function getUserByUsername(username: string): Promise<User | null> 
 export async function getUserCount(): Promise<number> {
   const { rows } = await sql<{ count: string }>`SELECT COUNT(*) as count FROM users`;
   return parseInt(rows[0]?.count ?? "0", 10);
+}
+
+// ── OAuth queries ──
+
+export async function createOauthClient(
+  clientId: string,
+  clientName: string | null,
+  redirectUris: string[],
+): Promise<void> {
+  await sql`
+    INSERT INTO oauth_clients (client_id, client_name, redirect_uris)
+    VALUES (${clientId}, ${clientName}, ${JSON.stringify(redirectUris)})
+    ON CONFLICT (client_id) DO NOTHING
+  `;
+}
+
+export async function getOauthClient(clientId: string): Promise<OauthClient | null> {
+  const { rows } = await sql<OauthClient>`
+    SELECT * FROM oauth_clients WHERE client_id = ${clientId} LIMIT 1
+  `;
+  return rows[0] ?? null;
+}
+
+export async function createOauthCode(code: OauthCode): Promise<void> {
+  await sql`
+    INSERT INTO oauth_codes
+      (code, client_id, user_id, redirect_uri, code_challenge, code_challenge_method, scope, resource, expires_at)
+    VALUES (
+      ${code.code}, ${code.client_id}, ${code.user_id}, ${code.redirect_uri},
+      ${code.code_challenge}, ${code.code_challenge_method}, ${code.scope}, ${code.resource},
+      ${code.expires_at.toISOString()}
+    )
+  `;
+}
+
+/** Atomically fetch and delete an authorization code, enforcing single use. */
+export async function consumeOauthCode(code: string): Promise<OauthCode | null> {
+  const { rows } = await sql<OauthCode>`
+    DELETE FROM oauth_codes WHERE code = ${code} RETURNING *
+  `;
+  return rows[0] ?? null;
+}
+
+/** Best-effort cleanup of expired authorization codes. */
+export async function deleteExpiredOauthCodes(): Promise<void> {
+  await sql`DELETE FROM oauth_codes WHERE expires_at < NOW()`;
 }

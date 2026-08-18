@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/auth/github", "/api/auth/callback", "/api/init-db", "/api/mcp"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth",
+  "/api/auth/github",
+  "/api/auth/callback",
+  "/api/init-db",
+  "/api/mcp",
+  // OAuth 2.1 for MCP remote connectors. These endpoints manage their own auth
+  // (bearer tokens, PKCE, or a login redirect from the authorize page), so they
+  // must not be gated by the session-cookie middleware.
+  "/api/oauth",
+  "/.well-known/oauth-protected-resource",
+  "/.well-known/oauth-authorization-server",
+];
 
 export function middleware(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;

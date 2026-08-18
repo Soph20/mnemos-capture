@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByApiKey } from "@/lib/db";
+import { getUserByApiKey, getUserById } from "@/lib/db";
 import type { User } from "@/lib/db";
+import { verifyToken, wwwAuthenticateHeader } from "@/lib/oauth";
 import { githubGet, githubPut, githubDelete, readFile, updateIndexEntry } from "@/lib/github";
 import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
@@ -794,43 +795,81 @@ async function handleCurate(
 
 // ── MCP HTTP handler ──
 
+// CORS so browser-based MCP clients (e.g. claude.ai web connector) can call the
+// endpoint and read the WWW-Authenticate challenge that drives OAuth discovery.
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, Content-Type, Mcp-Session-Id, Mcp-Protocol-Version",
+  "Access-Control-Expose-Headers": "WWW-Authenticate, Mcp-Session-Id",
+};
+
+/** 401 that tells the client where to discover the OAuth authorization server. */
+function unauthorized(message: string): NextResponse {
+  return NextResponse.json(
+    { jsonrpc: "2.0", error: { code: -32600, message } },
+    { status: 401, headers: { ...CORS, "WWW-Authenticate": wwwAuthenticateHeader() } },
+  );
+}
+
+/**
+ * Resolve the caller from the Authorization header. Accepts either an OAuth 2.1
+ * access token (Claude iOS/desktop/web remote connector) or a legacy static
+ * `mnemos_...` API key (CLI / stdio proxy). Returns null when neither validates.
+ */
+async function resolveUser(token: string): Promise<User | null> {
+  // OAuth access token first (self-contained, signed).
+  const payload = verifyToken(token, "access");
+  if (payload) {
+    return getUserById(payload.u);
+  }
+  // Fall back to the legacy static API key.
+  return getUserByApiKey(token);
+}
+
+export function OPTIONS(): NextResponse {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const authHeader = req.headers.get("authorization");
-  const apiKey = authHeader?.replace("Bearer ", "");
+  const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
 
-  if (!apiKey) {
-    return NextResponse.json(
-      { jsonrpc: "2.0", error: { code: -32600, message: "Missing API key" } },
-      { status: 401 },
-    );
+  if (!token) {
+    return unauthorized("Missing access token");
   }
 
-  const user = await getUserByApiKey(apiKey);
+  const user = await resolveUser(token);
   if (!user) {
-    return NextResponse.json(
-      { jsonrpc: "2.0", error: { code: -32600, message: "Invalid API key" } },
-      { status: 401 },
-    );
+    return unauthorized("Invalid or expired access token");
   }
 
   const body = (await req.json()) as JsonRpcRequest;
   const { method, id, params } = body;
 
+  // Notifications carry no id and expect no JSON-RPC response (202 Accepted).
+  if (typeof method === "string" && method.startsWith("notifications/")) {
+    return new NextResponse(null, { status: 202, headers: CORS });
+  }
+
   try {
     switch (method) {
       case "initialize":
-        return NextResponse.json({
-          jsonrpc: "2.0",
-          id,
-          result: {
-            protocolVersion: "2024-11-05",
-            capabilities: { tools: {} },
-            serverInfo: { name: "mnemos", version: "1.0.0" },
+        return NextResponse.json(
+          {
+            jsonrpc: "2.0",
+            id,
+            result: {
+              protocolVersion: "2024-11-05",
+              capabilities: { tools: {} },
+              serverInfo: { name: "mnemos", version: "1.0.0" },
+            },
           },
-        });
+          { headers: CORS },
+        );
 
       case "tools/list":
-        return NextResponse.json({ jsonrpc: "2.0", id, result: { tools: TOOLS } });
+        return NextResponse.json({ jsonrpc: "2.0", id, result: { tools: TOOLS } }, { headers: CORS });
 
       case "tools/call": {
         const toolName = (params as { name: string }).name;
@@ -887,33 +926,45 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             result = await handleCurate(user, toolArgs as { filename?: string; auto_archive?: boolean });
             break;
           default:
-            return NextResponse.json({
-              jsonrpc: "2.0",
-              id,
-              error: { code: -32601, message: `Unknown tool: ${toolName}` },
-            });
+            return NextResponse.json(
+              {
+                jsonrpc: "2.0",
+                id,
+                error: { code: -32601, message: `Unknown tool: ${toolName}` },
+              },
+              { headers: CORS },
+            );
         }
 
-        return NextResponse.json({
-          jsonrpc: "2.0",
-          id,
-          result: { content: [{ type: "text", text: result }] },
-        });
+        return NextResponse.json(
+          {
+            jsonrpc: "2.0",
+            id,
+            result: { content: [{ type: "text", text: result }] },
+          },
+          { headers: CORS },
+        );
       }
 
       default:
-        return NextResponse.json({
-          jsonrpc: "2.0",
-          id,
-          error: { code: -32601, message: `Unknown method: ${method}` },
-        });
+        return NextResponse.json(
+          {
+            jsonrpc: "2.0",
+            id,
+            error: { code: -32601, message: `Unknown method: ${method}` },
+          },
+          { headers: CORS },
+        );
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal error";
-    return NextResponse.json({
-      jsonrpc: "2.0",
-      id,
-      result: { content: [{ type: "text", text: `Error: ${message}` }], isError: true },
-    });
+    return NextResponse.json(
+      {
+        jsonrpc: "2.0",
+        id,
+        result: { content: [{ type: "text", text: `Error: ${message}` }], isError: true },
+      },
+      { headers: CORS },
+    );
   }
 }

@@ -1,0 +1,162 @@
+/**
+ * OAuth 2.1 primitives for the MCP remote connector.
+ *
+ * Design goals (kept intentionally simple, matching the rest of the codebase):
+ *  - Access and refresh tokens are self-contained, HMAC-signed strings — no token
+ *    table, no DB lookup to validate a token beyond loading the user by id.
+ *  - Authorization codes ARE stored (lib/db) so they can be single-use and carry
+ *    the PKCE challenge.
+ *  - PKCE (S256) is mandatory, per OAuth 2.1 / the MCP authorization spec.
+ *
+ * Everything is signed with SESSION_SECRET (already required by the app), so no
+ * new environment variable is introduced.
+ */
+
+import crypto from "crypto";
+import { env } from "./env";
+
+// Access tokens are short-lived; refresh tokens rotate them without a new consent.
+export const ACCESS_TOKEN_TTL_SECONDS = 60 * 60; // 1 hour
+export const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+export const AUTH_CODE_TTL_SECONDS = 60 * 5; // 5 minutes
+
+// The single OAuth scope this server understands.
+export const MCP_SCOPE = "mcp";
+
+type TokenKind = "access" | "refresh";
+
+interface TokenPayload {
+  k: TokenKind; // token kind
+  u: number; // user id
+  c: string; // client id
+  exp: number; // expiry (epoch seconds)
+}
+
+function b64url(input: Buffer | string): string {
+  return Buffer.from(input).toString("base64url");
+}
+
+function sign(data: string): string {
+  return crypto.createHmac("sha256", env.sessionSecret).update(data).digest("base64url");
+}
+
+/** Build a self-contained, HMAC-signed token: `<b64url(payload)>.<sig>`. */
+function issueToken(kind: TokenKind, userId: number, clientId: string, ttlSeconds: number): string {
+  const payload: TokenPayload = {
+    k: kind,
+    u: userId,
+    c: clientId,
+    exp: Math.floor(Date.now() / 1000) + ttlSeconds,
+  };
+  const body = b64url(JSON.stringify(payload));
+  return `${body}.${sign(body)}`;
+}
+
+export function issueAccessToken(userId: number, clientId: string): string {
+  return issueToken("access", userId, clientId, ACCESS_TOKEN_TTL_SECONDS);
+}
+
+export function issueRefreshToken(userId: number, clientId: string): string {
+  return issueToken("refresh", userId, clientId, REFRESH_TOKEN_TTL_SECONDS);
+}
+
+/** Verify a token's signature and expiry. Returns the payload or null. */
+export function verifyToken(token: string, expectedKind: TokenKind): TokenPayload | null {
+  const dot = token.lastIndexOf(".");
+  if (dot === -1) return null;
+
+  const body = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+
+  // Constant-time signature comparison.
+  const expected = sign(body);
+  const sigBuf = Buffer.from(sig);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+    return null;
+  }
+
+  let payload: TokenPayload;
+  try {
+    payload = JSON.parse(Buffer.from(body, "base64url").toString("utf-8")) as TokenPayload;
+  } catch {
+    return null;
+  }
+
+  if (payload.k !== expectedKind) return null;
+  if (typeof payload.u !== "number" || typeof payload.exp !== "number") return null;
+  if (payload.exp < Math.floor(Date.now() / 1000)) return null;
+
+  return payload;
+}
+
+// ── PKCE ──
+
+/** Verify a PKCE code_verifier against a stored S256 (or plain) challenge. */
+export function verifyPkce(verifier: string, challenge: string, method: string): boolean {
+  if (!verifier || !challenge) return false;
+
+  if (method === "S256") {
+    const hashed = crypto.createHash("sha256").update(verifier).digest("base64url");
+    const a = Buffer.from(hashed);
+    const b = Buffer.from(challenge);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  }
+
+  if (method === "plain") {
+    const a = Buffer.from(verifier);
+    const b = Buffer.from(challenge);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  }
+
+  return false;
+}
+
+// ── Random identifiers ──
+
+export function randomAuthCode(): string {
+  return `mnemos_ac_${crypto.randomBytes(32).toString("hex")}`;
+}
+
+export function randomClientId(): string {
+  return `mnemos_client_${crypto.randomBytes(16).toString("hex")}`;
+}
+
+// ── Metadata ──
+
+/** The canonical MCP resource URL this authorization server protects. */
+export function mcpResourceUrl(): string {
+  return `${env.appUrl}/api/mcp`;
+}
+
+/** RFC 9728 — OAuth 2.0 Protected Resource Metadata. */
+export function protectedResourceMetadata(): Record<string, unknown> {
+  return {
+    resource: mcpResourceUrl(),
+    authorization_servers: [env.appUrl],
+    scopes_supported: [MCP_SCOPE],
+    bearer_methods_supported: ["header"],
+    resource_documentation: "https://github.com/Soph20/mnemos-capture",
+  };
+}
+
+/** RFC 8414 — OAuth 2.0 Authorization Server Metadata. */
+export function authorizationServerMetadata(): Record<string, unknown> {
+  return {
+    issuer: env.appUrl,
+    authorization_endpoint: `${env.appUrl}/api/oauth/authorize`,
+    token_endpoint: `${env.appUrl}/api/oauth/token`,
+    registration_endpoint: `${env.appUrl}/api/oauth/register`,
+    scopes_supported: [MCP_SCOPE],
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
+    code_challenge_methods_supported: ["S256"],
+    token_endpoint_auth_methods_supported: ["none"],
+  };
+}
+
+/** The WWW-Authenticate value the MCP endpoint returns on an unauthenticated request. */
+export function wwwAuthenticateHeader(): string {
+  const metadataUrl = `${env.appUrl}/.well-known/oauth-protected-resource`;
+  return `Bearer resource_metadata="${metadataUrl}"`;
+}
