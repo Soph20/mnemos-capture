@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByApiKey } from "@/lib/db";
+import { getUserByApiKey, getUserById } from "@/lib/db";
 import type { User } from "@/lib/db";
+import { verifyToken, wwwAuthenticateHeader } from "@/lib/oauth";
+import { issueMcpSessionId, verifyMcpSessionId } from "@/lib/mcp-session";
 import { githubGet, githubPut, githubDelete, readFile, updateIndexEntry } from "@/lib/github";
 import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
@@ -792,45 +794,172 @@ async function handleCurate(
   return `Curation report — ${results.length} file(s) checked\n\n| File | Status | URL Status | Action |\n|------|--------|------------|--------|\n${rows.join("\n")}\n\n${staleCount} stale, ${lcCount} low-confidence, ${okCount} ok.`;
 }
 
-// ── MCP HTTP handler ──
+// ── MCP Streamable HTTP transport ──
+
+// CORS so browser-based MCP clients (e.g. claude.ai web connector) can call the
+// endpoint and read the WWW-Authenticate challenge that drives OAuth discovery.
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, GET, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version",
+  "Access-Control-Expose-Headers": "WWW-Authenticate, Mcp-Session-Id",
+};
+
+// The newest MCP protocol revision this server implements; echoed back to a
+// client that doesn't state its own version on initialize.
+const DEFAULT_PROTOCOL_VERSION = "2025-06-18";
+
+/** 401 that tells the client where to discover the OAuth authorization server. */
+function unauthorized(message: string): NextResponse {
+  return NextResponse.json(
+    { jsonrpc: "2.0", error: { code: -32600, message } },
+    { status: 401, headers: { ...CORS, "WWW-Authenticate": wwwAuthenticateHeader() } },
+  );
+}
+
+/**
+ * Serialize a JSON-RPC response. The Streamable HTTP transport lets the server
+ * answer a POST with either a plain JSON body or a one-message SSE stream; we
+ * pick based on the client's Accept header (JSON preferred when both are ok).
+ */
+function respond(payload: unknown, wantsSse: boolean, extraHeaders: Record<string, string> = {}): NextResponse {
+  if (wantsSse) {
+    const body = `event: message\ndata: ${JSON.stringify(payload)}\n\n`;
+    return new NextResponse(body, {
+      headers: {
+        ...CORS,
+        ...extraHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      },
+    });
+  }
+  return NextResponse.json(payload, { headers: { ...CORS, ...extraHeaders } });
+}
+
+/**
+ * DNS-rebinding protection (required by the transport spec). Native apps send no
+ * Origin; browsers do. Allow https and loopback, reject other explicit origins.
+ * Bearer-token auth already gates the endpoint, so this stays permissive.
+ */
+function originRejected(req: NextRequest): NextResponse | null {
+  const origin = req.headers.get("origin");
+  if (!origin) return null;
+  try {
+    const u = new URL(origin);
+    if (u.protocol === "https:") return null;
+    if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return null;
+  } catch {
+    // malformed Origin → reject below
+  }
+  return NextResponse.json(
+    { jsonrpc: "2.0", error: { code: -32600, message: "Origin not allowed" } },
+    { status: 403, headers: CORS },
+  );
+}
+
+/**
+ * Resolve the caller from the Authorization header. Accepts either an OAuth 2.1
+ * access token (Claude iOS/desktop/web remote connector) or a legacy static
+ * `mnemos_...` API key (CLI / stdio proxy). Returns null when neither validates.
+ */
+async function resolveUser(token: string): Promise<User | null> {
+  // OAuth access token first (self-contained, signed).
+  const payload = verifyToken(token, "access");
+  if (payload) {
+    return getUserById(payload.u);
+  }
+  // Fall back to the legacy static API key.
+  return getUserByApiKey(token);
+}
+
+export function OPTIONS(): NextResponse {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
+
+// GET opens a server→client SSE stream. Mnemos has no server-initiated messages,
+// so per the spec it MAY decline with 405 — the client just won't open a stream.
+export function GET(): NextResponse {
+  return new NextResponse(null, { status: 405, headers: { ...CORS, Allow: "POST, DELETE, OPTIONS" } });
+}
+
+// DELETE terminates a session. Sessions are stateless signed tokens, so there's
+// nothing server-side to purge — acknowledge the client's termination.
+export function DELETE(): NextResponse {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const originError = originRejected(req);
+  if (originError) return originError;
+
   const authHeader = req.headers.get("authorization");
-  const apiKey = authHeader?.replace("Bearer ", "");
+  const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
 
-  if (!apiKey) {
-    return NextResponse.json(
-      { jsonrpc: "2.0", error: { code: -32600, message: "Missing API key" } },
-      { status: 401 },
-    );
+  if (!token) {
+    return unauthorized("Missing access token");
   }
 
-  const user = await getUserByApiKey(apiKey);
+  const user = await resolveUser(token);
   if (!user) {
+    return unauthorized("Invalid or expired access token");
+  }
+
+  // Content negotiation: SSE only when the client accepts it and not JSON.
+  const accept = req.headers.get("accept") ?? "";
+  const acceptsJson = accept.includes("application/json") || accept.includes("*/*") || accept.trim() === "";
+  const wantsSse = accept.includes("text/event-stream") && !acceptsJson;
+
+  let body: JsonRpcRequest;
+  try {
+    body = (await req.json()) as JsonRpcRequest;
+  } catch {
+    return respond({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }, wantsSse);
+  }
+  const { method, id, params } = body;
+
+  // Session check for post-initialize requests. Lenient by design: a missing
+  // Mcp-Session-Id is allowed (the legacy stdio proxy never sends one), but a
+  // present-and-invalid one gets 404 so the client knows to re-initialize.
+  const providedSession = req.headers.get("mcp-session-id");
+  if (method !== "initialize" && providedSession && !verifyMcpSessionId(providedSession)) {
     return NextResponse.json(
-      { jsonrpc: "2.0", error: { code: -32600, message: "Invalid API key" } },
-      { status: 401 },
+      { jsonrpc: "2.0", id: id ?? null, error: { code: -32001, message: "Session not found" } },
+      { status: 404, headers: CORS },
     );
   }
 
-  const body = (await req.json()) as JsonRpcRequest;
-  const { method, id, params } = body;
+  // Notifications carry no id and expect no JSON-RPC response (202 Accepted).
+  if (typeof method === "string" && method.startsWith("notifications/")) {
+    return new NextResponse(null, { status: 202, headers: CORS });
+  }
 
   try {
     switch (method) {
-      case "initialize":
-        return NextResponse.json({
-          jsonrpc: "2.0",
-          id,
-          result: {
-            protocolVersion: "2024-11-05",
-            capabilities: { tools: {} },
-            serverInfo: { name: "mnemos", version: "1.0.0" },
+      case "initialize": {
+        // Echo the client's requested protocol version when it states one.
+        const requested = (params as { protocolVersion?: unknown } | undefined)?.protocolVersion;
+        const protocolVersion = typeof requested === "string" ? requested : DEFAULT_PROTOCOL_VERSION;
+        // Hand the client a session id it will echo on subsequent requests.
+        const sessionId = issueMcpSessionId(user.id);
+        return respond(
+          {
+            jsonrpc: "2.0",
+            id,
+            result: {
+              protocolVersion,
+              capabilities: { tools: {} },
+              serverInfo: { name: "mnemos", version: "1.0.0" },
+            },
           },
-        });
+          wantsSse,
+          { "Mcp-Session-Id": sessionId },
+        );
+      }
 
       case "tools/list":
-        return NextResponse.json({ jsonrpc: "2.0", id, result: { tools: TOOLS } });
+        return respond({ jsonrpc: "2.0", id, result: { tools: TOOLS } }, wantsSse);
 
       case "tools/call": {
         const toolName = (params as { name: string }).name;
@@ -887,33 +1016,33 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             result = await handleCurate(user, toolArgs as { filename?: string; auto_archive?: boolean });
             break;
           default:
-            return NextResponse.json({
-              jsonrpc: "2.0",
-              id,
-              error: { code: -32601, message: `Unknown tool: ${toolName}` },
-            });
+            return respond(
+              { jsonrpc: "2.0", id, error: { code: -32601, message: `Unknown tool: ${toolName}` } },
+              wantsSse,
+            );
         }
 
-        return NextResponse.json({
-          jsonrpc: "2.0",
-          id,
-          result: { content: [{ type: "text", text: result }] },
-        });
+        return respond(
+          { jsonrpc: "2.0", id, result: { content: [{ type: "text", text: result }] } },
+          wantsSse,
+        );
       }
 
       default:
-        return NextResponse.json({
-          jsonrpc: "2.0",
-          id,
-          error: { code: -32601, message: `Unknown method: ${method}` },
-        });
+        return respond(
+          { jsonrpc: "2.0", id, error: { code: -32601, message: `Unknown method: ${method}` } },
+          wantsSse,
+        );
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal error";
-    return NextResponse.json({
-      jsonrpc: "2.0",
-      id,
-      result: { content: [{ type: "text", text: `Error: ${message}` }], isError: true },
-    });
+    return respond(
+      {
+        jsonrpc: "2.0",
+        id,
+        result: { content: [{ type: "text", text: `Error: ${message}` }], isError: true },
+      },
+      wantsSse,
+    );
   }
 }

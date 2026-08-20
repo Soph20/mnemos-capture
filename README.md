@@ -57,12 +57,30 @@ When you finish onboarding, Mnemos generates a personal **MCP API key** — copy
 claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key <your-mcp-key>
 ```
 
+**Claude Desktop (macOS / Windows):** open **Settings → Developer → Edit Config** and add Mnemos to `claude_desktop_config.json`, then fully restart Claude Desktop:
+```json
+{
+  "mcpServers": {
+    "mnemos": {
+      "command": "npx",
+      "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "<your-mcp-key>"]
+    }
+  }
+}
+```
+
+**Claude iOS / mobile / web (remote connector):** the mobile apps can't run a local proxy, so Mnemos also speaks OAuth 2.1 as a **remote MCP server**. In the Claude app go to **Settings → Connectors → Add custom connector** and enter your instance's MCP URL:
+```
+https://mnemos-capture.vercel.app/api/mcp
+```
+Claude discovers the authorization server automatically, opens a Mnemos sign-in (GitHub), and you approve the connection — no key to paste. Requires your account to be onboarded (knowledge repo + LLM key set) first.
+
 **Any MCP-compatible client** (Cursor, Continue, Gemini CLI, etc.) — point it at the stdio proxy:
 ```bash
 npx -y mnemos-capture@latest serve-mcp --key <your-mcp-key>
 ```
 
-The proxy forwards your agent's MCP tool calls to the hosted Mnemos API. Nothing is stored locally — your knowledge lives in your GitHub repo.
+The stdio proxy forwards your agent's MCP tool calls to the hosted Mnemos API over HTTPS. Nothing is stored locally — your knowledge lives in your GitHub repo. The remote connector talks to the same `/api/mcp` endpoint directly, authenticated with a short-lived OAuth token instead of a static key.
 
 ### 3. Capture something
 

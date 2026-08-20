@@ -63,12 +63,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // Create session
     await createSession(user.id);
 
-    // Redirect: onboard if no repo, otherwise home
-    const response = user.github_repo
-      ? NextResponse.redirect(`${env.appUrl}/`)
-      : NextResponse.redirect(`${env.appUrl}/onboard`);
+    // If this login was initiated to resume an OAuth authorization request
+    // (Claude connecting over MCP), send the browser back to that request.
+    const oauthReturn = req.cookies.get("mnemos_oauth_return")?.value;
+
+    let response: NextResponse;
+    if (oauthReturn && oauthReturn.startsWith(`${env.appUrl}/api/oauth/authorize`)) {
+      response = NextResponse.redirect(oauthReturn);
+    } else if (user.github_repo) {
+      // Redirect: onboard if no repo, otherwise home
+      response = NextResponse.redirect(`${env.appUrl}/`);
+    } else {
+      response = NextResponse.redirect(`${env.appUrl}/onboard`);
+    }
 
     response.cookies.delete("oauth_state");
+    response.cookies.delete("mnemos_oauth_return");
     return response;
   } catch (err) {
     console.error("OAuth callback error:", err);
