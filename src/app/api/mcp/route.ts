@@ -3,6 +3,7 @@ import { getUserByApiKey, getUserById } from "@/lib/db";
 import type { User } from "@/lib/db";
 import { verifyToken, wwwAuthenticateHeader } from "@/lib/oauth";
 import { issueMcpSessionId, verifyMcpSessionId } from "@/lib/mcp-session";
+import { env } from "@/lib/env";
 import { githubGet, githubPut, githubDelete, readFile, updateIndexEntry } from "@/lib/github";
 import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
@@ -950,7 +951,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             result: {
               protocolVersion,
               capabilities: { tools: {} },
-              serverInfo: { name: "mnemos", version: "1.0.0" },
+              // `title`, `websiteUrl`, and `icons` are best-effort branding hints:
+              // clients that support them can show the Mnemos name and logo instead
+              // of a generated letter avatar. Unknown fields are ignored by others.
+              serverInfo: {
+                name: "mnemos",
+                title: "Mnemos",
+                version: "1.0.0",
+                websiteUrl: env.appUrl,
+                icons: [
+                  { src: `${env.appUrl}/icon-192.png`, mimeType: "image/png", sizes: ["192x192"] },
+                  { src: `${env.appUrl}/icon-512.png`, mimeType: "image/png", sizes: ["512x512"] },
+                ],
+              },
             },
           },
           wantsSse,

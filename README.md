@@ -50,14 +50,29 @@ No config files. No repos to clone. No CLI setup required.
 
 ### 2. Connect to your AI assistant
 
-When you finish onboarding, Mnemos generates a personal **MCP API key** — copy it.
+Mnemos exposes the **same 15 tools** two ways. Both hit the hosted API over HTTPS; nothing is stored locally — your knowledge lives in your GitHub repo. Pick whichever your tool supports:
+
+- **A — Remote connector (OAuth).** Add one URL; the client signs you in. No key to paste. Best for the Claude apps and any client that speaks the MCP *remote / Streamable HTTP* transport.
+- **B — Local stdio proxy (static key).** A tiny `npx` process bridges a stdio client to the hosted API using a personal key. The universal fallback — works with any MCP client that can launch a local command.
+
+#### A — Remote connector (OAuth 2.1)
+
+In the Claude app (iOS / Android / desktop / web): **Settings → Connectors → Add custom connector**, then enter your instance's MCP URL:
+```
+https://mnemos-capture.vercel.app/api/mcp
+```
+The client fetches the discovery metadata, opens a **Mnemos sign-in (GitHub)**, and you approve on the consent screen — no key to paste. Behind the scenes it's a standards-compliant OAuth 2.1 authorization-code + PKCE flow over the MCP Streamable HTTP transport, so any client that implements that flow can connect the same way. Requires your account to be onboarded (knowledge repo + LLM key set) first.
+
+#### B — Local stdio proxy (static key)
+
+When you finish onboarding, Mnemos generates a personal **MCP API key** — copy it, then:
 
 **Claude Code:**
 ```bash
 claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key <your-mcp-key>
 ```
 
-**Claude Desktop (macOS / Windows):** open **Settings → Developer → Edit Config** and add Mnemos to `claude_desktop_config.json`, then fully restart Claude Desktop:
+**Claude Desktop (macOS / Windows):** **Settings → Developer → Edit Config**, add Mnemos to `claude_desktop_config.json`, then fully restart Claude Desktop:
 ```json
 {
   "mcpServers": {
@@ -69,18 +84,25 @@ claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key <your-mcp-
 }
 ```
 
-**Claude iOS / mobile / web (remote connector):** the mobile apps can't run a local proxy, so Mnemos also speaks OAuth 2.1 as a **remote MCP server**. In the Claude app go to **Settings → Connectors → Add custom connector** and enter your instance's MCP URL:
-```
-https://mnemos-capture.vercel.app/api/mcp
-```
-Claude discovers the authorization server automatically, opens a Mnemos sign-in (GitHub), and you approve the connection — no key to paste. Requires your account to be onboarded (knowledge repo + LLM key set) first.
-
-**Any MCP-compatible client** (Cursor, Continue, Gemini CLI, etc.) — point it at the stdio proxy:
+**Any other MCP client that launches local commands** (Cursor, Continue, Windsurf, Cline, Codex CLI, Gemini CLI, Zed, …) — register the same command in that client's MCP config:
 ```bash
 npx -y mnemos-capture@latest serve-mcp --key <your-mcp-key>
 ```
 
-The stdio proxy forwards your agent's MCP tool calls to the hosted Mnemos API over HTTPS. Nothing is stored locally — your knowledge lives in your GitHub repo. The remote connector talks to the same `/api/mcp` endpoint directly, authenticated with a short-lived OAuth token instead of a static key.
+#### Which method does my tool support?
+
+| Client | Remote connector (A) | stdio proxy (B) |
+|---|---|---|
+| Claude iOS / Android / web | ✅ | — (no local process) |
+| Claude Desktop | ✅ | ✅ |
+| Claude Code (CLI / IDE) | ✅ `claude mcp add --transport http` | ✅ |
+| VS Code (Copilot MCP) | ✅ | ✅ |
+| Cursor, Continue, Windsurf, Cline, Zed | varies by version | ✅ |
+| Codex CLI, Gemini CLI | varies by version | ✅ |
+| ChatGPT / OpenAI Responses API (`mcp` tool) | ✅ remote MCP w/ OAuth | — |
+| A browser tab, or an assistant with **no** MCP client (e.g. plain Gemini/Grok apps) | — | — (see Roadmap) |
+
+Rule of thumb: **if the client can speak remote MCP, use A**; otherwise fall back to **B**. Tools with no MCP support at all can't use either — those are what the Chrome extension and per-tool integrations on the roadmap are for.
 
 ### 3. Capture something
 
@@ -349,12 +371,16 @@ Next.js · TypeScript · Vercel Postgres · GitHub OAuth · GitHub Content API �
 
 ## Roadmap
 
-Shipped in 1.2: the `mnemos kos` orchestrator (isolated worktree, plan-as-contract, verification checklist) and provider-agnostic BYOK (Anthropic, OpenAI, Google).
+Shipped:
 
-Next:
+- the `mnemos kos` orchestrator (isolated worktree, plan-as-contract, verification checklist)
+- provider-agnostic BYOK (Anthropic, OpenAI, Google)
+- **Web + app access** — Mnemos is an **OAuth 2.1 remote MCP connector** over the Streamable HTTP transport, so your knowledge base works in the Claude web and desktop/mobile apps (and any MCP client that speaks the remote flow), not just the CLI
 
-- **Web + app access** — register Mnemos as a Claude account-level connector (OAuth + streamable HTTP) so your knowledge base works in the Claude web and desktop/mobile apps, not just the CLI
-- **Chrome extension** — one-click capture from anywhere in the browser
+Next — reaching tools where the MCP connector *doesn't* work (no MCP client, or MCP behind a wall):
+
+- **Chrome extension** — one-click capture from any browser tab, for surfaces with no MCP client at all
+- **Per-tool integrations** — thin adapters for assistants that can't (yet) speak remote MCP, so the same capture library shows up there too
 - **One key → any provider** — a single gateway key that routes to any model, instead of per-provider BYOK
 - **Voice memo capture** — record a memo; Mnemos transcribes it and captures the insight
 - **`kos` enhancements** — per-step model switching within a run, and `--detach` for background execution

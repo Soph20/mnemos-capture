@@ -128,6 +128,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mnemos — connect</title></head><body style="font-family:system-ui,sans-serif;background:#0f0e0c;color:#f5ead0;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px;">
 <form method="POST" action="/api/oauth/authorize" style="max-width:24rem;width:100%;background:#171512;border:1px solid rgba(212,175,90,0.2);border-radius:16px;padding:28px;">
+  <img src="/icon-192.png" alt="Mnemos" width="56" height="56" style="width:56px;height:56px;object-fit:contain;border-radius:12px;margin:0 0 16px;" />
   <h1 style="font-size:1.15rem;margin:0 0 8px;">Connect to Mnemos</h1>
   <p style="opacity:0.8;line-height:1.5;margin:0 0 4px;"><strong>${clientName.replace(/</g, "&lt;")}</strong> wants to access your knowledge hub.</p>
   <p style="opacity:0.6;line-height:1.5;font-size:0.85rem;margin:0 0 20px;">Signed in as <strong>${user.github_username.replace(/</g, "&lt;")}</strong>. It will be able to capture, search, and apply your captures over MCP.</p>
