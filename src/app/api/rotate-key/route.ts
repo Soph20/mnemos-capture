@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSession } from "@/lib/session";
-import { updateUserApiKey } from "@/lib/db";
+import { updateUserApiKey, revokeUserTokens } from "@/lib/db";
 
 // Regenerate the MCP/CLI API key for the signed-in user.
 // This is the only path (besides full onboarding) that mints a new api_key.
@@ -23,6 +23,11 @@ export async function POST(): Promise<NextResponse> {
 
     const apiKey = `mnemos_${crypto.randomBytes(24).toString("hex")}`;
     await updateUserApiKey(user.id, apiKey);
+
+    // Rotating the key is the user's "revoke my access" lever, so it must also
+    // retire OAuth access/refresh tokens — otherwise a leaked connector token
+    // would outlive the rotation by up to 30 days.
+    await revokeUserTokens(user.id);
 
     return NextResponse.json({ ok: true, apiKey });
   } catch (err) {

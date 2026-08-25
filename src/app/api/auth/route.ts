@@ -70,7 +70,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     await clearAttempts(username);
-    await createSession(user.id);
+    await createSession(user.id, user.token_version ?? 0);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[auth] login error:", err);

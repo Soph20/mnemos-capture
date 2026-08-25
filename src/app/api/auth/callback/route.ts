@@ -61,7 +61,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const user = await createUser(ghUser.id, ghUser.login, tokenData.access_token);
 
     // Create session
-    await createSession(user.id);
+    await createSession(user.id, user.token_version ?? 0);
 
     // If this login was initiated to resume an OAuth authorization request
     // (Claude connecting over MCP), send the browser back to that request.

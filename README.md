@@ -361,6 +361,8 @@ Mnemos holds three secrets on your behalf. None of them is stored in a form that
 
 Your MCP key is shown to you exactly once, when it's generated. If you lose it, generate a new one — Mnemos cannot show you the old one again.
 
+**Revoking access.** Generating a new MCP key is also the kill switch: it immediately invalidates the old key, every signed-in session, and every connected MCP client. Anything still holding an old credential stops working at once and has to reconnect. Sessions also expire on their own after 30 days.
+
 
 ## Cost
 
