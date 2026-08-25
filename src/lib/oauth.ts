@@ -25,11 +25,13 @@ export const MCP_SCOPE = "mcp";
 
 type TokenKind = "access" | "refresh";
 
-interface TokenPayload {
+export interface TokenPayload {
   k: TokenKind; // token kind
   u: number; // user id
   c: string; // client id
+  v: number; // token_version — bumping it revokes every outstanding token
   exp: number; // expiry (epoch seconds)
+  jti?: string; // refresh tokens only: id used for single-use + reuse detection
 }
 
 function b64url(input: Buffer | string): string {
@@ -41,23 +43,42 @@ function sign(data: string): string {
 }
 
 /** Build a self-contained, HMAC-signed token: `<b64url(payload)>.<sig>`. */
-function issueToken(kind: TokenKind, userId: number, clientId: string, ttlSeconds: number): string {
+function issueToken(
+  kind: TokenKind,
+  userId: number,
+  clientId: string,
+  ttlSeconds: number,
+  tokenVersion: number,
+  jti?: string,
+): string {
   const payload: TokenPayload = {
     k: kind,
     u: userId,
     c: clientId,
+    v: tokenVersion,
     exp: Math.floor(Date.now() / 1000) + ttlSeconds,
+    ...(jti ? { jti } : {}),
   };
   const body = b64url(JSON.stringify(payload));
   return `${body}.${sign(body)}`;
 }
 
-export function issueAccessToken(userId: number, clientId: string): string {
-  return issueToken("access", userId, clientId, ACCESS_TOKEN_TTL_SECONDS);
+export function issueAccessToken(userId: number, clientId: string, tokenVersion: number): string {
+  return issueToken("access", userId, clientId, ACCESS_TOKEN_TTL_SECONDS, tokenVersion);
 }
 
-export function issueRefreshToken(userId: number, clientId: string): string {
-  return issueToken("refresh", userId, clientId, REFRESH_TOKEN_TTL_SECONDS);
+/**
+ * Issue a refresh token. The `jti` is recorded by the caller so the token can
+ * be single-use with reuse detection (OAuth 2.1 for public clients).
+ */
+export function issueRefreshToken(
+  userId: number,
+  clientId: string,
+  tokenVersion: number,
+): { token: string; jti: string; expiresAt: Date } {
+  const jti = `mnemos_rt_${crypto.randomBytes(24).toString("hex")}`;
+  const token = issueToken("refresh", userId, clientId, REFRESH_TOKEN_TTL_SECONDS, tokenVersion, jti);
+  return { token, jti, expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000) };
 }
 
 /** Verify a token's signature and expiry. Returns the payload or null. */
@@ -85,6 +106,7 @@ export function verifyToken(token: string, expectedKind: TokenKind): TokenPayloa
 
   if (payload.k !== expectedKind) return null;
   if (typeof payload.u !== "number" || typeof payload.exp !== "number") return null;
+  if (typeof payload.v !== "number") return null;
   if (payload.exp < Math.floor(Date.now() / 1000)) return null;
 
   return payload;

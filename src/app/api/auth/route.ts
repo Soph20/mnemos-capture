@@ -23,6 +23,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
   }
 
-  await createSession(user.id);
+  await createSession(user.id, user.token_version ?? 0);
   return NextResponse.json({ ok: true });
 }

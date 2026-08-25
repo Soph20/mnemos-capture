@@ -869,7 +869,11 @@ async function resolveUser(token: string): Promise<User | null> {
   // OAuth access token first (self-contained, signed).
   const payload = verifyToken(token, "access");
   if (payload) {
-    return getUserById(payload.u);
+    const user = await getUserById(payload.u);
+    if (!user) return null;
+    // A bumped token_version retires every token issued before the bump.
+    if ((user.token_version ?? 0) !== payload.v) return null;
+    return user;
   }
   // Fall back to the legacy static API key.
   return getUserByApiKey(token);

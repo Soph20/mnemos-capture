@@ -11,7 +11,7 @@ const oauth = await import("../oauth");
 
 describe("access/refresh token round-trip", () => {
   it("issues and verifies an access token", () => {
-    const token = oauth.issueAccessToken(42, "client-abc");
+    const token = oauth.issueAccessToken(42, "client-abc", 0);
     const payload = oauth.verifyToken(token, "access");
     expect(payload).not.toBeNull();
     expect(payload!.u).toBe(42);
@@ -20,21 +20,23 @@ describe("access/refresh token round-trip", () => {
   });
 
   it("issues and verifies a refresh token", () => {
-    const token = oauth.issueRefreshToken(7, "client-xyz");
+    const { token, jti } = oauth.issueRefreshToken(7, "client-xyz", 0);
     expect(oauth.verifyToken(token, "refresh")!.u).toBe(7);
+    // The jti is what makes the token single-use and reuse-detectable.
+    expect(oauth.verifyToken(token, "refresh")!.jti).toBe(jti);
   });
 
   it("rejects a token verified against the wrong kind", () => {
-    const access = oauth.issueAccessToken(1, "c");
+    const access = oauth.issueAccessToken(1, "c", 0);
     expect(oauth.verifyToken(access, "refresh")).toBeNull();
-    const refresh = oauth.issueRefreshToken(1, "c");
+    const refresh = oauth.issueRefreshToken(1, "c", 0).token;
     expect(oauth.verifyToken(refresh, "access")).toBeNull();
   });
 
   it("rejects a tampered payload", () => {
-    const token = oauth.issueAccessToken(1, "c");
+    const token = oauth.issueAccessToken(1, "c", 0);
     const [body, sig] = token.split(".");
-    const forged = Buffer.from(JSON.stringify({ k: "access", u: 999, c: "c", exp: 9999999999 })).toString("base64url");
+    const forged = Buffer.from(JSON.stringify({ k: "access", u: 999, c: "c", v: 0, exp: 9999999999 })).toString("base64url");
     expect(oauth.verifyToken(`${forged}.${sig}`, "access")).toBeNull();
     // sanity: the untouched token still verifies
     expect(oauth.verifyToken(`${body}.${sig}`, "access")).not.toBeNull();
@@ -51,6 +53,26 @@ describe("access/refresh token round-trip", () => {
   it("rejects garbage input", () => {
     expect(oauth.verifyToken("not-a-token", "access")).toBeNull();
     expect(oauth.verifyToken("", "access")).toBeNull();
+  });
+
+  it("carries token_version so a bump can revoke outstanding tokens", () => {
+    const token = oauth.issueAccessToken(42, "c", 7);
+    expect(oauth.verifyToken(token, "access")!.v).toBe(7);
+  });
+
+  it("rejects a payload with a non-numeric token_version", () => {
+    const body = Buffer.from(
+      JSON.stringify({ k: "access", u: 5, c: "c", v: "nope", exp: 9999999999 }),
+    ).toString("base64url");
+    const sig = crypto.createHmac("sha256", "test-secret-for-oauth").update(body).digest("base64url");
+    expect(oauth.verifyToken(`${body}.${sig}`, "access")).toBeNull();
+  });
+
+  it("gives every refresh token a distinct jti", () => {
+    const a = oauth.issueRefreshToken(1, "c", 0);
+    const b = oauth.issueRefreshToken(1, "c", 0);
+    expect(a.jti).not.toBe(b.jti);
+    expect(a.expiresAt.getTime()).toBeGreaterThan(Date.now());
   });
 });
 
