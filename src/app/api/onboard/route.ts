@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { getSession } from "@/lib/session";
 import { updateUserRepo, updateUserPin, updateUserApiKey, updateUserLlmKey } from "@/lib/db";
+import { hashPin, validatePin } from "@/lib/pin";
 import type { LlmProvider } from "@/lib/types";
 
 interface GithubRepoResponse {
@@ -125,6 +126,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: `Unsupported provider: ${provider}` }, { status: 400 });
   }
 
+  // The PIN guards a public login endpoint, so enforce a real minimum here —
+  // client-side validation alone is not a control.
+  const pinError = validatePin(body.pin);
+  if (pinError) {
+    return NextResponse.json({ error: pinError }, { status: 400 });
+  }
+
   try {
     // Create knowledge repo
     const fullRepo = await createKnowledgeRepo(
@@ -136,9 +144,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Save repo to user
     await updateUserRepo(user.id, fullRepo);
 
-    // Hash and save PIN
-    const pinHash = crypto.createHash("sha256").update(body.pin).digest("hex");
-    await updateUserPin(user.id, pinHash);
+    // Hash and save PIN (salted scrypt — see lib/pin)
+    await updateUserPin(user.id, hashPin(body.pin));
 
     // Save LLM key + provider (BYOK — Anthropic, OpenAI, or Google)
     await updateUserLlmKey(user.id, provider, llmKey);

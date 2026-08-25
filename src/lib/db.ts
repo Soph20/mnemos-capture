@@ -61,6 +61,19 @@ export async function initDb(): Promise<void> {
   // Clients register dynamically (RFC 7591); authorization codes are short-lived
   // and single-use, carrying the PKCE challenge (RFC 7636). Access/refresh tokens
   // are self-contained signed strings (see lib/oauth.ts) and need no table.
+  // Login throttling state. Keyed by lowercased username so a targeted PIN
+  // brute force is rate-limited across serverless instances (an in-process
+  // counter would reset on every cold start).
+  await sql`
+    CREATE TABLE IF NOT EXISTS login_attempts (
+      identifier TEXT PRIMARY KEY,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      lockouts INTEGER NOT NULL DEFAULT 0,
+      window_started_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      locked_until TIMESTAMP
+    )
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS oauth_clients (
       client_id TEXT PRIMARY KEY,

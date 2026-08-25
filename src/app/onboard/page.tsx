@@ -1,5 +1,8 @@
 "use client";
 
+// Kept in sync with MIN_PIN_LENGTH in lib/pin.ts (the server is the real check).
+const MIN_PIN_LENGTH = 6;
+
 import { useState } from "react";
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -48,7 +51,7 @@ export default function OnboardPage() {
   const providerInfo = PROVIDERS[provider];
 
   async function handleSubmit() {
-    if (!repoName.trim() || !apiKey.trim() || !pin.trim()) return;
+    if (!repoName.trim() || !apiKey.trim() || pin.length < MIN_PIN_LENGTH) return;
     setStatus("loading");
     setErrorMsg("");
 
@@ -210,7 +213,8 @@ export default function OnboardPage() {
             type="password"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
-            placeholder="Quick unlock PIN"
+            placeholder={`Quick unlock PIN (min ${MIN_PIN_LENGTH} characters)`}
+            minLength={MIN_PIN_LENGTH}
             className="w-full rounded-xl px-3 py-2.5 text-sm transition-colors focus:outline-none"
             style={INPUT_STYLE}
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}
@@ -223,7 +227,7 @@ export default function OnboardPage() {
 
         <button
           onClick={() => void handleSubmit()}
-          disabled={!repoName.trim() || !apiKey.trim() || !pin.trim() || status === "loading"}
+          disabled={!repoName.trim() || !apiKey.trim() || pin.length < MIN_PIN_LENGTH || status === "loading"}
           className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all disabled:opacity-25 disabled:cursor-not-allowed"
           style={{ background: "#2A62C6", color: "#FFFCEB" }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#3570d4"; }}
