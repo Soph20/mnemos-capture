@@ -44,7 +44,7 @@ During setup, Mnemos will:
 
 - Create a knowledge repo in your GitHub account — plain Markdown files, no proprietary format
 - Ask for your API key (your provider, your key — Mnemos never pays for your API calls)
-- Set a PIN so you can unlock the app quickly on mobile
+- Set a PIN (minimum 6 characters) so you can unlock the app quickly on mobile
 
 No config files. No repos to clone. No CLI setup required.
 
