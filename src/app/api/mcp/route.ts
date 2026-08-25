@@ -5,7 +5,7 @@ import { verifyToken, wwwAuthenticateHeader } from "@/lib/oauth";
 import { issueMcpSessionId, verifyMcpSessionId } from "@/lib/mcp-session";
 import { env } from "@/lib/env";
 import { githubGet, githubPut, githubDelete, readFile, updateIndexEntry } from "@/lib/github";
-import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType } from "@/lib/llm";
+import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType, filterByDateRange, paginate, pageFooter } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
 import { synthesizeTopic } from "@/lib/synthesis";
 import type { ExtractedCapture } from "@/lib/types";
@@ -37,20 +37,32 @@ const TOOLS = [
   },
   {
     name: "search_captures",
-    description: "Search the knowledge hub for captures matching a query.",
+    description: "Search the knowledge hub for captures matching a query. Supports date filtering and pagination — page through all matches with offset/limit; the response footer reports the total and the next offset.",
     inputSchema: {
       type: "object" as const,
       properties: {
         query: { type: "string", description: "Search term" },
         tag: { type: "string", description: "Filter by tag (e.g. 'ai-agents', 'pricing')" },
+        since: { type: "string", description: "Only include captures dated on/after this date (inclusive, 'YYYY-MM-DD')" },
+        until: { type: "string", description: "Only include captures dated on/before this date (inclusive, 'YYYY-MM-DD')" },
+        offset: { type: "number", description: "Number of matches to skip for pagination (default 0)" },
+        limit: { type: "number", description: "Max matches to return (default 20, max 50)" },
       },
       required: ["query"],
     },
   },
   {
     name: "list_inbox",
-    description: "List unprocessed captures in the inbox with summaries (title, type, tags, core idea).",
-    inputSchema: { type: "object" as const, properties: {} },
+    description: "List unprocessed captures in the inbox with summaries (title, type, tags, core idea). Supports date filtering and pagination — page through the entire inbox with offset/limit; the response footer reports the total and the next offset.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        since: { type: "string", description: "Only include captures dated on/after this date (inclusive, 'YYYY-MM-DD')" },
+        until: { type: "string", description: "Only include captures dated on/before this date (inclusive, 'YYYY-MM-DD')" },
+        offset: { type: "number", description: "Number of captures to skip for pagination (default 0)" },
+        limit: { type: "number", description: "Max captures to summarize (default 10, max 50)" },
+      },
+    },
   },
   {
     name: "read_capture",
@@ -218,6 +230,10 @@ const TOOLS = [
       properties: {
         filename: { type: "string", description: "Single inbox file to curate (e.g. '2026-05-14-slug.md'). Omit to curate the entire inbox." },
         auto_archive: { type: "boolean", description: "If true, automatically archive captures flagged as stale or low-confidence (default false)" },
+        since: { type: "string", description: "Only curate captures dated on/after this date (inclusive, 'YYYY-MM-DD')" },
+        until: { type: "string", description: "Only curate captures dated on/before this date (inclusive, 'YYYY-MM-DD')" },
+        offset: { type: "number", description: "Number of files to skip for pagination (default 0)" },
+        limit: { type: "number", description: "Max files to check in one call (default 20, max 50)" },
       },
     },
   },
@@ -301,19 +317,29 @@ async function handleCapture(user: User, args: { content: string; title?: string
   return result;
 }
 
-async function handleListInbox(user: User): Promise<string> {
+async function handleListInbox(
+  user: User,
+  args: { since?: string; until?: string; offset?: number; limit?: number } = {},
+): Promise<string> {
   if (!user.github_repo) return "Knowledge repo not configured.";
   const res = await githubGet<Array<{ name: string }>>(user.github_token, user.github_repo, "inbox");
   if (!res.ok || !res.data) return "Inbox is empty.";
-  const mdFiles = res.data.filter((f) => f.name.endsWith(".md"));
-  if (mdFiles.length === 0) return "Inbox is empty.";
+  // Sort by name (date-prefixed → chronological) for a stable paging order.
+  const allMd = res.data.filter((f) => f.name.endsWith(".md")).sort((a, b) => a.name.localeCompare(b.name));
+  if (allMd.length === 0) return "Inbox is empty.";
 
-  // Read up to 10 files in parallel for summaries
-  const toRead = mdFiles.slice(0, 10);
+  const filtered = filterByDateRange(allMd, args.since, args.until);
+  if (filtered.length === 0) {
+    return `No captures in inbox match the given date range (${allMd.length} total in inbox).`;
+  }
+
+  // Page through filtered results; only the current page is read for summaries.
+  const page = paginate(filtered, args.offset ?? 0, args.limit ?? 10);
   const summaries = await Promise.all(
-    toRead.map(async (f, i) => {
+    page.items.map(async (f, i) => {
+      const n = page.offset + i + 1;
       const file = await readFile(user.github_token, user.github_repo!, `inbox/${f.name}`);
-      if (!file) return `${i + 1}. ${f.name}\n   (could not read)`;
+      if (!file) return `${n}. ${f.name}\n   (could not read)`;
 
       const fmMatch = file.content.match(/^---\n([\s\S]*?)\n---/);
       const fm = fmMatch?.[1] ?? "";
@@ -324,18 +350,17 @@ async function handleListInbox(user: User): Promise<string> {
       const coreMatch = file.content.match(/## Core idea\n([\s\S]*?)(?=\n##|$)/);
       const coreIdea = coreMatch?.[1]?.trim().slice(0, 120) ?? "";
 
-      return `${i + 1}. ${f.name}\n   Source: ${source}\n   Type: ${type} | Tags: ${tags}\n   Core idea: ${coreIdea}`;
+      return `${n}. ${f.name}\n   Source: ${source}\n   Type: ${type} | Tags: ${tags}\n   Core idea: ${coreIdea}`;
     }),
   );
 
-  let result = `${mdFiles.length} capture(s) in inbox:\n\n${summaries.join("\n\n")}`;
-  if (mdFiles.length > 10) {
-    result += `\n\n... and ${mdFiles.length - 10} more.`;
-  }
-  return result;
+  return `${page.total} capture(s) in inbox:\n\n${summaries.join("\n\n")}${pageFooter(page, "list_inbox")}`;
 }
 
-async function handleSearch(user: User, args: { query: string; tag?: string }): Promise<string> {
+async function handleSearch(
+  user: User,
+  args: { query: string; tag?: string; since?: string; until?: string; offset?: number; limit?: number },
+): Promise<string> {
   if (!user.github_repo) return "Knowledge repo not configured.";
   const existing = await readFile(user.github_token, user.github_repo, "INDEX.md");
   if (!existing) return "No captures yet.";
@@ -345,13 +370,23 @@ async function handleSearch(user: User, args: { query: string; tag?: string }): 
     .filter((l) => l.startsWith("|") && !l.startsWith("| Date") && !l.startsWith("|---"));
 
   const q = args.query.toLowerCase();
-  const matches = lines.filter((l) => {
+  const textMatches = lines.filter((l) => {
     const lower = l.toLowerCase();
     return lower.includes(q) && (args.tag ? lower.includes(args.tag) : true);
   });
 
-  if (matches.length === 0) return `No matches for "${args.query}".`;
-  return `${matches.length} match(es):\n${matches.join("\n")}`;
+  // Apply the date filter on the row's leading date column. `name` is set to
+  // that date so filterByDateRange (which reads a `YYYY-MM-DD` prefix) works.
+  const dated = textMatches.map((row) => ({ name: (row.match(/\|\s*(\d{4}-\d{2}-\d{2})/)?.[1] ?? "") + " " + row, row }));
+  const matches = filterByDateRange(dated, args.since, args.until).map((m) => m.row);
+
+  if (matches.length === 0) {
+    const scope = args.since || args.until ? " in the given date range" : "";
+    return `No matches for "${args.query}"${scope}.`;
+  }
+
+  const page = paginate(matches, args.offset ?? 0, args.limit ?? 20);
+  return `${page.total} match(es):\n${page.items.join("\n")}${pageFooter(page, "search_captures")}`;
 }
 
 async function handleReadCapture(user: User, args: { filename: string }): Promise<string> {
@@ -723,7 +758,7 @@ Apply it? Run: \`apply_capture\` with filename: \`${basename}\``;
 
 async function handleCurate(
   user: User,
-  args: { filename?: string; auto_archive?: boolean },
+  args: { filename?: string; auto_archive?: boolean; since?: string; until?: string; offset?: number; limit?: number },
 ): Promise<string> {
   if (!user.github_repo) return "Knowledge repo not configured.";
 
@@ -775,13 +810,19 @@ async function handleCurate(
     return `Curation: ${result.filename}\nStatus: ${result.status}${archivedNote}\nURL status: ${result.httpStatus ?? "no URL"}\nReason: ${result.reason}`;
   }
 
-  // Scan entire inbox (cap at 20)
+  // Scan the inbox, one page at a time (deterministic, date-sorted order).
   const res = await githubGet<Array<{ name: string }>>(user.github_token, user.github_repo, "inbox");
   if (!res.ok || !res.data) return "Inbox is empty.";
-  const mdFiles = res.data.filter((f) => f.name.endsWith(".md")).slice(0, 20);
-  if (mdFiles.length === 0) return "Inbox is empty.";
+  const allMd = res.data.filter((f) => f.name.endsWith(".md")).sort((a, b) => a.name.localeCompare(b.name));
+  if (allMd.length === 0) return "Inbox is empty.";
 
-  const results = await Promise.all(mdFiles.map((f) => curateFile(f.name)));
+  const filtered = filterByDateRange(allMd, args.since, args.until);
+  if (filtered.length === 0) {
+    return `No captures in inbox match the given date range (${allMd.length} total in inbox).`;
+  }
+
+  const page = paginate(filtered, args.offset ?? 0, args.limit ?? 20);
+  const results = await Promise.all(page.items.map((f) => curateFile(f.name)));
 
   const rows = results.map((r) => {
     const action = r.archived ? "archived" : r.status !== "ok" ? "flagged" : "—";
@@ -792,7 +833,7 @@ async function handleCurate(
   const lcCount = results.filter((r) => r.status === "low_confidence" || r.status === "stale_and_low_confidence").length;
   const okCount = results.filter((r) => r.status === "ok").length;
 
-  return `Curation report — ${results.length} file(s) checked\n\n| File | Status | URL Status | Action |\n|------|--------|------------|--------|\n${rows.join("\n")}\n\n${staleCount} stale, ${lcCount} low-confidence, ${okCount} ok.`;
+  return `Curation report — ${results.length} file(s) checked\n\n| File | Status | URL Status | Action |\n|------|--------|------------|--------|\n${rows.join("\n")}\n\n${staleCount} stale, ${lcCount} low-confidence, ${okCount} ok.${pageFooter(page, "curate")}`;
 }
 
 // ── MCP Streamable HTTP transport ──
@@ -984,10 +1025,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             result = await handleCapture(user, toolArgs as { content: string; title?: string });
             break;
           case "list_inbox":
-            result = await handleListInbox(user);
+            result = await handleListInbox(user, toolArgs as { since?: string; until?: string; offset?: number; limit?: number });
             break;
           case "search_captures":
-            result = await handleSearch(user, toolArgs as { query: string; tag?: string });
+            result = await handleSearch(user, toolArgs as { query: string; tag?: string; since?: string; until?: string; offset?: number; limit?: number });
             break;
           case "read_capture":
             result = await handleReadCapture(user, toolArgs as { filename: string });
@@ -1026,7 +1067,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             result = await handleVaultScan(user, toolArgs as { activity_context: string; session_surfaced?: string[] });
             break;
           case "curate":
-            result = await handleCurate(user, toolArgs as { filename?: string; auto_archive?: boolean });
+            result = await handleCurate(user, toolArgs as { filename?: string; auto_archive?: boolean; since?: string; until?: string; offset?: number; limit?: number });
             break;
           default:
             return respond(
