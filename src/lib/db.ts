@@ -1,4 +1,5 @@
 import { sql } from "@vercel/postgres";
+import { encrypt, decrypt, hashApiKey } from "./crypto";
 import type { LlmProvider } from "./types";
 
 export type { LlmProvider };
@@ -13,6 +14,8 @@ export interface User {
   api_key: string | null;
   llm_provider: LlmProvider;
   llm_api_key: string | null;
+  /** Bumped to revoke every outstanding session and OAuth token for this user. */
+  token_version: number;
   created_at: Date;
 }
 
@@ -52,6 +55,23 @@ export async function initDb(): Promise<void> {
       api_key TEXT UNIQUE,
       llm_provider TEXT DEFAULT 'anthropic',
       llm_api_key TEXT,
+      token_version INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `;
+
+  // Additive migration for databases created before token_version existed.
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0`;
+
+  // Refresh tokens are tracked so they can be single-use with reuse detection
+  // (OAuth 2.1 for public clients). Only the jti is stored, never the token.
+  await sql`
+    CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
+      jti TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      client_id TEXT NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      used_at TIMESTAMP,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `;
@@ -60,6 +80,19 @@ export async function initDb(): Promise<void> {
   // Clients register dynamically (RFC 7591); authorization codes are short-lived
   // and single-use, carrying the PKCE challenge (RFC 7636). Access/refresh tokens
   // are self-contained signed strings (see lib/oauth.ts) and need no table.
+  // Login throttling state. Keyed by lowercased username so a targeted PIN
+  // brute force is rate-limited across serverless instances (an in-process
+  // counter would reset on every cold start).
+  await sql`
+    CREATE TABLE IF NOT EXISTS login_attempts (
+      identifier TEXT PRIMARY KEY,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      lockouts INTEGER NOT NULL DEFAULT 0,
+      window_started_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      locked_until TIMESTAMP
+    )
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS oauth_clients (
       client_id TEXT PRIMARY KEY,
@@ -85,20 +118,39 @@ export async function initDb(): Promise<void> {
   `;
 }
 
+// ── Credential hydration ──
+
+/**
+ * Decrypt the credential columns on a row read from the database.
+ *
+ * Storage is encrypted (see lib/crypto); every consumer of `User` expects
+ * usable plaintext, so decryption happens here at the single read boundary
+ * rather than at each call site. Legacy plaintext rows pass through unchanged
+ * and are re-encrypted the next time they're written.
+ */
+function hydrate(user: User | undefined): User | null {
+  if (!user) return null;
+  return {
+    ...user,
+    github_token: decrypt(user.github_token) ?? "",
+    llm_api_key: decrypt(user.llm_api_key),
+  };
+}
+
 // ── Queries ──
 
 export async function getUserByGithubId(githubId: number): Promise<User | null> {
   const { rows } = await sql<User>`
     SELECT * FROM users WHERE github_id = ${githubId} LIMIT 1
   `;
-  return rows[0] ?? null;
+  return hydrate(rows[0]);
 }
 
 export async function getUserById(id: number): Promise<User | null> {
   const { rows } = await sql<User>`
     SELECT * FROM users WHERE id = ${id} LIMIT 1
   `;
-  return rows[0] ?? null;
+  return hydrate(rows[0]);
 }
 
 export async function createUser(
@@ -106,15 +158,16 @@ export async function createUser(
   githubUsername: string,
   githubToken: string
 ): Promise<User> {
+  const stored = encrypt(githubToken);
   const { rows } = await sql<User>`
     INSERT INTO users (github_id, github_username, github_token)
-    VALUES (${githubId}, ${githubUsername}, ${githubToken})
+    VALUES (${githubId}, ${githubUsername}, ${stored})
     ON CONFLICT (github_id) DO UPDATE SET
       github_username = ${githubUsername},
-      github_token = ${githubToken}
+      github_token = ${stored}
     RETURNING *
   `;
-  return rows[0] as User;
+  return hydrate(rows[0]) as User;
 }
 
 export async function updateUserRepo(userId: number, repo: string): Promise<void> {
@@ -125,26 +178,49 @@ export async function updateUserPin(userId: number, pinHash: string): Promise<vo
   await sql`UPDATE users SET pin_hash = ${pinHash} WHERE id = ${userId}`;
 }
 
+/**
+ * Resolve a user from an MCP API key.
+ *
+ * Keys are stored hashed, so the incoming key is hashed and matched against
+ * that. A legacy plaintext row still matches on the raw value and is upgraded
+ * to a hash in place, so existing keys keep working without a forced rotation.
+ */
 export async function getUserByApiKey(apiKey: string): Promise<User | null> {
+  const hashed = hashApiKey(apiKey);
   const { rows } = await sql<User>`
+    SELECT * FROM users WHERE api_key = ${hashed} LIMIT 1
+  `;
+  if (rows[0]) return hydrate(rows[0]);
+
+  const { rows: legacy } = await sql<User>`
     SELECT * FROM users WHERE api_key = ${apiKey} LIMIT 1
   `;
-  return rows[0] ?? null;
+  const found = legacy[0];
+  if (!found) return null;
+
+  try {
+    await sql`UPDATE users SET api_key = ${hashed} WHERE id = ${found.id}`;
+  } catch {
+    // A failed upgrade must not break a valid key.
+  }
+  return hydrate(found);
 }
 
+/** Store an MCP API key as a hash. The plaintext is shown to the user once. */
 export async function updateUserApiKey(userId: number, apiKey: string): Promise<void> {
-  await sql`UPDATE users SET api_key = ${apiKey} WHERE id = ${userId}`;
+  await sql`UPDATE users SET api_key = ${hashApiKey(apiKey)} WHERE id = ${userId}`;
 }
 
 export async function updateUserLlmKey(userId: number, provider: LlmProvider, apiKey: string): Promise<void> {
-  await sql`UPDATE users SET llm_provider = ${provider}, llm_api_key = ${apiKey} WHERE id = ${userId}`;
+  const stored = encrypt(apiKey);
+  await sql`UPDATE users SET llm_provider = ${provider}, llm_api_key = ${stored} WHERE id = ${userId}`;
 }
 
 export async function getUserByUsername(username: string): Promise<User | null> {
   const { rows } = await sql<User>`
     SELECT * FROM users WHERE github_username = ${username} LIMIT 1
   `;
-  return rows[0] ?? null;
+  return hydrate(rows[0]);
 }
 
 export async function getUserCount(): Promise<number> {
@@ -191,6 +267,84 @@ export async function consumeOauthCode(code: string): Promise<OauthCode | null> 
     DELETE FROM oauth_codes WHERE code = ${code} RETURNING *
   `;
   return rows[0] ?? null;
+}
+
+/**
+ * Bump a user's token_version, invalidating every session cookie and OAuth
+ * access/refresh token issued before now. Returns the new version.
+ */
+export async function revokeUserTokens(userId: number): Promise<number> {
+  const { rows } = await sql<{ token_version: number }>`
+    UPDATE users SET token_version = token_version + 1
+    WHERE id = ${userId}
+    RETURNING token_version
+  `;
+  return rows[0]?.token_version ?? 0;
+}
+
+// ── OAuth refresh token tracking ──
+
+export interface RefreshRecord {
+  jti: string;
+  user_id: number;
+  client_id: string;
+  expires_at: Date;
+  used_at: Date | null;
+}
+
+export async function recordRefreshToken(
+  jti: string,
+  userId: number,
+  clientId: string,
+  expiresAt: Date,
+): Promise<void> {
+  await sql`
+    INSERT INTO oauth_refresh_tokens (jti, user_id, client_id, expires_at)
+    VALUES (${jti}, ${userId}, ${clientId}, ${expiresAt.toISOString()})
+    ON CONFLICT (jti) DO NOTHING
+  `;
+}
+
+export type RefreshConsumeResult =
+  | { status: "ok"; record: RefreshRecord }
+  | { status: "reused"; record: RefreshRecord }
+  | { status: "unknown" };
+
+/**
+ * Atomically claim a refresh token for single use.
+ *
+ * The `used_at IS NULL` predicate makes the claim itself the concurrency
+ * control: exactly one caller can win, so two clients replaying the same token
+ * cannot both succeed. A miss is then disambiguated with a follow-up read —
+ * "reused" is the signal to revoke the whole family, "unknown" is just an
+ * invalid token.
+ */
+export async function consumeRefreshToken(jti: string): Promise<RefreshConsumeResult> {
+  const { rows } = await sql<RefreshRecord>`
+    UPDATE oauth_refresh_tokens SET used_at = NOW()
+    WHERE jti = ${jti} AND used_at IS NULL
+    RETURNING jti, user_id, client_id, expires_at, used_at
+  `;
+  if (rows[0]) return { status: "ok", record: rows[0] };
+
+  const { rows: existing } = await sql<RefreshRecord>`
+    SELECT jti, user_id, client_id, expires_at, used_at
+    FROM oauth_refresh_tokens WHERE jti = ${jti} LIMIT 1
+  `;
+  return existing[0] ? { status: "reused", record: existing[0] } : { status: "unknown" };
+}
+
+/** Drop every refresh token for a user+client pair (a detected-reuse response). */
+export async function revokeRefreshFamily(userId: number, clientId: string): Promise<void> {
+  await sql`
+    DELETE FROM oauth_refresh_tokens
+    WHERE user_id = ${userId} AND client_id = ${clientId}
+  `;
+}
+
+/** Best-effort cleanup of expired refresh tokens. */
+export async function deleteExpiredRefreshTokens(): Promise<void> {
+  await sql`DELETE FROM oauth_refresh_tokens WHERE expires_at < NOW()`;
 }
 
 /** Best-effort cleanup of expired authorization codes. */

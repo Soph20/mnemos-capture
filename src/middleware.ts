@@ -18,8 +18,10 @@ const PUBLIC_PATHS = [
 export function middleware(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;
 
-  // Allow public paths
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  // Allow public paths. Match on a path-segment boundary rather than a bare
+  // prefix, so "/login" does not also allow "/login-something".
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (isPublic) {
     return NextResponse.next();
   }
 

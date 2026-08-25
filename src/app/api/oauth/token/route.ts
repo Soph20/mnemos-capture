@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { consumeOauthCode, getOauthClient, getUserById } from "@/lib/db";
+import {
+  consumeOauthCode,
+  getOauthClient,
+  getUserById,
+  recordRefreshToken,
+  consumeRefreshToken,
+  revokeRefreshFamily,
+  deleteExpiredRefreshTokens,
+} from "@/lib/db";
 import {
   issueAccessToken,
   issueRefreshToken,
@@ -39,15 +47,24 @@ async function readParams(req: NextRequest): Promise<URLSearchParams> {
   return new URLSearchParams(text);
 }
 
-async function issueTokens(userId: number, clientId: string): Promise<NextResponse> {
-  const accessToken = issueAccessToken(userId, clientId);
-  const refreshToken = issueRefreshToken(userId, clientId);
+async function issueTokens(
+  userId: number,
+  clientId: string,
+  tokenVersion: number,
+): Promise<NextResponse> {
+  const accessToken = issueAccessToken(userId, clientId, tokenVersion);
+  const refresh = issueRefreshToken(userId, clientId, tokenVersion);
+
+  // Track the refresh token's id so it can be used exactly once.
+  await recordRefreshToken(refresh.jti, userId, clientId, refresh.expiresAt);
+  void deleteExpiredRefreshTokens().catch(() => {});
+
   return NextResponse.json(
     {
       access_token: accessToken,
       token_type: "Bearer",
       expires_in: ACCESS_TOKEN_TTL_SECONDS,
-      refresh_token: refreshToken,
+      refresh_token: refresh.token,
       scope: MCP_SCOPE,
     },
     { headers: CORS },
@@ -90,7 +107,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return tokenError("invalid_grant", "PKCE verification failed.");
     }
 
-    return issueTokens(stored.user_id, stored.client_id);
+    const user = await getUserById(stored.user_id);
+    if (!user) return tokenError("invalid_grant", "User no longer exists.");
+
+    return issueTokens(stored.user_id, stored.client_id, user.token_version ?? 0);
   }
 
   // ── refresh_token ──
@@ -103,6 +123,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (clientId && payload.c !== clientId) {
       return tokenError("invalid_grant", "client_id does not match the refresh token.");
     }
+    if (!payload.jti) {
+      // Pre-rotation token with no tracked id — cannot be made single-use.
+      return tokenError("invalid_grant", "Refresh token is no longer valid; re-authorize.");
+    }
 
     // Confirm the client and user still exist.
     const client = await getOauthClient(payload.c);
@@ -110,7 +134,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const user = await getUserById(payload.u);
     if (!user) return tokenError("invalid_grant", "User no longer exists.");
 
-    return issueTokens(payload.u, payload.c);
+    // A bumped token_version retires every token issued before the bump.
+    if ((user.token_version ?? 0) !== payload.v) {
+      return tokenError("invalid_grant", "Refresh token has been revoked.");
+    }
+
+    // Rotate: claim the token for single use. A second presentation means the
+    // token leaked, so drop the whole family and force a fresh authorization.
+    const claim = await consumeRefreshToken(payload.jti);
+    if (claim.status === "reused") {
+      await revokeRefreshFamily(payload.u, payload.c);
+      return tokenError("invalid_grant", "Refresh token reuse detected; re-authorize.");
+    }
+    if (claim.status === "unknown") {
+      return tokenError("invalid_grant", "Refresh token is invalid or expired.");
+    }
+
+    return issueTokens(payload.u, payload.c, user.token_version ?? 0);
   }
 
   return tokenError("unsupported_grant_type", `Unsupported grant_type: ${grantType ?? "(none)"}`);

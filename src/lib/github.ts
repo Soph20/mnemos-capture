@@ -6,6 +6,42 @@
 const GITHUB_API = "https://api.github.com";
 const GITHUB_HEADERS = { Accept: "application/vnd.github+json" };
 
+/**
+ * Encode a repo-relative path for use in a GitHub contents URL.
+ *
+ * Interpolating a raw path here is unsafe: the WHATWG URL parser normalizes
+ * dot-segments, so a filename like `../../../../user/repos` walks out of the
+ * contents endpoint entirely and the request lands on a different GitHub API
+ * endpoint — carrying the user's repo-scoped token. Unencoded `?` and `#` can
+ * likewise rewrite the query or truncate the path. Since capture filenames
+ * reach these helpers from LLM tool arguments derived from untrusted captured
+ * content, that is reachable by prompt injection.
+ *
+ * Each segment is encoded and traversal/empty segments are rejected outright.
+ */
+export function encodeRepoPath(filePath: string): string {
+  const segments = filePath.split("/").filter((s, i, arr) => {
+    // Tolerate a single trailing slash but nothing else empty.
+    if (s === "") return i === arr.length - 1 ? false : true;
+    return true;
+  });
+
+  if (segments.length === 0) {
+    throw new Error(`Invalid repo path: "${filePath}" (empty)`);
+  }
+
+  for (const segment of segments) {
+    if (segment === "" || segment === "." || segment === "..") {
+      throw new Error(`Invalid repo path: "${filePath}" (path traversal or empty segment)`);
+    }
+    if (segment.includes("\\")) {
+      throw new Error(`Invalid repo path: "${filePath}" (backslash)`);
+    }
+  }
+
+  return segments.map(encodeURIComponent).join("/");
+}
+
 // ── Types ──
 
 export interface GitHubFileResponse {
@@ -31,7 +67,7 @@ export async function githubGet<T = unknown>(
   filePath: string,
 ): Promise<GitHubApiResult<T>> {
   const res = await fetch(
-    `${GITHUB_API}/repos/${repo}/contents/${filePath}?ref=main`,
+    `${GITHUB_API}/repos/${repo}/contents/${encodeRepoPath(filePath)}?ref=main`,
     { headers: authHeaders(token) },
   );
   if (res.status === 404) return { ok: false, data: null, status: 404 };
@@ -55,7 +91,7 @@ export async function githubPut(
   if (sha) body["sha"] = sha;
 
   const res = await fetch(
-    `${GITHUB_API}/repos/${repo}/contents/${filePath}`,
+    `${GITHUB_API}/repos/${repo}/contents/${encodeRepoPath(filePath)}`,
     {
       method: "PUT",
       headers: { ...authHeaders(token), "Content-Type": "application/json" },
@@ -77,7 +113,7 @@ export async function githubDelete(
   message: string,
 ): Promise<void> {
   const res = await fetch(
-    `${GITHUB_API}/repos/${repo}/contents/${filePath}`,
+    `${GITHUB_API}/repos/${repo}/contents/${encodeRepoPath(filePath)}`,
     {
       method: "DELETE",
       headers: { ...authHeaders(token), "Content-Type": "application/json" },

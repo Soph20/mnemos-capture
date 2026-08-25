@@ -7,6 +7,11 @@ import { randomClientId } from "@/lib/oauth";
 // We only support public clients using PKCE (token_endpoint_auth_method: "none"),
 // so no client secret is issued.
 
+/** Bounds on open (unauthenticated) dynamic client registration. */
+const MAX_REDIRECT_URIS = 10;
+const MAX_URI_LENGTH = 2048;
+const MAX_CLIENT_NAME_LENGTH = 80;
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -47,6 +52,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ? body.redirect_uris.filter((u): u is string => typeof u === "string")
     : [];
 
+  if (redirectUris.length > MAX_REDIRECT_URIS) {
+    return NextResponse.json(
+      { error: "invalid_redirect_uri", error_description: `At most ${MAX_REDIRECT_URIS} redirect_uris.` },
+      { status: 400, headers: CORS },
+    );
+  }
+
+  if (redirectUris.some((u) => u.length > MAX_URI_LENGTH)) {
+    return NextResponse.json(
+      { error: "invalid_redirect_uri", error_description: "redirect_uri is too long." },
+      { status: 400, headers: CORS },
+    );
+  }
+
   if (redirectUris.length === 0) {
     return NextResponse.json(
       { error: "invalid_redirect_uri", error_description: "At least one redirect_uri is required." },
@@ -61,7 +80,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const clientName = typeof body.client_name === "string" ? body.client_name : null;
+  // Truncated here as well as at render time: registration is unauthenticated.
+  const clientName =
+    typeof body.client_name === "string" ? body.client_name.slice(0, MAX_CLIENT_NAME_LENGTH) : null;
 
   // Retry on the astronomically unlikely id collision.
   let clientId = randomClientId();
