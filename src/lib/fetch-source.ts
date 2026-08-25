@@ -35,10 +35,13 @@ export function isBareUrl(content: string): boolean {
  * loopback, private ranges, and link-local (incl. the cloud metadata endpoint
  * 169.254.169.254) as IP literals / `localhost`.
  *
- * Limitation: this does NOT resolve DNS, so a public hostname that resolves to
- * a private IP — or a public URL that redirects to one — is not caught. That's
- * an accepted residual risk for a tool where users paste their own public
- * article URLs into their own repo.
+ * Redirects are re-validated hop by hop (see `safeFetch`), so a public URL that
+ * 302s to an internal address is caught.
+ *
+ * Limitation: this does NOT resolve DNS, so a public hostname whose A record
+ * points at a private IP still slips through. Closing that needs resolve-then-
+ * pin-the-IP, which the platform fetch doesn't expose; it remains an accepted
+ * residual risk for a tool where users paste their own public article URLs.
  */
 export function isBlockedHost(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, ""); // strip IPv6 brackets
@@ -163,12 +166,14 @@ async function readCapped(res: Response, maxBytes: number): Promise<string> {
   return new TextDecoder("utf-8", { fatal: false }).decode(buf);
 }
 
+/** Maximum redirects followed by `safeFetch` before giving up. */
+const MAX_REDIRECTS = 5;
+
 /**
- * Fetch a URL and return cleaned article text, or `null` if it can't be used.
- * Never throws — failures resolve to `null` so the caller can fall back to
- * URL-only capture.
+ * Validate a URL for server-side fetching: http/https only, and not an
+ * internal host. Returns the parsed URL, or null when it must not be fetched.
  */
-export async function fetchSourceContent(url: string): Promise<string | null> {
+export function validateFetchUrl(url: string): URL | null {
   let parsed: URL;
   try {
     parsed = new URL(url.trim());
@@ -177,19 +182,61 @@ export async function fetchSourceContent(url: string): Promise<string | null> {
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
   if (isBlockedHost(parsed.hostname)) return null;
+  return parsed;
+}
 
+/**
+ * Fetch with SSRF protection across redirects.
+ *
+ * `redirect: "follow"` would let a public URL 302 to `http://169.254.169.254`
+ * and defeat the up-front host check, so redirects are handled manually and
+ * every hop is re-validated with `validateFetchUrl`. Returns null when any hop
+ * is disallowed, the chain is too long, or the request fails.
+ */
+export async function safeFetch(
+  url: string,
+  init: RequestInit & { method?: string } = {},
+): Promise<Response | null> {
+  let current = validateFetchUrl(url);
+  if (!current) return null;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    let res: Response;
+    try {
+      res = await fetch(current.toString(), { ...init, redirect: "manual" });
+    } catch {
+      return null;
+    }
+
+    // 3xx with a Location header → validate the next hop before following it.
+    const location = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
+    if (!location) return res;
+
+    const next = validateFetchUrl(new URL(location, current).toString());
+    if (!next) return null;
+    current = next;
+  }
+
+  return null; // too many redirects
+}
+
+/**
+ * Fetch a URL and return cleaned article text, or `null` if it can't be used.
+ * Never throws — failures resolve to `null` so the caller can fall back to
+ * URL-only capture.
+ */
+export async function fetchSourceContent(url: string): Promise<string | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(parsed.toString(), {
-      redirect: "follow",
+    const res = await safeFetch(url, {
       signal: controller.signal,
       headers: {
         "user-agent": USER_AGENT,
         accept: "text/html,application/xhtml+xml,text/plain",
       },
     });
-    if (!res.ok) return null;
+    if (!res || !res.ok) return null;
 
     const contentType = res.headers.get("content-type") ?? "";
     // Only HTML / plain text — reject text/css, text/javascript, etc.

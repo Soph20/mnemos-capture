@@ -44,7 +44,7 @@ During setup, Mnemos will:
 
 - Create a knowledge repo in your GitHub account — plain Markdown files, no proprietary format
 - Ask for your API key (your provider, your key — Mnemos never pays for your API calls)
-- Set a PIN so you can unlock the app quickly on mobile
+- Set a PIN (minimum 6 characters) so you can unlock the app quickly on mobile
 
 No config files. No repos to clone. No CLI setup required.
 
@@ -347,6 +347,21 @@ Your knowledge lives in a GitHub repo you own. Plain Markdown files, version-con
 - **No training on your data** — Mnemos never reads your captures for any purpose other than serving them back to you
 - **Any tool can access it** — anything that reads Git or speaks MCP works with your knowledge base
 - **BYOK** — your provider, your key, your cost
+
+### How your credentials are stored
+
+Mnemos holds three secrets on your behalf. None of them is stored in a form that is useful to anyone who reads the database:
+
+| Secret | How it's stored |
+|---|---|
+| GitHub token | Encrypted at rest (AES-256-GCM) |
+| Your LLM API key | Encrypted at rest (AES-256-GCM) |
+| Your MCP API key | Hashed — never recoverable, not even by Mnemos |
+| Your PIN | Salted scrypt hash |
+
+Your MCP key is shown to you exactly once, when it's generated. If you lose it, generate a new one — Mnemos cannot show you the old one again.
+
+**Revoking access.** Generating a new MCP key is also the kill switch: it immediately invalidates the old key, every signed-in session, and every connected MCP client. Anything still holding an old credential stops working at once and has to reconnect. Sessions also expire on their own after 30 days.
 
 
 ## Cost
