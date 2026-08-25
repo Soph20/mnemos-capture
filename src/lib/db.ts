@@ -1,4 +1,5 @@
 import { sql } from "@vercel/postgres";
+import { encrypt, decrypt, hashApiKey } from "./crypto";
 import type { LlmProvider } from "./types";
 
 export type { LlmProvider };
@@ -85,20 +86,39 @@ export async function initDb(): Promise<void> {
   `;
 }
 
+// ── Credential hydration ──
+
+/**
+ * Decrypt the credential columns on a row read from the database.
+ *
+ * Storage is encrypted (see lib/crypto); every consumer of `User` expects
+ * usable plaintext, so decryption happens here at the single read boundary
+ * rather than at each call site. Legacy plaintext rows pass through unchanged
+ * and are re-encrypted the next time they're written.
+ */
+function hydrate(user: User | undefined): User | null {
+  if (!user) return null;
+  return {
+    ...user,
+    github_token: decrypt(user.github_token) ?? "",
+    llm_api_key: decrypt(user.llm_api_key),
+  };
+}
+
 // ── Queries ──
 
 export async function getUserByGithubId(githubId: number): Promise<User | null> {
   const { rows } = await sql<User>`
     SELECT * FROM users WHERE github_id = ${githubId} LIMIT 1
   `;
-  return rows[0] ?? null;
+  return hydrate(rows[0]);
 }
 
 export async function getUserById(id: number): Promise<User | null> {
   const { rows } = await sql<User>`
     SELECT * FROM users WHERE id = ${id} LIMIT 1
   `;
-  return rows[0] ?? null;
+  return hydrate(rows[0]);
 }
 
 export async function createUser(
@@ -106,15 +126,16 @@ export async function createUser(
   githubUsername: string,
   githubToken: string
 ): Promise<User> {
+  const stored = encrypt(githubToken);
   const { rows } = await sql<User>`
     INSERT INTO users (github_id, github_username, github_token)
-    VALUES (${githubId}, ${githubUsername}, ${githubToken})
+    VALUES (${githubId}, ${githubUsername}, ${stored})
     ON CONFLICT (github_id) DO UPDATE SET
       github_username = ${githubUsername},
-      github_token = ${githubToken}
+      github_token = ${stored}
     RETURNING *
   `;
-  return rows[0] as User;
+  return hydrate(rows[0]) as User;
 }
 
 export async function updateUserRepo(userId: number, repo: string): Promise<void> {
@@ -125,26 +146,49 @@ export async function updateUserPin(userId: number, pinHash: string): Promise<vo
   await sql`UPDATE users SET pin_hash = ${pinHash} WHERE id = ${userId}`;
 }
 
+/**
+ * Resolve a user from an MCP API key.
+ *
+ * Keys are stored hashed, so the incoming key is hashed and matched against
+ * that. A legacy plaintext row still matches on the raw value and is upgraded
+ * to a hash in place, so existing keys keep working without a forced rotation.
+ */
 export async function getUserByApiKey(apiKey: string): Promise<User | null> {
+  const hashed = hashApiKey(apiKey);
   const { rows } = await sql<User>`
+    SELECT * FROM users WHERE api_key = ${hashed} LIMIT 1
+  `;
+  if (rows[0]) return hydrate(rows[0]);
+
+  const { rows: legacy } = await sql<User>`
     SELECT * FROM users WHERE api_key = ${apiKey} LIMIT 1
   `;
-  return rows[0] ?? null;
+  const found = legacy[0];
+  if (!found) return null;
+
+  try {
+    await sql`UPDATE users SET api_key = ${hashed} WHERE id = ${found.id}`;
+  } catch {
+    // A failed upgrade must not break a valid key.
+  }
+  return hydrate(found);
 }
 
+/** Store an MCP API key as a hash. The plaintext is shown to the user once. */
 export async function updateUserApiKey(userId: number, apiKey: string): Promise<void> {
-  await sql`UPDATE users SET api_key = ${apiKey} WHERE id = ${userId}`;
+  await sql`UPDATE users SET api_key = ${hashApiKey(apiKey)} WHERE id = ${userId}`;
 }
 
 export async function updateUserLlmKey(userId: number, provider: LlmProvider, apiKey: string): Promise<void> {
-  await sql`UPDATE users SET llm_provider = ${provider}, llm_api_key = ${apiKey} WHERE id = ${userId}`;
+  const stored = encrypt(apiKey);
+  await sql`UPDATE users SET llm_provider = ${provider}, llm_api_key = ${stored} WHERE id = ${userId}`;
 }
 
 export async function getUserByUsername(username: string): Promise<User | null> {
   const { rows } = await sql<User>`
     SELECT * FROM users WHERE github_username = ${username} LIMIT 1
   `;
-  return rows[0] ?? null;
+  return hydrate(rows[0]);
 }
 
 export async function getUserCount(): Promise<number> {
