@@ -348,6 +348,19 @@ Your knowledge lives in a GitHub repo you own. Plain Markdown files, version-con
 - **Any tool can access it** — anything that reads Git or speaks MCP works with your knowledge base
 - **BYOK** — your provider, your key, your cost
 
+### How your credentials are stored
+
+Mnemos holds three secrets on your behalf. None of them is stored in a form that is useful to anyone who reads the database:
+
+| Secret | How it's stored |
+|---|---|
+| GitHub token | Encrypted at rest (AES-256-GCM) |
+| Your LLM API key | Encrypted at rest (AES-256-GCM) |
+| Your MCP API key | Hashed — never recoverable, not even by Mnemos |
+| Your PIN | Salted scrypt hash |
+
+Your MCP key is shown to you exactly once, when it's generated. If you lose it, generate a new one — Mnemos cannot show you the old one again.
+
 
 ## Cost
 
