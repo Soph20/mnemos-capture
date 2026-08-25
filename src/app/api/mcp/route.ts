@@ -5,6 +5,7 @@ import { verifyToken, wwwAuthenticateHeader } from "@/lib/oauth";
 import { issueMcpSessionId, verifyMcpSessionId } from "@/lib/mcp-session";
 import { env } from "@/lib/env";
 import { githubGet, githubPut, githubDelete, readFile, updateIndexEntry } from "@/lib/github";
+import { safeFetch } from "@/lib/fetch-source";
 import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
 import { synthesizeTopic } from "@/lib/synthesis";
@@ -727,17 +728,17 @@ async function handleCurate(
 ): Promise<string> {
   if (!user.github_repo) return "Knowledge repo not configured.";
 
+  // Liveness check for a capture's source URL. The `url:` frontmatter is
+  // attacker-influenced (it comes from LLM extraction of user-supplied
+  // content), and the returned status is echoed back to the caller — so an
+  // unguarded fetch here is an SSRF with a status oracle. Reuse the same
+  // redirect-validating guard the capture path uses.
   async function checkUrl(url: string): Promise<number | null> {
-    try {
-      const res = await fetch(url, {
-        method: "HEAD",
-        signal: AbortSignal.timeout(5000),
-        redirect: "follow",
-      });
-      return res.status;
-    } catch {
-      return null;
-    }
+    const res = await safeFetch(url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(5000),
+    });
+    return res?.status ?? null;
   }
 
   async function curateFile(
