@@ -5,7 +5,7 @@ import { verifyToken, wwwAuthenticateHeader } from "@/lib/oauth";
 import { issueMcpSessionId, verifyMcpSessionId } from "@/lib/mcp-session";
 import { env } from "@/lib/env";
 import { githubGet, githubPut, githubDelete, readFile, updateIndexEntry } from "@/lib/github";
-import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType, filterByDateRange, paginate, pageFooter } from "@/lib/llm";
+import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType, filterByDateRange, paginate, pageFooter, matchIndexRows } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
 import { synthesizeTopic } from "@/lib/synthesis";
 import type { ExtractedCapture } from "@/lib/types";
@@ -37,18 +37,17 @@ const TOOLS = [
   },
   {
     name: "search_captures",
-    description: "Search the knowledge hub for captures matching a query. Supports date filtering and pagination — page through all matches with offset/limit; the response footer reports the total and the next offset.",
+    description: "Search the knowledge hub for captures. The query is tokenized on whitespace and matched with OR semantics (a capture surfaces if it contains any term), ranked by how many terms it matches, with a bonus for an exact phrase match — so a single unknown word no longer zeroes the whole query. Omit query (or pass an empty string) to list ALL captures. Supports tag/date filtering and offset/limit pagination; the response footer reports the total and next offset.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        query: { type: "string", description: "Search term" },
+        query: { type: "string", description: "Search terms (whitespace-separated, OR-matched). Omit or leave empty to list all captures." },
         tag: { type: "string", description: "Filter by tag (e.g. 'ai-agents', 'pricing')" },
         since: { type: "string", description: "Only include captures dated on/after this date (inclusive, 'YYYY-MM-DD')" },
         until: { type: "string", description: "Only include captures dated on/before this date (inclusive, 'YYYY-MM-DD')" },
         offset: { type: "number", description: "Number of matches to skip for pagination (default 0)" },
         limit: { type: "number", description: "Max matches to return (default 20, max 50)" },
       },
-      required: ["query"],
     },
   },
   {
@@ -359,7 +358,7 @@ async function handleListInbox(
 
 async function handleSearch(
   user: User,
-  args: { query: string; tag?: string; since?: string; until?: string; offset?: number; limit?: number },
+  args: { query?: string; tag?: string; since?: string; until?: string; offset?: number; limit?: number },
 ): Promise<string> {
   if (!user.github_repo) return "Knowledge repo not configured.";
   const existing = await readFile(user.github_token, user.github_repo, "INDEX.md");
@@ -369,24 +368,26 @@ async function handleSearch(
     .split("\n")
     .filter((l) => l.startsWith("|") && !l.startsWith("| Date") && !l.startsWith("|---"));
 
-  const q = args.query.toLowerCase();
-  const textMatches = lines.filter((l) => {
-    const lower = l.toLowerCase();
-    return lower.includes(q) && (args.tag ? lower.includes(args.tag) : true);
-  });
+  // Hard filters first: tag membership, then the date window (the row's
+  // leading date column drives filterByDateRange via a synthetic `name`).
+  const tag = args.tag?.toLowerCase();
+  const tagged = tag ? lines.filter((l) => l.toLowerCase().includes(tag)) : lines;
+  const dated = tagged.map((row) => ({ name: (row.match(/\|\s*(\d{4}-\d{2}-\d{2})/)?.[1] ?? "") + " " + row, row }));
+  const inScope = filterByDateRange(dated, args.since, args.until).map((m) => m.row);
 
-  // Apply the date filter on the row's leading date column. `name` is set to
-  // that date so filterByDateRange (which reads a `YYYY-MM-DD` prefix) works.
-  const dated = textMatches.map((row) => ({ name: (row.match(/\|\s*(\d{4}-\d{2}-\d{2})/)?.[1] ?? "") + " " + row, row }));
-  const matches = filterByDateRange(dated, args.since, args.until).map((m) => m.row);
+  // Then rank by query tokens (OR + relevance). An empty query lists all.
+  const query = args.query ?? "";
+  const matches = matchIndexRows(inScope, query);
 
   if (matches.length === 0) {
     const scope = args.since || args.until ? " in the given date range" : "";
-    return `No matches for "${args.query}"${scope}.`;
+    const what = query.trim() ? `matches for "${query.trim()}"` : "captures";
+    return `No ${what}${scope}.`;
   }
 
   const page = paginate(matches, args.offset ?? 0, args.limit ?? 20);
-  return `${page.total} match(es):\n${page.items.join("\n")}${pageFooter(page, "search_captures")}`;
+  const header = query.trim() ? `${page.total} match(es):` : `${page.total} capture(s):`;
+  return `${header}\n${page.items.join("\n")}${pageFooter(page, "search_captures")}`;
 }
 
 async function handleReadCapture(user: User, args: { filename: string }): Promise<string> {
@@ -1028,7 +1029,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             result = await handleListInbox(user, toolArgs as { since?: string; until?: string; offset?: number; limit?: number });
             break;
           case "search_captures":
-            result = await handleSearch(user, toolArgs as { query: string; tag?: string; since?: string; until?: string; offset?: number; limit?: number });
+            result = await handleSearch(user, toolArgs as { query?: string; tag?: string; since?: string; until?: string; offset?: number; limit?: number });
             break;
           case "read_capture":
             result = await handleReadCapture(user, toolArgs as { filename: string });

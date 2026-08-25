@@ -9,6 +9,7 @@ import {
   filterByDateRange,
   paginate,
   pageFooter,
+  matchIndexRows,
 } from "../llm";
 import type { ExtractedCapture } from "../types";
 
@@ -382,5 +383,58 @@ describe("pageFooter", () => {
   it("reports zero cleanly", () => {
     const footer = pageFooter({ total: 0, offset: 0, items: [], nextOffset: null }, "search_captures");
     expect(footer).toContain("Showing 0–0 of 0");
+  });
+});
+
+// ── matchIndexRows ───────────────────────────────────────────────────────────
+
+describe("matchIndexRows", () => {
+  const rows = [
+    "| 2026-04-02 | [startup-fundraising](inbox/a.md) | How startups raise from VC investors | fundraising, startup | note |",
+    "| 2026-05-14 | [rag-memory](inbox/b.md) | Retrieval and RAG for agent memory | ai-agents, retrieval | article |",
+    "| 2026-06-01 | [saas-pricing](inbox/c.md) | Pricing a SaaS business model | pricing, growth | note |",
+  ];
+
+  it("matches on OR semantics — an absent term no longer zeroes the query", () => {
+    // The old exact-phrase logic returned nothing for this multi-word query.
+    const out = matchIndexRows(rows, "startup fundraising product");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toContain("startup-fundraising");
+  });
+
+  it("matches a single token as a substring", () => {
+    expect(matchIndexRows(rows, "pricing")).toHaveLength(1);
+    expect(matchIndexRows(rows, "pricing")[0]).toContain("saas-pricing");
+  });
+
+  it("ranks rows matching more tokens first", () => {
+    // "retrieval" hits row b twice-over vs "pricing" hits row c; a combined
+    // query should order the row matching more distinct tokens first.
+    const out = matchIndexRows(rows, "retrieval agent");
+    expect(out[0]).toContain("rag-memory");
+  });
+
+  it("gives an exact-phrase match a ranking bonus", () => {
+    const out = matchIndexRows(rows, "business model");
+    expect(out[0]).toContain("saas-pricing");
+  });
+
+  it("returns nothing when no token matches", () => {
+    expect(matchIndexRows(rows, "quantum blockchain")).toEqual([]);
+  });
+
+  it("lists all rows in input order for an empty query (enumeration mode)", () => {
+    expect(matchIndexRows(rows, "")).toEqual(rows);
+    expect(matchIndexRows(rows, "   ")).toEqual(rows);
+  });
+
+  it("is case-insensitive", () => {
+    expect(matchIndexRows(rows, "SAAS")).toHaveLength(1);
+  });
+
+  it("does not mutate the input array", () => {
+    const copy = [...rows];
+    matchIndexRows(rows, "pricing agent");
+    expect(rows).toEqual(copy);
   });
 });

@@ -662,6 +662,42 @@ export function pageFooter(
   return footer;
 }
 
+// ── Listing: keyword search ──
+
+/**
+ * Rank INDEX.md rows against a free-text query.
+ *
+ * Splits the query into whitespace tokens and matches each token as a
+ * case-insensitive substring — OR semantics, so a row surfaces when it
+ * contains *any* token, and one unknown word no longer zeroes the whole
+ * query (the previous behaviour matched the entire query as a single
+ * contiguous substring). Rows are ranked by how many distinct tokens they
+ * match, with a bonus when the full phrase appears verbatim, so the best
+ * matches sort first. Ties preserve the input order (date order), keeping
+ * the result deterministic for pagination.
+ *
+ * An empty/whitespace query is enumeration mode: every row is returned in
+ * input order, letting search_captures double as a "list all" tool.
+ */
+export function matchIndexRows(rows: string[], query: string): string[] {
+  const tokens = query.toLowerCase().split(/\s+/).map((t) => t.trim()).filter(Boolean);
+  if (tokens.length === 0) return [...rows];
+
+  const phrase = query.toLowerCase().trim();
+  const hasPhrase = phrase.includes(" ");
+
+  return rows
+    .map((row, i) => {
+      const lower = row.toLowerCase();
+      const matched = tokens.reduce((n, t) => (lower.includes(t) ? n + 1 : n), 0);
+      const phraseBonus = hasPhrase && lower.includes(phrase) ? tokens.length : 0;
+      return { row, i, score: matched + phraseBonus };
+    })
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .map((s) => s.row);
+}
+
 // ── Markdown formatting ──
 
 /** Build the INDEX.md row for a capture. */
