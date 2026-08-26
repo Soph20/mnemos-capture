@@ -44,6 +44,8 @@ export default function OnboardPage() {
   const [provider, setProvider] = useState<Provider>("anthropic");
   const [apiKey, setApiKey] = useState("");
   const [pin, setPin] = useState("");
+  // Private by default — the hub holds everything the user captures.
+  const [isPublic, setIsPublic] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [result, setResult] = useState<{ repo: string; repoUrl: string; apiKey: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
@@ -59,7 +61,7 @@ export default function OnboardPage() {
       const res = await fetch("/api/onboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoName: repoName.trim(), provider, apiKey: apiKey.trim(), pin }),
+        body: JSON.stringify({ repoName: repoName.trim(), provider, apiKey: apiKey.trim(), pin, isPublic }),
       });
 
       if (!res.ok) {
@@ -200,8 +202,25 @@ export default function OnboardPage() {
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--gold-low)"; }}
           />
           <p className="text-[11px]" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
-            We'll create this repo on your GitHub. Your captures live here.
+            We&apos;ll create this repo on your GitHub. Your captures live here.
           </p>
+
+          <label className="flex items-start gap-2.5 pt-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="mt-0.5 accent-current"
+              style={{ accentColor: "#2A62C6" }}
+            />
+            <span className="text-[11px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
+              Make this repo <strong>public</strong>
+              <span className="block" style={{ opacity: 0.55 }}>
+                Off by default — your hub is private, visible only to you. Turn this on
+                only if you want everything you capture to be readable by anyone.
+              </span>
+            </span>
+          </label>
         </div>
 
         {/* Step 3: PIN */}

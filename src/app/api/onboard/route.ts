@@ -47,7 +47,22 @@ async function githubApiPut(token: string, path: string, body: Record<string, un
   return { ok: res.ok, status: res.status };
 }
 
-async function createKnowledgeRepo(token: string, username: string, repoName: string): Promise<string> {
+/**
+ * Create the user's knowledge hub.
+ *
+ * The hub is **private by default**. It holds everything the user captures —
+ * reading habits, product thinking, work-in-progress decisions — so making it
+ * world-readable is not a default anyone would knowingly choose. Publishing is
+ * opt-in via `isPublic`, and an existing repo is never re-scoped: if the repo
+ * already exists we return it untouched, so this can't flip someone's
+ * deliberately-public (or deliberately-private) hub behind their back.
+ */
+async function createKnowledgeRepo(
+  token: string,
+  username: string,
+  repoName: string,
+  isPublic = false,
+): Promise<string> {
   const fullRepo = `${username}/${repoName}`;
 
   // Check if repo exists
@@ -58,7 +73,7 @@ async function createKnowledgeRepo(token: string, username: string, repoName: st
   const createRes = await githubApiPost(token, "/user/repos", {
     name: repoName,
     description: "Knowledge hub for Mnemos — captured insights routed to agentic workflows",
-    private: false,
+    private: !isPublic,
     auto_init: true,
   });
 
@@ -109,6 +124,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const body = (await req.json()) as {
     repoName: string;
     pin: string;
+    isPublic?: boolean;
     apiKey?: string;
     provider?: LlmProvider;
     anthropicKey?: string; // legacy field — kept for backward compatibility
@@ -138,7 +154,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const fullRepo = await createKnowledgeRepo(
       user.github_token,
       user.github_username,
-      body.repoName.trim()
+      body.repoName.trim(),
+      body.isPublic === true,
     );
 
     // Save repo to user
