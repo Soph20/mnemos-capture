@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createUser, getUserByGithubId } from "@/lib/db";
 import { createSession } from "@/lib/session";
+import { issueDeviceToken, DEVICE_COOKIE_NAME, deviceCookieOptions } from "@/lib/device";
 import { env } from "@/lib/env";
 
 interface GithubTokenResponse {
@@ -79,6 +80,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     response.cookies.delete("oauth_state");
     response.cookies.delete("mnemos_oauth_return");
+
+    // Mark this device as GitHub-verified, so PIN quick-unlock is allowed here
+    // (and only here). See lib/device for why the PIN is device-bound.
+    response.cookies.set(
+      DEVICE_COOKIE_NAME,
+      issueDeviceToken(user.id, user.token_version ?? 0),
+      deviceCookieOptions(),
+    );
+
     return response;
   } catch (err) {
     console.error("OAuth callback error:", err);
