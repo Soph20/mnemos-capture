@@ -42,7 +42,7 @@ Go to **[mnemos-capture.vercel.app](https://mnemos-capture.vercel.app)** → **S
 
 During setup, Mnemos will:
 
-- Create a knowledge repo in your GitHub account — plain Markdown files, no proprietary format
+- Create a **private** knowledge repo in your GitHub account — plain Markdown files, no proprietary format (you can opt to make it public)
 - Ask for your API key (your provider, your key — Mnemos never pays for your API calls)
 - Set a PIN (minimum 6 characters) so you can unlock the app quickly on mobile
 
@@ -342,6 +342,7 @@ Open Mnemos in your phone's browser → **Share → Add to Home Screen**. Runs f
 
 Your knowledge lives in a GitHub repo you own. Plain Markdown files, version-controlled, portable.
 
+- **Private by default** — the hub is created private, visible only to you. Making it public is an explicit opt-in at setup
 - **No lock-in** — clone it, move it, delete Mnemos and your repo stays exactly where it is
 - **No proprietary format** — every capture is a readable `.md` file
 - **No training on your data** — Mnemos never reads your captures for any purpose other than serving them back to you
@@ -354,7 +355,7 @@ Mnemos holds three secrets on your behalf. None of them is stored in a form that
 
 | Secret | How it's stored |
 |---|---|
-| GitHub token | Encrypted at rest (AES-256-GCM) |
+| GitHub token | Encrypted at rest (AES-256-GCM). Uses the `repo` scope, which is required to read and write a **private** knowledge hub |
 | Your LLM API key | Encrypted at rest (AES-256-GCM) |
 | Your MCP API key | Hashed — never recoverable, not even by Mnemos |
 | Your PIN | Salted scrypt hash |
