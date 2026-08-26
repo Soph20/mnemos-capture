@@ -582,6 +582,122 @@ export function curateSingle(
   return { status: "ok", reason: "Source is live and extraction is well-formed." };
 }
 
+// ── Listing: date filtering & pagination ──
+
+/**
+ * Extract the leading `YYYY-MM-DD` date from a capture filename
+ * (e.g. `2026-05-14-slug.md`). Returns null if the name isn't date-prefixed.
+ * Because filenames are date-prefixed, lexical order equals chronological
+ * order — so lexical sorting yields a stable, deterministic paging order.
+ */
+export function fileDate(name: string): string | null {
+  const m = name.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : null;
+}
+
+/**
+ * Filter date-prefixed files to an inclusive `[since, until]` window.
+ * Bounds are `YYYY-MM-DD` strings compared lexically (valid for ISO dates).
+ * When a range is requested, undated files are excluded. With no bounds the
+ * input list is returned unchanged.
+ */
+export function filterByDateRange<T extends { name: string }>(
+  files: T[],
+  since?: string,
+  until?: string,
+): T[] {
+  if (!since && !until) return files;
+  return files.filter((f) => {
+    const d = fileDate(f.name);
+    if (!d) return false;
+    if (since && d < since) return false;
+    if (until && d > until) return false;
+    return true;
+  });
+}
+
+export interface PageResult<T> {
+  items: T[];
+  total: number;
+  offset: number;
+  limit: number;
+  /** Offset to pass for the next page, or null when this is the last page. */
+  nextOffset: number | null;
+}
+
+/**
+ * Deterministically slice `items` into a page. `limit` is clamped to
+ * `[1, maxLimit]` and `offset` to `>= 0`, so out-of-range inputs degrade
+ * gracefully rather than throwing. `nextOffset` is null on the final page.
+ */
+export function paginate<T>(
+  items: T[],
+  offset = 0,
+  limit = 10,
+  maxLimit = 50,
+): PageResult<T> {
+  const safeLimit = Math.max(1, Math.min(Math.floor(limit) || 10, maxLimit));
+  const safeOffset = Math.max(0, Math.floor(offset) || 0);
+  const page = items.slice(safeOffset, safeOffset + safeLimit);
+  const nextOffset = safeOffset + safeLimit < items.length ? safeOffset + safeLimit : null;
+  return { items: page, total: items.length, offset: safeOffset, limit: safeLimit, nextOffset };
+}
+
+/**
+ * Human-readable pagination footer for tool output. Tells the model exactly
+ * how to fetch the next page (or that it has reached the end).
+ */
+export function pageFooter(
+  p: { total: number; offset: number; items: unknown[]; nextOffset: number | null },
+  toolName: string,
+): string {
+  const shownStart = p.total === 0 ? 0 : p.offset + 1;
+  const shownEnd = p.offset + p.items.length;
+  let footer = `\n\nShowing ${shownStart}–${shownEnd} of ${p.total}.`;
+  if (p.nextOffset !== null) {
+    footer += ` More available — call ${toolName} again with offset: ${p.nextOffset} for the next page.`;
+  } else if (p.total > 0) {
+    footer += " End of results.";
+  }
+  return footer;
+}
+
+// ── Listing: keyword search ──
+
+/**
+ * Rank INDEX.md rows against a free-text query.
+ *
+ * Splits the query into whitespace tokens and matches each token as a
+ * case-insensitive substring — OR semantics, so a row surfaces when it
+ * contains *any* token, and one unknown word no longer zeroes the whole
+ * query (the previous behaviour matched the entire query as a single
+ * contiguous substring). Rows are ranked by how many distinct tokens they
+ * match, with a bonus when the full phrase appears verbatim, so the best
+ * matches sort first. Ties preserve the input order (date order), keeping
+ * the result deterministic for pagination.
+ *
+ * An empty/whitespace query is enumeration mode: every row is returned in
+ * input order, letting search_captures double as a "list all" tool.
+ */
+export function matchIndexRows(rows: string[], query: string): string[] {
+  const tokens = query.toLowerCase().split(/\s+/).map((t) => t.trim()).filter(Boolean);
+  if (tokens.length === 0) return [...rows];
+
+  const phrase = query.toLowerCase().trim();
+  const hasPhrase = phrase.includes(" ");
+
+  return rows
+    .map((row, i) => {
+      const lower = row.toLowerCase();
+      const matched = tokens.reduce((n, t) => (lower.includes(t) ? n + 1 : n), 0);
+      const phraseBonus = hasPhrase && lower.includes(phrase) ? tokens.length : 0;
+      return { row, i, score: matched + phraseBonus };
+    })
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .map((s) => s.row);
+}
+
 // ── Markdown formatting ──
 
 /** Build the INDEX.md row for a capture. */

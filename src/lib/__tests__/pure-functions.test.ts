@@ -5,6 +5,11 @@ import {
   buildMarkdown,
   buildIndexRow,
   curateSingle,
+  fileDate,
+  filterByDateRange,
+  paginate,
+  pageFooter,
+  matchIndexRows,
 } from "../llm";
 import type { ExtractedCapture } from "../types";
 
@@ -260,5 +265,176 @@ describe("curateSingle", () => {
     for (const [status, lc] of [[200, false], [404, false], [200, true], [404, true], [null, true]] as [number | null, boolean][]) {
       expect(curateSingle(status, lc).reason.length).toBeGreaterThan(0);
     }
+  });
+});
+
+// ── fileDate ─────────────────────────────────────────────────────────────────
+
+describe("fileDate", () => {
+  it("extracts a leading YYYY-MM-DD prefix", () => {
+    expect(fileDate("2026-05-14-some-slug.md")).toBe("2026-05-14");
+  });
+
+  it("returns null for an undated name", () => {
+    expect(fileDate("RULES.md")).toBeNull();
+    expect(fileDate("notes.md")).toBeNull();
+  });
+});
+
+// ── filterByDateRange ────────────────────────────────────────────────────────
+
+describe("filterByDateRange", () => {
+  const files = [
+    { name: "2026-04-02-a.md" },
+    { name: "2026-05-14-b.md" },
+    { name: "2026-08-01-c.md" },
+    { name: "RULES.md" },
+  ];
+
+  it("returns the input unchanged when no bounds are given", () => {
+    expect(filterByDateRange(files)).toEqual(files);
+  });
+
+  it("filters inclusively on the since bound", () => {
+    expect(filterByDateRange(files, "2026-05-14").map((f) => f.name)).toEqual([
+      "2026-05-14-b.md",
+      "2026-08-01-c.md",
+    ]);
+  });
+
+  it("filters inclusively on the until bound", () => {
+    expect(filterByDateRange(files, undefined, "2026-05-14").map((f) => f.name)).toEqual([
+      "2026-04-02-a.md",
+      "2026-05-14-b.md",
+    ]);
+  });
+
+  it("filters on a closed [since, until] window", () => {
+    expect(filterByDateRange(files, "2026-05-01", "2026-05-31").map((f) => f.name)).toEqual([
+      "2026-05-14-b.md",
+    ]);
+  });
+
+  it("excludes undated files when a range is requested", () => {
+    expect(filterByDateRange(files, "2026-01-01").some((f) => f.name === "RULES.md")).toBe(false);
+  });
+});
+
+// ── paginate ─────────────────────────────────────────────────────────────────
+
+describe("paginate", () => {
+  const items = Array.from({ length: 25 }, (_, i) => i);
+
+  it("returns the first page and a next offset", () => {
+    const p = paginate(items, 0, 10);
+    expect(p.items).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(p.total).toBe(25);
+    expect(p.nextOffset).toBe(10);
+  });
+
+  it("returns null nextOffset on the final page", () => {
+    const p = paginate(items, 20, 10);
+    expect(p.items).toEqual([20, 21, 22, 23, 24]);
+    expect(p.nextOffset).toBeNull();
+  });
+
+  it("clamps limit to maxLimit", () => {
+    const p = paginate(items, 0, 999, 50);
+    expect(p.limit).toBe(25 > 50 ? 50 : p.limit);
+    expect(p.limit).toBe(50);
+    expect(p.items.length).toBe(25);
+  });
+
+  it("clamps a negative offset to 0", () => {
+    const p = paginate(items, -5, 10);
+    expect(p.offset).toBe(0);
+    expect(p.items[0]).toBe(0);
+  });
+
+  it("falls back to the default limit for a zero/NaN limit", () => {
+    expect(paginate(items, 0, 0).limit).toBe(10);
+    expect(paginate(items, 0, NaN).limit).toBe(10);
+  });
+
+  it("returns an empty page past the end", () => {
+    const p = paginate(items, 100, 10);
+    expect(p.items).toEqual([]);
+    expect(p.nextOffset).toBeNull();
+  });
+});
+
+// ── pageFooter ───────────────────────────────────────────────────────────────
+
+describe("pageFooter", () => {
+  it("advertises the next offset when more results remain", () => {
+    const footer = pageFooter({ total: 25, offset: 0, items: new Array(10), nextOffset: 10 }, "list_inbox");
+    expect(footer).toContain("Showing 1–10 of 25");
+    expect(footer).toContain("offset: 10");
+    expect(footer).toContain("list_inbox");
+  });
+
+  it("marks the end of results on the last page", () => {
+    const footer = pageFooter({ total: 25, offset: 20, items: new Array(5), nextOffset: null }, "curate");
+    expect(footer).toContain("Showing 21–25 of 25");
+    expect(footer).toContain("End of results.");
+    expect(footer).not.toContain("offset:");
+  });
+
+  it("reports zero cleanly", () => {
+    const footer = pageFooter({ total: 0, offset: 0, items: [], nextOffset: null }, "search_captures");
+    expect(footer).toContain("Showing 0–0 of 0");
+  });
+});
+
+// ── matchIndexRows ───────────────────────────────────────────────────────────
+
+describe("matchIndexRows", () => {
+  const rows = [
+    "| 2026-04-02 | [startup-fundraising](inbox/a.md) | How startups raise from VC investors | fundraising, startup | note |",
+    "| 2026-05-14 | [rag-memory](inbox/b.md) | Retrieval and RAG for agent memory | ai-agents, retrieval | article |",
+    "| 2026-06-01 | [saas-pricing](inbox/c.md) | Pricing a SaaS business model | pricing, growth | note |",
+  ];
+
+  it("matches on OR semantics — an absent term no longer zeroes the query", () => {
+    // The old exact-phrase logic returned nothing for this multi-word query.
+    const out = matchIndexRows(rows, "startup fundraising product");
+    expect(out).toHaveLength(1);
+    expect(out[0]).toContain("startup-fundraising");
+  });
+
+  it("matches a single token as a substring", () => {
+    expect(matchIndexRows(rows, "pricing")).toHaveLength(1);
+    expect(matchIndexRows(rows, "pricing")[0]).toContain("saas-pricing");
+  });
+
+  it("ranks rows matching more tokens first", () => {
+    // "retrieval" hits row b twice-over vs "pricing" hits row c; a combined
+    // query should order the row matching more distinct tokens first.
+    const out = matchIndexRows(rows, "retrieval agent");
+    expect(out[0]).toContain("rag-memory");
+  });
+
+  it("gives an exact-phrase match a ranking bonus", () => {
+    const out = matchIndexRows(rows, "business model");
+    expect(out[0]).toContain("saas-pricing");
+  });
+
+  it("returns nothing when no token matches", () => {
+    expect(matchIndexRows(rows, "quantum blockchain")).toEqual([]);
+  });
+
+  it("lists all rows in input order for an empty query (enumeration mode)", () => {
+    expect(matchIndexRows(rows, "")).toEqual(rows);
+    expect(matchIndexRows(rows, "   ")).toEqual(rows);
+  });
+
+  it("is case-insensitive", () => {
+    expect(matchIndexRows(rows, "SAAS")).toHaveLength(1);
+  });
+
+  it("does not mutate the input array", () => {
+    const copy = [...rows];
+    matchIndexRows(rows, "pricing agent");
+    expect(rows).toEqual(copy);
   });
 });

@@ -282,8 +282,8 @@ Mnemos exposes 15 tools via MCP:
 
 | Tool | What it does |
 |------|-------------|
-| `list_inbox` | Unprocessed captures with summaries — title, type, tags, core idea. |
-| `search_captures` | Keyword + tag search across inbox, applied, and archived. |
+| `list_inbox` | Unprocessed captures with summaries — title, type, tags, core idea. Page the whole inbox with `offset`/`limit` (default 10, max 50) and narrow by date with `since`/`until`; the footer reports the total and next `offset`. |
+| `search_captures` | Keyword + tag search across inbox, applied, and archived. Query is tokenized and OR-matched (any term hits), ranked by term-match count with an exact-phrase bonus — one unknown word no longer zeroes the query. Omit `query` to list ALL captures. Page all matches with `offset`/`limit` (default 20, max 50) and filter by date with `since`/`until`. |
 | `read_capture` | Full Markdown of any capture. |
 | `recall` | Semantic search — describe your task, get the most relevant captures back. More powerful than keyword search. |
 
@@ -315,7 +315,7 @@ Mnemos exposes 15 tools via MCP:
 
 | Tool | What it does |
 |------|-------------|
-| `curate` | Validates inbox captures: HEAD-checks URLs (404/410 → stale), flags low-confidence extractions. Optional `auto_archive`. Batch cap: 20 files. |
+| `curate` | Validates inbox captures: HEAD-checks URLs (404/410 → stale), flags low-confidence extractions. Optional `auto_archive`. Page through the inbox with `offset`/`limit` (default 20, max 50) and scope by date with `since`/`until`; the footer reports the total and next `offset`. |
 | `vault_scan` | Scans the full vault for captures relevant to your current activity (score ≥ 0.7). Used by the vault hook. |
 
 
