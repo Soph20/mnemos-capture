@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const INPUT_STYLE: React.CSSProperties = {
   background: "var(--input-bg)",
@@ -16,12 +16,34 @@ const CARD_STYLE: React.CSSProperties = {
 export default function LoginPage() {
   const [showPin, setShowPin] = useState(false);
   const [pin, setPin] = useState("");
-  const [username, setUsername] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  // PIN unlock only works on a device already verified through GitHub, so ask
+  // the server whether to offer it rather than showing a form that can't work.
+  const [pinAvailable, setPinAvailable] = useState(false);
+  const [pinUser, setPinUser] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/auth");
+        if (!res.ok) return;
+        const data = (await res.json()) as { available?: boolean; username?: string };
+        if (cancelled) return;
+        setPinAvailable(data.available === true);
+        setPinUser(data.username ?? "");
+      } catch {
+        // Offline or unreachable — leave PIN hidden; GitHub sign-in still works.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handlePinLogin() {
-    if (!pin.trim() || !username.trim()) return;
+    if (!pin.trim()) return;
     setStatus("loading");
     setErrorMsg("");
 
@@ -29,12 +51,21 @@ export default function LoginPage() {
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin, github_username: username }),
+        body: JSON.stringify({ pin }),
       });
 
       if (!res.ok) {
+        let message = "Incorrect PIN.";
+        try {
+          const data = (await res.json()) as { error?: string; needsGithub?: boolean };
+          if (data.error) message = data.error;
+          // The device is no longer trusted — send them back to GitHub.
+          if (data.needsGithub) setPinAvailable(false);
+        } catch {
+          // Non-JSON body: keep the default message.
+        }
         setStatus("error");
-        setErrorMsg("Wrong PIN or username.");
+        setErrorMsg(message);
         setPin("");
         return;
       }
@@ -80,15 +111,17 @@ export default function LoginPage() {
           Sign in with GitHub
         </a>
 
-        {/* Divider */}
+        {/* Divider — only when PIN unlock is actually possible here */}
+        {pinAvailable && (
         <div className="flex items-center gap-3 py-2">
           <div className="flex-1 h-px" style={{ background: "var(--gold-faint)" }} />
           <span className="text-xs" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>or</span>
           <div className="flex-1 h-px" style={{ background: "var(--gold-faint)" }} />
         </div>
+        )}
 
-        {/* PIN login — returning users */}
-        {!showPin ? (
+        {/* PIN quick-unlock — only on a device already verified via GitHub */}
+        {pinAvailable && (!showPin ? (
           <button
             onClick={() => setShowPin(true)}
             className="w-full py-3 rounded-2xl font-medium text-sm transition-all"
@@ -100,16 +133,11 @@ export default function LoginPage() {
           </button>
         ) : (
           <div className="space-y-2.5 rounded-2xl p-4" style={CARD_STYLE}>
-            <input
-              type="text"
-              placeholder="GitHub username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-xl px-3 py-2.5 text-sm transition-colors focus:outline-none"
-              style={INPUT_STYLE}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--gold-low)"; }}
-            />
+            {pinUser && (
+              <p className="text-xs text-center pb-0.5" style={{ color: "var(--fg-muted)", opacity: 0.6 }}>
+                Unlocking as <strong>{pinUser}</strong>
+              </p>
+            )}
             <input
               type="password"
               placeholder="PIN"
@@ -124,7 +152,7 @@ export default function LoginPage() {
             />
             <button
               onClick={() => void handlePinLogin()}
-              disabled={!pin.trim() || !username.trim() || status === "loading"}
+              disabled={!pin.trim() || status === "loading"}
               className="w-full py-2.5 rounded-xl font-medium text-sm transition-all disabled:opacity-25"
               style={{ background: "#2A62C6", color: "#FFFCEB" }}
             >
@@ -134,7 +162,7 @@ export default function LoginPage() {
               <p className="text-xs text-center" style={{ color: "#f87171" }}>{errorMsg}</p>
             )}
           </div>
-        )}
+        ))}
 
         <p className="text-[11px] text-center pt-4" style={{ color: "var(--fg-muted)", opacity: 0.3 }}>
           First time? Sign in with GitHub to get started.

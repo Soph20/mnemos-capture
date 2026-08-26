@@ -44,7 +44,7 @@ During setup, Mnemos will:
 
 - Create a **private** knowledge repo in your GitHub account — plain Markdown files, no proprietary format (you can opt to make it public)
 - Ask for your API key (your provider, your key — Mnemos never pays for your API calls)
-- Set a PIN (minimum 6 characters) so you can unlock the app quickly on mobile
+- Set a PIN (minimum 6 characters) to re-unlock the app quickly on **this device** — see below
 
 No config files. No repos to clone. No CLI setup required.
 
@@ -361,6 +361,8 @@ Mnemos holds three secrets on your behalf. None of them is stored in a form that
 | Your PIN | Salted scrypt hash |
 
 Your MCP key is shown to you exactly once, when it's generated. If you lose it, generate a new one — Mnemos cannot show you the old one again.
+
+**PIN unlock is device-bound.** The PIN is a quick re-unlock, not a password: it only works on a device that has already signed in with GitHub, and it unlocks *that* device. On any new device — or after you revoke access — you sign in with GitHub first, then the PIN becomes available there. A PIN on its own is not enough to reach your account from anywhere.
 
 **Revoking access.** Generating a new MCP key is also the kill switch: it immediately invalidates the old key, every signed-in session, and every connected MCP client. Anything still holding an old credential stops working at once and has to reconnect. Sessions also expire on their own after 30 days.
 

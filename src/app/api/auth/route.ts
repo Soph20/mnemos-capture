@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByUsername, updateUserPin } from "@/lib/db";
+import { getUserById, updateUserPin } from "@/lib/db";
 import { createSession } from "@/lib/session";
-import { verifyPin, needsRehash, hashPin, dummyVerify } from "@/lib/pin";
+import { verifyPin, needsRehash, hashPin } from "@/lib/pin";
 import { checkLock, recordFailure, clearAttempts } from "@/lib/rate-limit";
+import { getDevicePayload } from "@/lib/device";
 
-// PIN login for returning users (mobile quick access).
+// PIN quick-unlock for returning users.
 //
-// This endpoint is public and the other factor — the GitHub username — is
-// public information, so the PIN is the only real secret. It is therefore
-// throttled (see lib/rate-limit) and every failure path returns the SAME
-// message and status, so the response can't be used to enumerate accounts.
+// A PIN is a low-entropy secret, so it is only accepted on a device that has
+// already proved itself through GitHub sign-in (see lib/device). Without that
+// device cookie there is no PIN path at all — the caller signs in with GitHub.
+//
+// The device cookie also says *who* is unlocking, so the username is no longer
+// part of the credential and no longer an enumeration surface. Attempts are
+// still throttled per user (lib/rate-limit), since a shared or stolen device
+// would otherwise get unlimited guesses.
 
-/** One message for every failure, so nothing distinguishes the cases. */
-const INVALID = "Invalid username or PIN.";
-
-function failure(): NextResponse {
-  return NextResponse.json({ error: INVALID }, { status: 401 });
-}
+const INVALID = "Incorrect PIN.";
+const NO_DEVICE = "Sign in with GitHub on this device first.";
 
 function lockedOut(retryAfter: number): NextResponse {
   return NextResponse.json(
@@ -25,39 +26,66 @@ function lockedOut(retryAfter: number): NextResponse {
   );
 }
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  let body: { pin?: unknown; github_username?: unknown };
+/**
+ * Report whether PIN unlock is available on this device, so the login screen
+ * can offer it instead of showing a form that cannot work. Returns the username
+ * only when the device is already verified for that account.
+ */
+export async function GET(): Promise<NextResponse> {
   try {
-    body = (await req.json()) as { pin?: unknown; github_username?: unknown };
+    const device = await getDevicePayload();
+    if (!device) return NextResponse.json({ available: false });
+
+    const user = await getUserById(device.u);
+    if (!user || !user.pin_hash) return NextResponse.json({ available: false });
+    if ((user.token_version ?? 0) !== device.v) return NextResponse.json({ available: false });
+
+    return NextResponse.json({ available: true, username: user.github_username });
+  } catch {
+    return NextResponse.json({ available: false });
+  }
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  let body: { pin?: unknown };
+  try {
+    body = (await req.json()) as { pin?: unknown };
   } catch {
     return NextResponse.json({ error: "Body must be JSON." }, { status: 400 });
   }
 
   const pin = typeof body.pin === "string" ? body.pin : "";
-  const username = typeof body.github_username === "string" ? body.github_username.trim() : "";
-
-  if (!pin || !username) {
-    return NextResponse.json({ error: "PIN and username required" }, { status: 400 });
+  if (!pin) {
+    return NextResponse.json({ error: "PIN required" }, { status: 400 });
   }
 
   try {
-    // Throttle before touching the password path at all.
-    const lock = await checkLock(username);
-    if (lock.locked) return lockedOut(lock.retryAfter);
-
-    const user = await getUserByUsername(username);
-
-    if (!user || !user.pin_hash) {
-      // Spend comparable CPU to a real verification so timing doesn't reveal
-      // whether the account exists, and still count the attempt.
-      dummyVerify();
-      const after = await recordFailure(username);
-      return after.locked ? lockedOut(after.retryAfter) : failure();
+    // No verified device → no PIN login. This is the whole point: it stops a
+    // low-entropy secret from being a from-anywhere credential.
+    const device = await getDevicePayload();
+    if (!device) {
+      return NextResponse.json({ error: NO_DEVICE, needsGithub: true }, { status: 401 });
     }
 
+    const user = await getUserById(device.u);
+    if (!user || !user.pin_hash) {
+      return NextResponse.json({ error: NO_DEVICE, needsGithub: true }, { status: 401 });
+    }
+
+    // A bumped token_version un-trusts every device.
+    if ((user.token_version ?? 0) !== device.v) {
+      return NextResponse.json({ error: NO_DEVICE, needsGithub: true }, { status: 401 });
+    }
+
+    const key = `user:${user.id}`;
+    const lock = await checkLock(key);
+    if (lock.locked) return lockedOut(lock.retryAfter);
+
     if (!verifyPin(pin, user.pin_hash)) {
-      const after = await recordFailure(username);
-      return after.locked ? lockedOut(after.retryAfter) : failure();
+      const after = await recordFailure(key);
+      return after.locked
+        ? lockedOut(after.retryAfter)
+        : NextResponse.json({ error: INVALID }, { status: 401 });
     }
 
     // Correct PIN. Transparently upgrade a legacy/outdated hash.
@@ -69,11 +97,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
-    await clearAttempts(username);
+    await clearAttempts(key);
     await createSession(user.id, user.token_version ?? 0);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[auth] login error:", err);
-    return NextResponse.json({ error: "[auth] Login failed." }, { status: 500 });
+    console.error("[auth] PIN unlock error:", err);
+    return NextResponse.json({ error: "[auth] Unlock failed." }, { status: 500 });
   }
 }
