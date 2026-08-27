@@ -71,7 +71,20 @@ async function issueTokens(
   );
 }
 
+// Wrapped so an escaped exception can never make Next.js answer with HTML —
+// the client would then fail on res.json() with a browser-engine error instead
+// of the real reason. API routes must always return JSON (CLAUDE.md).
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    return await handlePost(req);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    console.error("[oauth-token] unhandled error:", err);
+    return NextResponse.json({ error: `[oauth-token] ${message}` }, { status: 500 });
+  }
+}
+
+async function handlePost(req: NextRequest): Promise<NextResponse> {
   let params: URLSearchParams;
   try {
     params = await readParams(req);
