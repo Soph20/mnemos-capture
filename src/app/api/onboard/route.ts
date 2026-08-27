@@ -115,20 +115,31 @@ async function createKnowledgeRepo(
   return fullRepo;
 }
 
+interface OnboardBody {
+  repoName?: string;
+  pin?: string;
+  /** Opt-in to a public knowledge hub; private when absent. */
+  isPublic?: boolean;
+  apiKey?: string;
+  provider?: LlmProvider;
+  anthropicKey?: string; // legacy field — kept for backward compatibility
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const user = await getSession();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const body = (await req.json()) as {
-    repoName: string;
-    pin: string;
-    isPublic?: boolean;
-    apiKey?: string;
-    provider?: LlmProvider;
-    anthropicKey?: string; // legacy field — kept for backward compatibility
-  };
+  // Own try/catch: an unguarded req.json() throw escapes the handler and Next.js
+  // answers with HTML, which makes the client's res.json() fail with Safari's
+  // "The string did not match the expected pattern." (see CLAUDE.md).
+  let body: OnboardBody;
+  try {
+    body = (await req.json()) as OnboardBody;
+  } catch {
+    return NextResponse.json({ error: "[onboard] Body must be JSON." }, { status: 400 });
+  }
 
   // Accept either the new { apiKey, provider } shape or the legacy { anthropicKey }.
   const llmKey = (body.apiKey ?? body.anthropicKey ?? "").trim();

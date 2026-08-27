@@ -26,10 +26,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const body = (await req.json()) as { content: string; title?: string };
-  const { content, title } = body;
+  // Parse the body in its own try/catch: an unguarded req.json() throw escapes
+  // the handler, Next.js answers with its HTML error page, and the client's
+  // res.json() then fails with Safari's "The string did not match the expected
+  // pattern." — the exact failure documented in CLAUDE.md. API routes must
+  // always return JSON.
+  let body: { content?: unknown; title?: unknown };
+  try {
+    body = (await req.json()) as { content?: unknown; title?: unknown };
+  } catch {
+    return NextResponse.json({ error: "[capture] Body must be JSON." }, { status: 400 });
+  }
 
-  if (!content?.trim()) {
+  const content = typeof body.content === "string" ? body.content : "";
+  const title = typeof body.title === "string" ? body.title : undefined;
+
+  if (!content.trim()) {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
 
