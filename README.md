@@ -338,6 +338,59 @@ All commands run via `npx -y mnemos-capture@latest <subcommand>`. `@latest` forc
 Open Mnemos in your phone's browser → **Share → Add to Home Screen**. Runs full-screen like a native app. Capture while reading — your agents have it by the time you sit down to work.
 
 
+## Local development
+
+You do not need to run Mnemos to use it — the hosted instance at
+[mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is
+for working on the code.
+
+**Prerequisites**
+
+| | |
+|---|---|
+| Node.js | 20.9 or later (Next.js 16 requires it) |
+| PostgreSQL | any reachable instance — local, Neon, or Vercel Postgres |
+| GitHub OAuth app | [create one](https://github.com/settings/developers) with callback `http://localhost:3000/api/auth/callback` |
+
+**Setup**
+
+```bash
+git clone https://github.com/Soph20/mnemos-capture.git
+cd mnemos-capture
+npm ci
+cp .env.example .env
+```
+
+Fill in `.env`:
+
+| Variable | Where it comes from |
+|---|---|
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | your GitHub OAuth app |
+| `POSTGRES_URL` | your Postgres connection string |
+| `SESSION_SECRET` | `openssl rand -hex 32` — also derives the credential-encryption key |
+| `ADMIN_SECRET` | any random string; guards `/api/init-db` |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` |
+
+Then start the app and create the schema:
+
+```bash
+npm run dev
+# in another shell, once — creates the tables (idempotent)
+curl -X POST http://localhost:3000/api/init-db -H "x-admin-secret: $ADMIN_SECRET"
+```
+
+Sign in at `http://localhost:3000` with GitHub. **`init-db` must succeed before sign-in works** — the
+app queries tables that do not exist until then.
+
+**Checks** — the same two CI runs on every PR:
+
+```bash
+npm run typecheck
+npm test
+npm run test:e2e   # Playwright, optional
+```
+
+
 ## Your data, your storage
 
 Your knowledge lives in a GitHub repo you own. Plain Markdown files, version-controlled, portable.
@@ -348,6 +401,42 @@ Your knowledge lives in a GitHub repo you own. Plain Markdown files, version-con
 - **No training on your data** — Mnemos never reads your captures for any purpose other than serving them back to you
 - **Any tool can access it** — anything that reads Git or speaks MCP works with your knowledge base
 - **BYOK** — your provider, your key, your cost
+
+### What Mnemos stores, and where
+
+The whole point of this repo being public is that you can check these claims rather than trust them.
+Every file named below is in this repository.
+
+**Your captures are never stored by Mnemos.** They are written straight to your own GitHub repo as
+Markdown (`src/lib/github.ts`). There is no captures table, no copy on our side. Delete the app and
+your knowledge is untouched.
+
+**The database holds only account plumbing** (`src/lib/db.ts` — `initDb` is the full schema):
+
+| Stored | What it is |
+|---|---|
+| `github_id`, `github_username` | who you are |
+| `github_token` | encrypted (`src/lib/crypto.ts`) |
+| `github_repo` | the *name* of your hub, not its contents |
+| `pin_hash` | salted scrypt (`src/lib/pin.ts`) |
+| `api_key` | hashed — not recoverable |
+| `llm_provider`, `llm_api_key` | encrypted |
+| `token_version` | bumped to revoke everything |
+| login attempts, OAuth clients/codes, refresh-token ids | auth plumbing; refresh tokens are stored as an id only, never the token |
+
+**Where data goes when you capture** — the server talks to exactly three kinds of destination:
+
+1. **GitHub** (`api.github.com`) — to write the capture into your repo.
+2. **Your LLM provider**, with *your* key — Anthropic, OpenAI, or Google, whichever you configured
+   (`src/lib/llm.ts`). Mnemos has no key of its own and pays for nothing.
+3. **The page you captured** — if you paste a bare URL, the server fetches that page so the model reads
+   real content instead of guessing (`src/lib/fetch-source.ts`). Only http/https, never an internal
+   address, and every redirect is re-checked.
+
+That is the entire outbound surface. No analytics, no telemetry, no third-party tracking.
+
+**"No training on your data"** means what it says: your captures are sent to the provider you chose,
+with the key you supplied, to extract the insight you asked for — and nowhere else.
 
 ### How your credentials are stored
 
@@ -384,7 +473,19 @@ Briefing and plan generation use your configured model and only run when you exp
 
 ## Tech stack
 
-Next.js · TypeScript · Vercel Postgres · GitHub OAuth · GitHub Content API · MCP protocol · Anthropic SDK · Tailwind CSS · Vitest
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router), React 19 |
+| Language | TypeScript |
+| Database | Vercel Postgres |
+| Auth | GitHub OAuth · OAuth 2.1 + PKCE for MCP connectors |
+| Storage | GitHub Contents API — your captures live in your repo |
+| Agent interface | Model Context Protocol (Streamable HTTP + stdio proxy) |
+| LLM | Anthropic SDK · OpenAI and Google via REST (BYOK) |
+| Styling | Tailwind CSS |
+| Tests | Vitest (unit) · Playwright (e2e) |
+
+Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md) and [Local development](#local-development).
 
 
 ## Roadmap
