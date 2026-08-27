@@ -14,7 +14,8 @@
     "prepublishOnly": "npm run build:cli",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "ai",
@@ -28,7 +29,7 @@
     "llm",
     "workflow"
   ],
-  "author": "Sofía Padrón Valdez",
+  "author": "Sof\u00eda Padr\u00f3n Valdez",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -59,6 +60,6 @@
     "vitest": "^4.1.8"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.9"
   }
 }
