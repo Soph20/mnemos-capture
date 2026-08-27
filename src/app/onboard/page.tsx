@@ -85,7 +85,7 @@ export default function OnboardPage() {
           <div className="flex flex-col items-center mb-2">
             <div className="text-4xl mb-4">✓</div>
             <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>
-              You're all set
+              You&apos;re all set
             </h1>
           </div>
 
@@ -103,7 +103,7 @@ export default function OnboardPage() {
                 {result.apiKey}
               </code>
               <p className="text-[10px] mt-1" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
-                Save this — it won't be shown again.
+                Save this — it won&apos;t be shown again.
               </p>
             </div>
             <div>
@@ -138,7 +138,7 @@ export default function OnboardPage() {
             Set up your knowledge hub
           </h1>
           <p className="text-sm mt-1 text-center" style={{ color: "var(--fg-muted)", opacity: 0.6 }}>
-            Three things and you're capturing.
+            Three things and you&apos;re capturing.
           </p>
         </div>
 
