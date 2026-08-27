@@ -382,6 +382,16 @@ curl -X POST http://localhost:3000/api/init-db -H "x-admin-secret: $ADMIN_SECRET
 Sign in at `http://localhost:3000` with GitHub. **`init-db` must succeed before sign-in works** — the
 app queries tables that do not exist until then.
 
+Point the MCP proxy at your local instance with `MNEMOS_API_URL`:
+
+```bash
+MNEMOS_API_URL=http://localhost:3000/api/mcp node dist/cli/index.js serve-mcp --key <key>
+```
+
+**After any schema change**, `initDb` must run again against the deployment. From a phone or any
+browser: **Actions → Initialize database → Run workflow** (needs the `MNEMOS_APP_URL` and
+`MNEMOS_ADMIN_SECRET` repository secrets). It is idempotent.
+
 **Checks** — the same two CI runs on every PR:
 
 ```bash
