@@ -80,6 +80,19 @@ export async function initDb(): Promise<void> {
   // Clients register dynamically (RFC 7591); authorization codes are short-lived
   // and single-use, carrying the PKCE challenge (RFC 7636). Access/refresh tokens
   // are self-contained signed strings (see lib/oauth.ts) and need no table.
+  // Per-user usage quota for expensive endpoints. Distinct from login_attempts:
+  // that table counts *failures* and escalates to a lockout, which is the wrong
+  // shape here. A capture costs the user real money (it calls their LLM with
+  // their key), so what's needed is a ceiling on *successful* calls per window —
+  // it bounds what a stolen MCP key can spend before the owner notices.
+  await sql`
+    CREATE TABLE IF NOT EXISTS usage_quota (
+      identifier TEXT PRIMARY KEY,
+      used INTEGER NOT NULL DEFAULT 0,
+      window_started_at TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+  `;
+
   // Login throttling state. Keyed by lowercased username so a targeted PIN
   // brute force is rate-limited across serverless instances (an in-process
   // counter would reset on every cold start).

@@ -6,6 +6,7 @@ import { issueMcpSessionId, verifyMcpSessionId } from "@/lib/mcp-session";
 import { env } from "@/lib/env";
 import { githubGet, githubPut, githubDelete, readFile, updateIndexEntry } from "@/lib/github";
 import { safeFetch } from "@/lib/fetch-source";
+import { consumeQuota } from "@/lib/rate-limit";
 import { extractCapture, formatDate, buildIndexRow, rankByRelevance, composeBriefing, generateApplicationSuggestions, generatePlan, curateSingle, detectSourceType, filterByDateRange, paginate, pageFooter, matchIndexRows } from "@/lib/llm";
 import { linkCapture } from "@/lib/linking";
 import { synthesizeTopic } from "@/lib/synthesis";
@@ -244,6 +245,16 @@ const TOOLS = [
 async function handleCapture(user: User, args: { content: string; title?: string }): Promise<string> {
   if (!user.llm_api_key) throw new Error("API key not configured. Complete onboarding at mnemos-capture.vercel.app");
   if (!user.github_repo) throw new Error("Knowledge repo not configured");
+
+  // Same ceiling as the web route, and the same identifier, so the two paths
+  // share one budget. This is the likelier abuse path: a stolen MCP key reaches
+  // capture directly, and every call spends the owner's LLM credits.
+  const quota = await consumeQuota(`capture:user:${user.id}`);
+  if (!quota.allowed) {
+    throw new Error(
+      `Rate limit reached (${quota.limit} captures/hour). Try again in ${Math.ceil(quota.resetIn / 60)} minute(s).`,
+    );
+  }
 
   const sourceType = detectSourceType(args.content);
   const capture: ExtractedCapture = await extractCapture(user.llm_api_key, args.content, args.title, user.llm_provider);

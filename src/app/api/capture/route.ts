@@ -4,6 +4,7 @@ import { githubPut, appendToIndex, readFile } from "@/lib/github";
 import { extractCapture, formatDate, buildMarkdown, buildIndexRow, detectSourceType } from "@/lib/llm";
 import { fetchSourceContent } from "@/lib/fetch-source";
 import { linkCapture } from "@/lib/linking";
+import { consumeQuota } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const user = await getSession();
@@ -30,6 +31,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   if (!content?.trim()) {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
+  }
+
+  // Capture spends the user's own LLM credits, so cap how fast one account can
+  // spend them. Without this, a stolen MCP key runs up their bill unbounded.
+  // Charged after validation so malformed requests don't consume quota.
+  const quota = await consumeQuota(`capture:user:${user.id}`);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        error: `[capture] Rate limit reached (${quota.limit} captures/hour). Try again shortly.`,
+      },
+      { status: 429, headers: { "Retry-After": String(quota.resetIn) } },
+    );
   }
 
   const sourceType = detectSourceType(content);

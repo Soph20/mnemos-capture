@@ -13,7 +13,7 @@ const MAX_TOKENS = 800;
 /** Default model per provider for Mnemos' server-side extraction/briefing/plan work.
  *  Tuned for low cost — these are fast, cheap models. BYOK: the user's key, the user's bill. */
 const MODELS: Record<LlmProvider, string> = {
-  anthropic: "claude-haiku-4-5-20251001",
+  anthropic: "claude-haiku-4-5",
   openai: "gpt-4o-mini",
   google: "gemini-2.0-flash",
 };
