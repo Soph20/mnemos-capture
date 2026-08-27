@@ -6,7 +6,27 @@ import { fetchSourceContent } from "@/lib/fetch-source";
 import { linkCapture } from "@/lib/linking";
 import { consumeQuota } from "@/lib/rate-limit";
 
+/**
+ * Capture touches the database, GitHub, and an LLM provider — any of which can
+ * throw. An escaped exception makes Next.js answer with its HTML error page,
+ * and the client's res.json() then fails with a cryptic browser-engine error
+ * instead of the real reason (CLAUDE.md, Source A / Trigger #1). The handler is
+ * wrapped so this route always answers with JSON, whatever fails inside it.
+ *
+ * This is not hypothetical: adding the quota check surfaced it immediately —
+ * a missing usage_quota table produced an HTML 500 rather than a usable error.
+ */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    return await handleCapture(req);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    console.error("[capture] unhandled error:", err);
+    return NextResponse.json({ error: `[capture] ${message}` }, { status: 500 });
+  }
+}
+
+async function handleCapture(req: NextRequest): Promise<NextResponse> {
   const user = await getSession();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

@@ -949,7 +949,24 @@ export function DELETE(): NextResponse {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
+// The inner handler already catches per-request tool failures, but the steps
+// before it — origin check, token resolution, which reads the database — could
+// still throw and make Next.js answer with HTML. An MCP client parsing that as
+// JSON-RPC gets a meaningless error, so failures are shaped as JSON-RPC here.
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    return await handlePost(req);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    console.error("[mcp] unhandled error:", err);
+    return NextResponse.json(
+      { jsonrpc: "2.0", id: null, error: { code: -32603, message: `[mcp] ${message}` } },
+      { status: 500, headers: CORS },
+    );
+  }
+}
+
+async function handlePost(req: NextRequest): Promise<NextResponse> {
   const originError = originRejected(req);
   if (originError) return originError;
 
