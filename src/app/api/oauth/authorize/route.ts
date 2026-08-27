@@ -89,7 +89,19 @@ async function validateClient(p: AuthParams): Promise<{ redirectUri: string } | 
   return { redirectUri };
 }
 
+// This endpoint is browser-facing, so an escaped exception would render
+// Next.js's error page mid-consent-flow. Wrapped to fail as our own HTML
+// error page instead — JSON would be wrong for a page the user navigates to.
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  try {
+    return await handleGet(req);
+  } catch (err) {
+    console.error("[oauth-authorize] unhandled error:", err);
+    return errorPage("Something went wrong starting the authorization. Please try again.", 500);
+  }
+}
+
+async function handleGet(req: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(req.url);
   const p = parseParams(searchParams);
 
@@ -170,7 +182,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
+// This endpoint is browser-facing, so an escaped exception would render
+// Next.js's error page mid-consent-flow. Wrapped to fail as our own HTML
+// error page instead — JSON would be wrong for a page the user navigates to.
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    return await handlePost(req);
+  } catch (err) {
+    console.error("[oauth-authorize] unhandled error:", err);
+    return errorPage("Something went wrong starting the authorization. Please try again.", 500);
+  }
+}
+
+async function handlePost(req: NextRequest): Promise<NextResponse> {
   const form = await req.formData();
   const sp = new URLSearchParams();
   for (const [k, v] of form.entries()) if (typeof v === "string") sp.set(k, v);

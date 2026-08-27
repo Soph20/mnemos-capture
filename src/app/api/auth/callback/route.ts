@@ -15,7 +15,20 @@ interface GithubUser {
   login: string;
 }
 
+// Wrapped so an escaped exception can never make Next.js answer with HTML —
+// the client would then fail on res.json() with a browser-engine error instead
+// of the real reason. API routes must always return JSON (CLAUDE.md).
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  try {
+    return await handleGet(req);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    console.error("[auth-callback] unhandled error:", err);
+    return NextResponse.json({ error: `[auth-callback] ${message}` }, { status: 500 });
+  }
+}
+
+async function handleGet(req: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const state = searchParams.get("state");
