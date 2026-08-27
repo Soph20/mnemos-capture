@@ -1,0 +1,56 @@
+# Schema changes need POST /api/init-db against the deployment, which is awkward
+# from a phone and easy to forget after a deploy — capture returned an opaque 500
+# for exactly that reason. This makes it a button: Actions → Initialize database
+# → Run workflow.
+#
+# Requires two repository secrets:
+#   MNEMOS_APP_URL       e.g. https://mnemos-capture.vercel.app  (no trailing slash)
+#   MNEMOS_ADMIN_SECRET  the same value as the deployment's ADMIN_SECRET
+name: Initialize database
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "yes" to run initDb against the target deployment'
+        required: true
+        default: "no"
+
+jobs:
+  init:
+    name: Run init-db
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: ${{ inputs.confirm != 'yes' }}
+        run: |
+          echo "::error::Confirmation not given — type 'yes' to run."
+          exit 1
+
+      - name: Verify secrets are configured
+        env:
+          APP_URL: ${{ secrets.MNEMOS_APP_URL }}
+          ADMIN_SECRET: ${{ secrets.MNEMOS_ADMIN_SECRET }}
+        run: |
+          [ -n "$APP_URL" ] || { echo "::error::MNEMOS_APP_URL is not set"; exit 1; }
+          [ -n "$ADMIN_SECRET" ] || { echo "::error::MNEMOS_ADMIN_SECRET is not set"; exit 1; }
+
+      - name: POST /api/init-db
+        env:
+          APP_URL: ${{ secrets.MNEMOS_APP_URL }}
+          ADMIN_SECRET: ${{ secrets.MNEMOS_ADMIN_SECRET }}
+        run: |
+          # Body and status captured separately so a failure reports both, and
+          # the secret is never echoed.
+          status=$(curl -sS -o /tmp/body.txt -w '%{http_code}' \
+            -X POST "${APP_URL%/}/api/init-db" \
+            -H "x-admin-secret: ${ADMIN_SECRET}")
+
+          echo "HTTP $status"
+          echo "Response: $(cat /tmp/body.txt)"
+
+          if [ "$status" != "200" ]; then
+            echo "::error::init-db failed with HTTP $status"
+            exit 1
+          fi
+          echo "::notice::Database initialized (idempotent — safe to re-run)."

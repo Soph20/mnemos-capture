@@ -1,7 +1,10 @@
 // MCP server that runs locally via stdio and proxies to the hosted Mnemos API.
 // Used by Claude Code: claude mcp add mnemos -- npx mnemos-capture serve-mcp --key <api-key>
 
-const HOSTED_URL = "https://mnemos-capture.vercel.app/api/mcp";
+const DEFAULT_HOSTED_URL = "https://mnemos-capture.vercel.app/api/mcp";
+
+/** Override for pointing the proxy at a local instance during development. */
+const HOSTED_URL = process.env.MNEMOS_API_URL ?? DEFAULT_HOSTED_URL;
 
 interface JsonRpcMessage {
   jsonrpc: "2.0";
@@ -14,9 +17,17 @@ function sendMessage(msg: Record<string, unknown>): void {
   process.stdout.write(`${JSON.stringify(msg)}\n`);
 }
 
+/** In-flight proxied requests, so shutdown can wait for them. */
+const pending = new Set<Promise<void>>();
+
+function rpcError(id: JsonRpcMessage["id"], message: string): void {
+  sendMessage({ jsonrpc: "2.0", id, error: { code: -32603, message } });
+}
+
 async function proxyToHosted(apiKey: string, msg: JsonRpcMessage): Promise<void> {
+  let res: Response;
   try {
-    const res = await fetch(HOSTED_URL, {
+    res = await fetch(HOSTED_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -24,16 +35,59 @@ async function proxyToHosted(apiKey: string, msg: JsonRpcMessage): Promise<void>
       },
       body: JSON.stringify(msg),
     });
-
-    const data = (await res.json()) as Record<string, unknown>;
-    sendMessage(data);
   } catch (err) {
-    sendMessage({
-      jsonrpc: "2.0",
-      id: msg.id,
-      error: { code: -32603, message: err instanceof Error ? err.message : "Proxy error" },
-    });
+    const detail = err instanceof Error ? err.message : "unknown error";
+    rpcError(msg.id, `Could not reach Mnemos at ${HOSTED_URL}: ${detail}`);
+    return;
   }
+
+  const body = await res.text().catch(() => "");
+  const result = interpretResponse(res.status, res.headers.get("content-type"), body);
+
+  if ("error" in result) {
+    rpcError(msg.id, result.error);
+    return;
+  }
+  sendMessage(result.data);
+}
+
+/**
+ * Turn a raw HTTP reply into either parsed JSON-RPC data or a useful message.
+ *
+ * Parsing straight to JSON turns any non-JSON reply — an HTML error page from a
+ * 500, a proxy block page, a login redirect — into "Unexpected token '<'",
+ * which says nothing about what actually happened. Reporting the status and a
+ * snippet makes the real cause visible in the MCP client.
+ *
+ * Exported for testing; this is the logic worth covering, not the stdio plumbing.
+ */
+export function interpretResponse(
+  status: number,
+  contentType: string | null,
+  body: string,
+): { data: Record<string, unknown> } | { error: string } {
+  const type = contentType ?? "";
+
+  if (!type.includes("application/json")) {
+    const snippet = body.trim().slice(0, 200).replace(/\s+/g, " ");
+    return {
+      error: `Mnemos returned a non-JSON response (HTTP ${status}${
+        type ? `, ${type}` : ""
+      })${snippet ? `: ${snippet}` : ""}`,
+    };
+  }
+
+  try {
+    return { data: JSON.parse(body) as Record<string, unknown> };
+  } catch {
+    return { error: `Mnemos returned malformed JSON (HTTP ${status}).` };
+  }
+}
+
+/** Track a proxied request so shutdown can await it. */
+function track(p: Promise<void>): void {
+  pending.add(p);
+  void p.finally(() => pending.delete(p));
 }
 
 export async function serveMcp(): Promise<void> {
@@ -89,12 +143,17 @@ export async function serveMcp(): Promise<void> {
         // Handle notifications/initialized locally (no response needed)
         if (msg.method === "notifications/initialized") continue;
 
-        void proxyToHosted(apiKey, msg);
+        track(proxyToHosted(apiKey, msg));
       } catch {
         process.stderr.write(`Failed to parse: ${line}\n`);
       }
     }
   });
 
-  process.stdin.on("end", () => process.exit(0));
+  // Wait for in-flight requests before exiting: exiting immediately on stdin
+  // close discards responses that were still being fetched, so the client sees
+  // silence rather than an answer or an error.
+  process.stdin.on("end", () => {
+    void Promise.allSettled([...pending]).then(() => process.exit(0));
+  });
 }
