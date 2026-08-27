@@ -25,12 +25,31 @@ function stripComments(src: string): string {
     .replace(/\/\/[^\n]*/g, (m) => " ".repeat(m.length));
 }
 
-/** True when `index` falls inside an open try block. */
+/**
+ * Ranges covered by a `try { ... }` block, matched by walking braces.
+ *
+ * A naive "nearest preceding try, no catch between" check is wrong once try
+ * blocks nest: an inner try that has already closed makes the check believe the
+ * outer one closed too. Computing real ranges avoids that.
+ */
+function tryRanges(src: string): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  const re = /\btry\s*\{/g;
+  for (let m = re.exec(src); m; m = re.exec(src)) {
+    let depth = 1;
+    let i = m.index + m[0].length;
+    for (; i < src.length && depth > 0; i++) {
+      if (src[i] === "{") depth++;
+      else if (src[i] === "}") depth--;
+    }
+    ranges.push([m.index, i]);
+  }
+  return ranges;
+}
+
+/** True when `index` falls inside any try block. */
 function insideTry(src: string, index: number): boolean {
-  const before = src.slice(0, index);
-  const lastTry = before.lastIndexOf("try {");
-  if (lastTry === -1) return false;
-  return !before.slice(lastTry).includes("catch");
+  return tryRanges(src).some(([start, end]) => index > start && index < end);
 }
 
 /** Name of the function enclosing `index`, if it is a named declaration. */
@@ -71,6 +90,59 @@ describe("API routes always return JSON", () => {
           fn ? everyCallGuarded(src, fn) : false,
           `unguarded req.json() — a malformed body would return HTML, not JSON`,
         ).toBe(true); // shape 2
+      });
+    }
+  }
+});
+
+/**
+ * The narrower rule above (guard `req.json()`) was not enough. A quota check
+ * added to the capture route threw on a missing table, escaped the handler, and
+ * Next.js answered with HTML — the same failure, from a different line.
+ *
+ * CLAUDE.md states the rule broadly: "API routes must always return JSON."
+ * So enforce it broadly: a handler that awaits anything must not be able to let
+ * an exception escape. Either its body is wrapped in a try, or it delegates to
+ * an inner function inside one.
+ */
+function exportedHandlers(src: string): Array<{ name: string; body: string }> {
+  const out: Array<{ name: string; body: string }> = [];
+  const re = /export\s+(?:async\s+)?function\s+(POST|GET|PUT|DELETE|PATCH)\s*\([^)]*\)[^{]*\{/g;
+  for (let m = re.exec(src); m; m = re.exec(src)) {
+    // Walk braces to find the matching close, so nested blocks don't end it early.
+    let depth = 1;
+    let i = m.index + m[0].length;
+    for (; i < src.length && depth > 0; i++) {
+      if (src[i] === "{") depth++;
+      else if (src[i] === "}") depth--;
+    }
+    out.push({ name: m[1]!, body: src.slice(m.index + m[0].length, i - 1) });
+  }
+  return out;
+}
+
+describe("API handlers cannot return HTML on an unexpected throw", () => {
+  for (const route of routes) {
+    const raw = fs.readFileSync(path.join(process.cwd(), route), "utf-8");
+    const src = stripComments(raw);
+    const label = route.replace("src/app/api/", "");
+
+    for (const handler of exportedHandlers(src)) {
+      // A handler that never awaits has nothing that can reject.
+      if (!handler.body.includes("await ")) continue;
+
+      it(`${label} → ${handler.name} wraps everything that can throw`, () => {
+        const wrapped =
+          handler.body.trim().startsWith("try {") ||
+          // Or every await sits inside some try block within the handler.
+          [...handler.body.matchAll(/await\s/g)].every((m) =>
+            insideTry(handler.body, m.index!),
+          );
+
+        expect(
+          wrapped,
+          "an escaped exception makes Next.js return HTML, not JSON",
+        ).toBe(true);
       });
     }
   }
