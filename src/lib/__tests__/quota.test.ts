@@ -5,8 +5,13 @@ import { CAPTURE_QUOTA, QUOTA_WINDOW_SECONDS } from "../rate-limit";
 
 /**
  * consumeQuota talks to Postgres, so the arithmetic that isn't SQL is asserted
- * here and the wiring is asserted structurally — both capture paths must charge
- * the same budget, or a stolen MCP key simply uses the un-charged one.
+ * here and the web route's wiring is asserted structurally — its handler is a
+ * route export that cannot be imported without a NextRequest.
+ *
+ * The MCP side used to be grepped the same way, because its handler was
+ * module-private inside the route. It now lives in lib/mcp/handlers and is
+ * covered behaviorally in mcp-capture-quota.test.ts — including the ordering
+ * this file can only approximate with indexOf.
  */
 describe("capture quota constants", () => {
   it("is generous for a human and bounded for a script", () => {
@@ -19,22 +24,15 @@ describe("capture quota constants", () => {
   });
 });
 
-describe("both capture paths are charged", () => {
+describe("the web capture path is charged", () => {
   const web = fs.readFileSync(path.join(process.cwd(), "src/app/api/capture/route.ts"), "utf-8");
-  const mcp = fs.readFileSync(path.join(process.cwd(), "src/app/api/mcp/route.ts"), "utf-8");
 
   it("throttles the web capture route", () => {
     expect(web).toContain("consumeQuota");
   });
 
-  it("throttles the MCP capture tool — the likelier path for a stolen key", () => {
-    expect(mcp).toContain("consumeQuota");
-  });
-
-  it("charges both against the same identifier, so one budget covers both", () => {
-    const id = /capture:user:\$\{user\.id\}/;
-    expect(web).toMatch(id);
-    expect(mcp).toMatch(id);
+  it("charges against the shared identifier, so one budget covers both paths", () => {
+    expect(web).toMatch(/capture:user:\$\{user\.id\}/);
   });
 
   it("returns 429 with Retry-After on the HTTP path", () => {
