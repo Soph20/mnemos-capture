@@ -12,7 +12,6 @@
   <p>
     <img src="public/works-with.svg" width="720" alt="Works with Claude, Claude Code, Cursor, Codex, Gemini CLI, VS Code, and any MCP-compatible tool" />
   </p>
-  <p><sub>and any MCP-compatible tool</sub></p>
 </div>
 
 ```mermaid
