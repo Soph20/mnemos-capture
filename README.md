@@ -1,41 +1,49 @@
-<p align="center">
-  <img src="public/logo.png" alt="Mnemos" width="120" />
-</p>
+<div align="center">
+  <img src="public/mnemos-mark.svg" alt="Mnemos" width="56" height="56" />
+  <h1>Mnemos</h1>
+  <p><strong>Turn what you discover into context your AI agents can use.</strong></p>
+  <p>You find useful stuff. Mnemos makes sure your AI agents can use it later.</p>
+  <p>
+    <a href="https://mnemos-capture.vercel.app"><img src="https://img.shields.io/badge/Open_app-mnemos--capture.vercel.app-2A62C6?labelColor=0F162F&style=flat" alt="Open app" /></a>
+    <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=2A62C6&labelColor=0F162F&style=flat" alt="npm" /></a>
+    <img src="https://img.shields.io/badge/MCP-compatible-D2A657?labelColor=0F162F&style=flat" alt="MCP" />
+    <img src="https://img.shields.io/badge/license-MIT-FFFCEB?labelColor=0F162F&style=flat" alt="MIT" />
+  </p>
+  <p><sub>Claude · Claude Code · Cursor · Codex · Gemini CLI · VS Code · any MCP-compatible tool</sub></p>
+</div>
 
-<h1 align="center">Mnemos</h1>
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'ui-sans-serif, system-ui, sans-serif', 'primaryColor': '#0F162F', 'primaryTextColor': '#FFFCEB', 'primaryBorderColor': '#D2A657', 'lineColor': '#D2A657', 'secondaryColor': '#2A62C6', 'tertiaryColor': '#162040'}}}%%
+flowchart LR
+  D["Discover"] --> C["Capture"]
+  C --> B["Brief"]
+  B --> P["Plan"]
+  P --> E["Execute"]
 
-<p align="center">
-  <img src="https://img.shields.io/npm/v/mnemos-capture" alt="npm" />
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License" />
-  <img src="https://img.shields.io/badge/MCP-compatible-green" alt="MCP" />
-</p>
-
-<p align="center"><strong>Turn what you discover into context your AI can use.</strong></p>
-
-<p align="center">
-  You find useful stuff. Mnemos makes sure your AI can use it later.<br />
-  A paper, a doc, a GitHub repo, a note, an idea — capture it once.
-</p>
-
-```text
-Discover → Capture → Brief → Plan → Execute
+  style D fill:#0F162F,stroke:#D2A657,color:#FFFCEB
+  style C fill:#2A62C6,stroke:#2A62C6,color:#FFFCEB
+  style B fill:#0F162F,stroke:#D2A657,color:#FFFCEB
+  style P fill:#0F162F,stroke:#D2A657,color:#FFFCEB
+  style E fill:#D2A657,stroke:#D2A657,color:#0F162F
 ```
 
-<p align="center"><sub>Works with <strong>Claude</strong> · <strong>Claude Code</strong> · <strong>Cursor</strong> · <strong>Codex</strong> · <strong>Gemini CLI</strong> · <strong>VS Code</strong> · and any MCP-compatible tool.</sub></p>
+<p align="center">
+  <sub>
+    <a href="#start-here">Start</a>
+    · <a href="#connect-your-ai">Connect</a>
+    · <a href="#workflow">Workflow</a>
+    · <a href="#mcp-tools">Tools</a>
+    · <a href="#your-context-stays-in-github">Security</a>
+  </sub>
+</p>
 
 ---
 
 ## Why Mnemos?
 
-AI moves fast. New research, models, tools, and how-tos show up every day.
+The problem isn't finding information. It's putting what you learn to work.
 
-You save the useful ones. Then they disappear into notes, bookmarks, tabs, or chat history.
-
-**The problem isn't finding information. It's putting what you learn to work.**
-
-Your AI only knows what it was trained on, what's in the current prompt, and what's in the repo you opened. It doesn't know the article you read this morning, the decision you made last sprint, or the pattern that finally worked.
-
-Mnemos is the bridge.
+Your agents only know what they were trained on, what's in the current prompt, and what's in the repo you opened. They don't know the article you read this morning, the decision you made last sprint, or the pattern that finally worked.
 
 Capture something once. Mnemos turns it into structured Markdown, stores it in a GitHub repo you own, and makes it available to the AI tools you already use.
 
@@ -62,23 +70,16 @@ That's the whole setup. No repo to clone. No database. No CLI required.
 
 In the app, paste a URL, a note, a doc excerpt, a transcript, or an idea, then hit **Capture**.
 
-Mnemos extracts:
+Mnemos extracts the **core idea**, **key takeaways**, **where to apply it**, and the **capture type**, then commits Markdown to your GitHub repo.
 
-- **Core idea**
-- **Key takeaways**
-- **Where to apply it**
-- **Capture type**
-
-and commits it to your GitHub repo as Markdown.
-
-You can do this from your laptop or your phone. On a phone: open the app → **Share → Add to Home Screen**. It runs like a native app.
+On a phone: open the app → **Share → Add to Home Screen**. It runs like a native app.
 
 ### 3. Connect the AI you already use
 
-Pick the path that matches your tool. Same knowledge, same tools, either way.
+Same knowledge, same tools, whichever path you pick.
 
-| If you use… | Do this | You need |
-|---|---|---|
+| If you use | Do this | You need |
+| --- | --- | --- |
 | **Claude** (web, desktop, iOS, Android) | Add Mnemos as a custom connector. No terminal. | The MCP URL below |
 | **Claude Code** | Remote URL, or one local command | The MCP URL, or your API key |
 | **Cursor, Codex, Gemini CLI, VS Code, Windsurf, Cline, Zed** | Add Mnemos as a local MCP server | Your Mnemos API key |
@@ -88,11 +89,11 @@ Pick the path that matches your tool. Same knowledge, same tools, either way.
 
 ## Connect your AI
 
-MCP is how AI tools talk to Mnemos. You connect once. After that, your AI can search, brief, plan, and apply what you've captured.
+MCP is how AI tools talk to Mnemos. You connect once. After that, your agents can search, brief, plan, and apply what you've captured.
 
-### Claude — custom connector (easiest, no terminal)
+### Claude — custom connector
 
-In Claude:
+No terminal.
 
 1. Open **Settings → Connectors**
 2. Select **Add custom connector**
@@ -105,7 +106,7 @@ https://mnemos-capture.vercel.app/api/mcp
 
 5. Sign in with GitHub when Claude asks, and approve access
 
-Claude can now use your captures. Finish Mnemos onboarding (knowledge repo + LLM key) before connecting.
+Finish Mnemos onboarding (knowledge repo + LLM key) before connecting.
 
 > Only connect MCP servers you trust. Anthropic does not control the tools provided by custom connectors. [Learn more](https://support.anthropic.com/en/articles/11175166-about-custom-integrations-using-remote-mcp)
 
@@ -113,13 +114,13 @@ ChatGPT / the OpenAI Responses API MCP tool can use the same URL.
 
 ### Claude Code
 
-**Option A — remote (no API key to paste):**
+Remote — no API key to paste:
 
 ```bash
 claude mcp add --transport http mnemos https://mnemos-capture.vercel.app/api/mcp
 ```
 
-**Option B — local command (uses your Mnemos API key):**
+Local command — uses your Mnemos API key:
 
 ```bash
 claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
@@ -127,15 +128,13 @@ claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_K
 
 Then start Claude Code. Ask it to `list_inbox` or `briefing` to confirm the connection.
 
-### Cursor, Codex, Gemini CLI, VS Code, Windsurf, and other MCP clients
+### Other MCP clients
 
-If your tool can launch a local MCP server, register this command:
+Cursor, Codex, Gemini CLI, VS Code, Windsurf, Cline, Zed, Claude Desktop — register this command:
 
 ```bash
 npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
-
-Most clients accept a config block like this:
 
 ```json
 {
@@ -150,40 +149,38 @@ Most clients accept a config block like this:
 
 **Claude Desktop:** Settings → Developer → Edit Config, add the block to `claude_desktop_config.json`, then fully restart Claude Desktop.
 
-Use **Option A (the URL)** when the client supports remote MCP. Use **Option B (the command)** when it can launch a local process. If the tool has no MCP support yet, capture in the [Mnemos app](https://mnemos-capture.vercel.app) and connect later — a Chrome extension is on the roadmap for those surfaces.
+Use the URL when the client supports remote MCP. Use the command when it can launch a local process. If the tool has no MCP support yet, capture in the [Mnemos app](https://mnemos-capture.vercel.app) and connect later.
 
 ---
 
-## The Mnemos workflow
-
-```text
-Discover → Capture → Brief → Plan → Execute
-```
+## Workflow
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'ui-sans-serif, system-ui, sans-serif', 'primaryColor': '#0F162F', 'primaryTextColor': '#FFFCEB', 'primaryBorderColor': '#D2A657', 'lineColor': '#D2A657'}}}%%
 flowchart TD
-    A["Docs / links / notes / transcripts / ideas"] --> B["Capture in Mnemos"]
-    B --> C["Markdown in your GitHub knowledge repo"]
-    C --> D["Search, recall, and session briefing in your AI tools"]
-    D --> E["Generate an implementation plan"]
-    E --> F["Your AI executes with the plan as context"]
-    F --> G["Mark the capture applied or archive it"]
+  A["Docs · links · notes · transcripts · ideas"] --> B["Capture in Mnemos"]
+  B --> C["Markdown in your GitHub repo"]
+  C --> D["Brief your agents"]
+  D --> E["Generate a plan"]
+  E --> F["Execute"]
+  F --> G["Mark applied"]
+
+  style A fill:#0F162F,stroke:#D2A657,color:#FFFCEB
+  style B fill:#2A62C6,stroke:#2A62C6,color:#FFFCEB
+  style C fill:#0F162F,stroke:#D2A657,color:#FFFCEB
+  style D fill:#0F162F,stroke:#D2A657,color:#FFFCEB
+  style E fill:#0F162F,stroke:#D2A657,color:#FFFCEB
+  style F fill:#D2A657,stroke:#D2A657,color:#0F162F
+  style G fill:#0F162F,stroke:#D2A657,color:#FFFCEB
 ```
 
 ### 1. Capture
 
-Paste anything text-based:
-
-- Research papers and docs
-- Blog posts and tutorials
-- GitHub repos
-- Technical notes and architecture decisions
-- Ideas you want your AI to act on later
-- Transcripts and talks
+Paste anything text-based: papers, docs, posts, GitHub repos, notes, decisions, ideas, transcripts.
 
 Mnemos detects whether you pasted a URL, a short note, or longer text. No manual tagging required.
 
-You can also capture from a connected AI:
+From a connected agent:
 
 ```text
 capture "The Mom Test: don't ask if your idea is good. Ask about the person's real behavior, current workflow, and past spending."
@@ -191,21 +188,13 @@ capture "The Mom Test: don't ask if your idea is good. Ask about the person's re
 
 ### 2. Brief
 
-At the start of a work session, ask your AI for a briefing — or install the Claude Code hook below.
+At the start of a work session, ask your agent for a briefing — or install the Claude Code hook below.
 
-Mnemos looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now:
-
-- **Why** this insight matters
-- **What** applying it could achieve
-- **Where** it could land in the codebase
-
-You decide what to apply.
+Mnemos looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
 
 ### 3. Plan
 
-Select the captures you want to use and ask your AI to call `generate_plan`.
-
-Each plan is Markdown and includes:
+Select the captures you want and ask your agent to call `generate_plan`. Each plan is Markdown:
 
 - **Codebase mapping** — files and components involved
 - **Implementation steps** with effort tiers: `simple`, `complex`, `architectural`
@@ -213,7 +202,7 @@ Each plan is Markdown and includes:
 
 ### 4. Execute
 
-Hand the plan to your AI in the current session, or run it in an isolated git worktree:
+Hand the plan to your agent in the current session, or run it in an isolated git worktree:
 
 ```bash
 npx -y mnemos-capture@latest config set agent "claude -p"
@@ -222,29 +211,17 @@ npx -y mnemos-capture@latest kos --key YOUR_API_KEY
 
 `kos` creates a worktree, loads the plan as the contract, launches the assistant you configured, and prints the verification checklist when it finishes.
 
-Other assistants work the same way:
-
 ```bash
 npx -y mnemos-capture@latest config set agent "codex exec"
 ```
-
-```text
-Research → Capture → Brief → Plan → AI agent → Code → Verification
-```
-
-**From discovery to practice.**
 
 ---
 
 ## Example capture
 
-Input:
-
 ```text
 The Mom Test: don't ask if your idea is good. Ask about the person's real behavior, current workflow, and past spending.
 ```
-
-Saved to your GitHub repo:
 
 ```markdown
 ---
@@ -275,22 +252,16 @@ Discovery interview scripts, landing page tests, and product
 validation prompts.
 ```
 
-Because it's Markdown:
-
-- You can read it yourself
-- You can edit it with any editor
-- Git tracks every change
-- You can clone the repository
-- Your context isn't locked into a proprietary format
+Plain Markdown in a repo you own. Readable, editable, versioned, portable.
 
 ---
 
 ## MCP tools
 
-Once connected, your AI can use these tools. You don't have to memorize them — just ask in plain language ("save this", "what do I have on payments?", "brief me for this repo").
+You don't have to memorize these. Ask in plain language: "save this", "what do I have on payments?", "brief me for this repo".
 
 | Tool | What it does |
-|---|---|
+| --- | --- |
 | `capture` | Save new knowledge from pasted text or a URL |
 | `list_inbox` | List captures waiting for review |
 | `search_captures` | Keyword search across your captures |
@@ -312,75 +283,48 @@ Once connected, your AI can use these tools. You don't have to memorize them —
 
 ## Claude Code hooks
 
-Optional. MCP works without them. Hooks automatically bring your context into Claude Code.
+Optional. MCP works without them.
 
-**Session briefing** — ranked captures at session start:
+| Mode | Command |
+| --- | --- |
+| Session briefing | `npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --briefing` |
+| Vault, as you edit | `npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --vault` |
+| Both | `npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --briefing --vault` |
 
-```bash
-npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --briefing
-```
-
-**Vault** — relevant captures as you edit files:
-
-```bash
-npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --vault
-```
-
-**Both:**
-
-```bash
-npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --briefing --vault
-```
-
-| Surface | Hooks work? |
-|---|---|
+| Surface | Hooks |
+| --- | --- |
 | Claude Code CLI, VS Code / JetBrains extensions, desktop app | Yes |
 | Claude Code on the web | No — hooks are local files |
 | Cursor and other MCP clients | No — different hook systems |
 
-If hooks aren't available, tell your AI: *At session start, call `list_inbox` or `briefing`.*
+If hooks aren't available, tell your agent: *At session start, call `list_inbox` or `briefing`.*
 
 ---
 
 ## CLI
 
-You don't need a global install:
+No global install required.
 
 ```bash
 npx -y mnemos-capture@latest <command>
 ```
 
-```text
-npx -y mnemos-capture@latest
-    Open the hosted app
-
-npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
-    Run the local MCP proxy
-
-npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY [--briefing] [--vault]
-    Install Claude Code hooks
-
-npx -y mnemos-capture@latest config set agent "claude -p"
-    Set which assistant kos should drive
-
-npx -y mnemos-capture@latest kos --key YOUR_API_KEY
-    Implement the latest plan in an isolated worktree
-
-npx -y mnemos-capture@latest inbox-check --key YOUR_API_KEY [--briefing]
-    Debug the session hook
-
-npx -y mnemos-capture@latest vault-check --key YOUR_API_KEY
-    Debug the vault hook
-
-npx -y mnemos-capture@latest help
-    Show help
-```
+| Command | What it does |
+| --- | --- |
+| `npx -y mnemos-capture@latest` | Open the hosted app |
+| `serve-mcp --key YOUR_API_KEY` | Run the local MCP proxy |
+| `setup-hooks --key YOUR_API_KEY [--briefing] [--vault]` | Install Claude Code hooks |
+| `config set agent "claude -p"` | Set which assistant `kos` should drive |
+| `kos --key YOUR_API_KEY` | Implement the latest plan in an isolated worktree |
+| `inbox-check --key YOUR_API_KEY [--briefing]` | Debug the session hook |
+| `vault-check --key YOUR_API_KEY` | Debug the vault hook |
+| `help` | Show help |
 
 ---
 
 ## Your context stays in GitHub
 
-Mnemos stores captures as structured Markdown in **your** GitHub repository. Private by default.
+Captures live as structured Markdown in **your** GitHub repository. Private by default.
 
 - **No lock-in** — clone it, move it, delete Mnemos, keep the files
 - **No proprietary format** — every capture is a readable `.md` file
@@ -398,7 +342,7 @@ The whole point of this repo being public is that you can check these claims rat
 **The database holds only account plumbing** (`src/lib/db.ts`):
 
 | Stored | What it is |
-|---|---|
+| --- | --- |
 | `github_id`, `github_username` | who you are |
 | `github_token` | encrypted (`src/lib/crypto.ts`) |
 | `github_repo` | the *name* of your hub, not its contents |
@@ -408,7 +352,7 @@ The whole point of this repo being public is that you can check these claims rat
 | `token_version` | bumped to revoke everything |
 | login attempts, OAuth clients/codes, refresh-token ids | auth plumbing |
 
-**Where data goes when you capture** — the server talks to exactly three kinds of destination:
+When you capture, the server talks to exactly three kinds of destination:
 
 1. **GitHub** — to write the capture into your repo
 2. **Your LLM provider**, with *your* key — Anthropic, OpenAI, or Google
@@ -419,7 +363,7 @@ No analytics, no telemetry, no third-party tracking.
 ### How your credentials are stored
 
 | Secret | How it's stored |
-|---|---|
+| --- | --- |
 | GitHub token | Encrypted at rest (AES-256-GCM). Uses the `repo` scope, required to read and write a **private** knowledge hub |
 | Your LLM API key | Encrypted at rest (AES-256-GCM) |
 | Your MCP API key | Hashed — never recoverable, not even by Mnemos |
@@ -435,12 +379,12 @@ Your MCP key is shown exactly once. If you lose it, generate a new one.
 
 ## Cost
 
-Mnemos is BYOK — you bring your own API key. Mnemos never charges you for inference.
+Mnemos is BYOK. You bring your own API key. Mnemos never charges you for inference.
 
 Extraction runs on a fast, low-cost model (Claude Haiku 4.5 by default):
 
 | Usage | Estimated monthly cost |
-|---|---|
+| --- | --- |
 | 50 captures/month | ~$0.15 |
 | 100 captures/month | ~$0.30 |
 | 200 captures/month | ~$0.60 |
@@ -451,41 +395,21 @@ Briefing, planning, and synthesis only run when you ask for them.
 
 ## Roadmap
 
-Shipped:
+**Shipped** — hosted web + PWA, GitHub-backed Markdown repo, remote MCP connector, local stdio proxy, BYOK (Anthropic, OpenAI, Google), Claude Code hooks, `kos` orchestrator.
 
-- Hosted web + PWA capture app
-- GitHub-backed Markdown knowledge repo
-- Remote MCP connector (Claude apps, ChatGPT / OpenAI Responses API)
-- Local stdio MCP proxy (Claude Code, Cursor, Codex, Gemini CLI, …)
-- Provider-agnostic BYOK (Anthropic, OpenAI, Google)
-- Claude Code session hooks
-- `kos` orchestrator for plan-based execution in an isolated worktree
-
-Planned:
-
-- **Chrome extension** — one-click capture from any tab
-- More adapters for assistants that don't speak MCP yet
-- Voice memo capture with transcription
-- One Mnemos gateway key that routes across providers
-- `kos` improvements: per-step model switching and `--detach` background runs
+**Planned** — Chrome extension, adapters for tools without MCP, voice memo capture, one gateway key across providers, `kos` per-step model switching and `--detach`.
 
 ---
 
 ## Local development
 
-You do not need to run Mnemos to use it — the hosted instance at
-[mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is
-for working on the code.
-
-**Prerequisites**
+You do not need to run Mnemos to use it — the hosted instance at [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is for working on the code.
 
 | | |
-|---|---|
+| --- | --- |
 | Node.js | 20.9 or later (Next.js 16 requires it) |
 | PostgreSQL | any reachable instance — local, Neon, or Vercel Postgres |
 | GitHub OAuth app | [create one](https://github.com/settings/developers) with callback `http://localhost:3000/api/auth/callback` |
-
-**Setup**
 
 ```bash
 git clone https://github.com/Soph20/mnemos-capture.git
@@ -494,17 +418,13 @@ npm ci
 cp .env.example .env
 ```
 
-Fill in `.env`:
-
 | Variable | Where it comes from |
-|---|---|
+| --- | --- |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | your GitHub OAuth app |
 | `POSTGRES_URL` | your Postgres connection string |
 | `SESSION_SECRET` | `openssl rand -hex 32` — also derives the credential-encryption key |
 | `ADMIN_SECRET` | any random string; guards `/api/init-db` |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` |
-
-Then start the app and create the schema:
 
 ```bash
 npm run dev
@@ -514,15 +434,11 @@ curl -X POST http://localhost:3000/api/init-db -H "x-admin-secret: $ADMIN_SECRET
 
 Sign in at `http://localhost:3000` with GitHub. **`init-db` must succeed before sign-in works.**
 
-Point the MCP proxy at your local instance with `MNEMOS_API_URL`:
-
 ```bash
 MNEMOS_API_URL=http://localhost:3000/api/mcp node dist/cli/index.js serve-mcp --key <key>
 ```
 
 **After any schema change**, `init-db` must run again. From GitHub: **Actions → Initialize database → Run workflow**.
-
-**Checks** — the same two CI runs on every PR:
 
 ```bash
 npm run typecheck
@@ -537,7 +453,7 @@ Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Tech stack
 
 | Layer | Technology |
-|---|---|
+| --- | --- |
 | Framework | Next.js 16 (App Router), React 19 |
 | Language | TypeScript |
 | Database | Vercel Postgres |
@@ -550,11 +466,9 @@ Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-## Built by
-
-[Sofía Padrón Valdez](https://github.com/Soph20) — builder, AI systems architect.
-
-## Citation
+<div align="center">
+  <p><a href="https://github.com/Soph20">Sofía Padrón Valdez</a> — builder, AI systems architect.</p>
+</div>
 
 ```bibtex
 @misc{2026mnemos,
@@ -567,6 +481,4 @@ Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md).
 }
 ```
 
-## License
-
-[MIT License — see LICENSE for details](./LICENSE)
+[MIT License](./LICENSE)
