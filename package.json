@@ -30,7 +30,7 @@
     "llm",
     "workflow"
   ],
-  "author": "Sof\u00eda Padr\u00f3n Valdez",
+  "author": "Sofía Padrón Valdez",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -59,7 +59,7 @@
     "eslint-config-next": "^16.3.3",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "typescript": "^7",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.8"
   },
   "engines": {
