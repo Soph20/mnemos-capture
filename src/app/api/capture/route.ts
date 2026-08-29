@@ -4,8 +4,29 @@ import { githubPut, appendToIndex, readFile } from "@/lib/github";
 import { extractCapture, formatDate, buildMarkdown, buildIndexRow, detectSourceType } from "@/lib/llm";
 import { fetchSourceContent } from "@/lib/fetch-source";
 import { linkCapture } from "@/lib/linking";
+import { consumeQuota } from "@/lib/rate-limit";
 
+/**
+ * Capture touches the database, GitHub, and an LLM provider — any of which can
+ * throw. An escaped exception makes Next.js answer with its HTML error page,
+ * and the client's res.json() then fails with a cryptic browser-engine error
+ * instead of the real reason (CLAUDE.md, Source A / Trigger #1). The handler is
+ * wrapped so this route always answers with JSON, whatever fails inside it.
+ *
+ * This is not hypothetical: adding the quota check surfaced it immediately —
+ * a missing usage_quota table produced an HTML 500 rather than a usable error.
+ */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    return await handleCapture(req);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    console.error("[capture] unhandled error:", err);
+    return NextResponse.json({ error: `[capture] ${message}` }, { status: 500 });
+  }
+}
+
+async function handleCapture(req: NextRequest): Promise<NextResponse> {
   const user = await getSession();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -25,11 +46,36 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const body = (await req.json()) as { content: string; title?: string };
-  const { content, title } = body;
+  // Parse the body in its own try/catch: an unguarded req.json() throw escapes
+  // the handler, Next.js answers with its HTML error page, and the client's
+  // res.json() then fails with Safari's "The string did not match the expected
+  // pattern." — the exact failure documented in CLAUDE.md. API routes must
+  // always return JSON.
+  let body: { content?: unknown; title?: unknown };
+  try {
+    body = (await req.json()) as { content?: unknown; title?: unknown };
+  } catch {
+    return NextResponse.json({ error: "[capture] Body must be JSON." }, { status: 400 });
+  }
 
-  if (!content?.trim()) {
+  const content = typeof body.content === "string" ? body.content : "";
+  const title = typeof body.title === "string" ? body.title : undefined;
+
+  if (!content.trim()) {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
+  }
+
+  // Capture spends the user's own LLM credits, so cap how fast one account can
+  // spend them. Without this, a stolen MCP key runs up their bill unbounded.
+  // Charged after validation so malformed requests don't consume quota.
+  const quota = await consumeQuota(`capture:user:${user.id}`);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        error: `[capture] Rate limit reached (${quota.limit} captures/hour). Try again shortly.`,
+      },
+      { status: 429, headers: { "Retry-After": String(quota.resetIn) } },
+    );
   }
 
   const sourceType = detectSourceType(content);

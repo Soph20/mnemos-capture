@@ -115,20 +115,44 @@ async function createKnowledgeRepo(
   return fullRepo;
 }
 
+interface OnboardBody {
+  repoName?: string;
+  pin?: string;
+  /** Opt-in to a public knowledge hub; private when absent. */
+  isPublic?: boolean;
+  apiKey?: string;
+  provider?: LlmProvider;
+  anthropicKey?: string; // legacy field — kept for backward compatibility
+}
+
+// Wrapped so an escaped exception can never make Next.js answer with HTML —
+// the client would then fail on res.json() with a browser-engine error instead
+// of the real reason. API routes must always return JSON (CLAUDE.md).
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  try {
+    return await handlePost(req);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    console.error("[onboard] unhandled error:", err);
+    return NextResponse.json({ error: `[onboard] ${message}` }, { status: 500 });
+  }
+}
+
+async function handlePost(req: NextRequest): Promise<NextResponse> {
   const user = await getSession();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const body = (await req.json()) as {
-    repoName: string;
-    pin: string;
-    isPublic?: boolean;
-    apiKey?: string;
-    provider?: LlmProvider;
-    anthropicKey?: string; // legacy field — kept for backward compatibility
-  };
+  // Own try/catch: an unguarded req.json() throw escapes the handler and Next.js
+  // answers with HTML, which makes the client's res.json() fail with Safari's
+  // "The string did not match the expected pattern." (see CLAUDE.md).
+  let body: OnboardBody;
+  try {
+    body = (await req.json()) as OnboardBody;
+  } catch {
+    return NextResponse.json({ error: "[onboard] Body must be JSON." }, { status: 400 });
+  }
 
   // Accept either the new { apiKey, provider } shape or the legacy { anthropicKey }.
   const llmKey = (body.apiKey ?? body.anthropicKey ?? "").trim();

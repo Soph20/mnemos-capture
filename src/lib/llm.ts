@@ -4,7 +4,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import type { ExtractedCapture, RelatedCapture, RelevanceResult, SynthesisResult, ApplicationSuggestion, BriefingSuggestion, BriefingOutput, SourceType, LlmProvider } from "./types";
+import type { ExtractedCapture, ContentType, RelatedCapture, RelevanceResult, SynthesisResult, ApplicationSuggestion, BriefingSuggestion, BriefingOutput, SourceType, LlmProvider } from "./types";
 
 // ── Config ──
 
@@ -13,7 +13,7 @@ const MAX_TOKENS = 800;
 /** Default model per provider for Mnemos' server-side extraction/briefing/plan work.
  *  Tuned for low cost — these are fast, cheap models. BYOK: the user's key, the user's bill. */
 const MODELS: Record<LlmProvider, string> = {
-  anthropic: "claude-haiku-4-5-20251001",
+  anthropic: "claude-haiku-4-5",
   openai: "gpt-4o-mini",
   google: "gemini-2.0-flash",
 };
@@ -163,11 +163,70 @@ export async function extractCapture(
     .replace(/\s*```$/, "")
     .trim();
 
+  let parsed: unknown;
   try {
-    return JSON.parse(rawJson) as ExtractedCapture;
+    parsed = JSON.parse(rawJson);
   } catch {
     throw new Error("Failed to parse LLM response — extraction returned invalid JSON.");
   }
+  return normalizeCapture(parsed);
+}
+
+const CONTENT_TYPES: ContentType[] = [
+  "article", "blog", "research", "transcript", "notes", "post", "book", "thread", "video",
+];
+
+function str(v: unknown): string | null {
+  return typeof v === "string" && v.trim() !== "" ? v : null;
+}
+
+function strArray(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim() !== "") : [];
+}
+
+/**
+ * Coerce a parsed extraction into the ExtractedCapture contract.
+ *
+ * `JSON.parse(...) as ExtractedCapture` was a cast, not a check — the type
+ * declares `slug` and `coreIdea` as non-nullable strings, but the model
+ * returns `null` for them whenever it has nothing to work with (a bare URL it
+ * cannot fetch, say). Nothing caught it, and the nulls flowed downstream until
+ * `buildIndexRow` called `.slice()` on one and threw — *after* the capture file
+ * had already been written, so the file existed with no index row and was
+ * invisible to search. Two captures in the wild ended up in that state.
+ *
+ * Anything missing or blank becomes a safe placeholder and forces
+ * `lowConfidence`, so a thin extraction still gets a usable, findable record
+ * instead of a half-written one.
+ */
+export function normalizeCapture(parsed: unknown): ExtractedCapture {
+  const raw = (typeof parsed === "object" && parsed !== null ? parsed : {}) as Record<string, unknown>;
+
+  const slug = str(raw.slug);
+  const inferredTitle = str(raw.inferredTitle);
+  const coreIdea = str(raw.coreIdea);
+  const rawType = str(raw.inferredType);
+  const inferredType = CONTENT_TYPES.includes(rawType as ContentType)
+    ? (rawType as ContentType)
+    : "notes";
+
+  // Missing any of the three fields the record is built around means the model
+  // had nothing to extract, whatever it claimed about its own confidence.
+  const thin = slug === null || inferredTitle === null || coreIdea === null;
+
+  return {
+    slug: slug ?? "untitled",
+    inferredTitle: inferredTitle ?? "Untitled capture",
+    inferredAuthor: str(raw.inferredAuthor),
+    inferredUrl: str(raw.inferredUrl),
+    inferredType,
+    coreIdea: coreIdea ?? "No core idea could be extracted from the input.",
+    takeaways: strArray(raw.takeaways),
+    quotes: strArray(raw.quotes),
+    tags: strArray(raw.tags),
+    appliedTo: str(raw.appliedTo),
+    lowConfidence: thin || raw.lowConfidence === true,
+  };
 }
 
 // ── Markdown formatting ──
@@ -707,5 +766,12 @@ export function buildIndexRow(
   filename: string,
   sourceType?: SourceType,
 ): string {
-  return `| ${date} | [${capture.slug}](inbox/${filename}) | ${capture.coreIdea.slice(0, 80)}... | ${capture.tags.join(", ")} | ${sourceType ?? "—"} |\n`;
+  // Belt and braces behind normalizeCapture. An index row is written *after*
+  // the capture file, so anything that throws here orphans a file that is
+  // already in the repo — invisible to search with no error surfaced. Reading
+  // defensively is cheaper than that failure mode.
+  const slug = capture.slug || "untitled";
+  const summary = (capture.coreIdea || "No core idea extracted.").slice(0, 80);
+  const tags = (capture.tags ?? []).join(", ");
+  return `| ${date} | [${slug}](inbox/${filename}) | ${summary}... | ${tags} | ${sourceType ?? "—"} |\n`;
 }

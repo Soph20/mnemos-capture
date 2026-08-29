@@ -107,3 +107,58 @@ export async function recordFailure(identifier: string): Promise<LockState> {
 export async function clearAttempts(identifier: string): Promise<void> {
   await sql`DELETE FROM login_attempts WHERE identifier = ${identifier.toLowerCase()}`;
 }
+
+// ── Usage quota ──
+//
+// Separate concern from the lockout above. That one counts failed *attempts* and
+// escalates; this one counts *successful* calls against a ceiling. Capture spends
+// the user's own LLM credits, so an attacker holding a stolen MCP key could run up
+// their bill unbounded. A per-user window caps the damage.
+
+/** Captures allowed per user per window. Generous for a human, bounded for a script. */
+export const CAPTURE_QUOTA = 60;
+export const QUOTA_WINDOW_SECONDS = 60 * 60;
+
+export interface QuotaState {
+  allowed: boolean;
+  used: number;
+  limit: number;
+  /** Seconds until the window resets. */
+  resetIn: number;
+}
+
+/**
+ * Consume one unit of a user's quota. Increments and reports the result in a
+ * single statement, so concurrent requests cannot both slip past the ceiling.
+ * The window resets by moving `window_started_at`, not by a scheduled job.
+ */
+export async function consumeQuota(
+  identifier: string,
+  limit = CAPTURE_QUOTA,
+  windowSeconds = QUOTA_WINDOW_SECONDS,
+): Promise<QuotaState> {
+  const key = identifier.toLowerCase();
+
+  const { rows } = await sql<{ used: number; window_started_at: Date }>`
+    INSERT INTO usage_quota (identifier, used, window_started_at)
+    VALUES (${key}, 1, NOW())
+    ON CONFLICT (identifier) DO UPDATE SET
+      used = CASE
+        WHEN usage_quota.window_started_at < NOW() - (${windowSeconds} * INTERVAL '1 second')
+        THEN 1 ELSE usage_quota.used + 1 END,
+      window_started_at = CASE
+        WHEN usage_quota.window_started_at < NOW() - (${windowSeconds} * INTERVAL '1 second')
+        THEN NOW() ELSE usage_quota.window_started_at END
+    RETURNING used, window_started_at
+  `;
+
+  const row = rows[0];
+  const used = row?.used ?? 1;
+  const startedAt = row?.window_started_at ? new Date(row.window_started_at).getTime() : Date.now();
+  const resetIn = Math.max(
+    1,
+    Math.ceil((startedAt + windowSeconds * 1000 - Date.now()) / 1000),
+  );
+
+  return { allowed: used <= limit, used, limit, resetIn };
+}

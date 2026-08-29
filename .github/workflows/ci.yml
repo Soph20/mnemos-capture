@@ -1,0 +1,39 @@
+name: CI
+
+# Runs the checks a contributor is expected to run locally, so a PR cannot
+# merge on a green Vercel deployment alone — building successfully is not the
+# same as being correct.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Typecheck and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` over `npm install`: it installs exactly the lockfile, so CI
+      # can't pass on a dependency tree that no contributor actually has.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Lint runs here because it silently broke once and nobody noticed for a
+      # day: a TypeScript major bump made typescript-eslint refuse to load, and
+      # CI only ran typecheck and tests. A check a contributor runs locally but
+      # CI never runs is a check that eventually stops working.
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test

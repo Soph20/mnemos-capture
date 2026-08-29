@@ -1,0 +1,41 @@
+# Nothing was watching the dependency tree: six high-severity CVEs sat in the
+# production graph unnoticed (a WebSocket flaw in the Postgres driver's
+# transport, reached by every query), and the Anthropic SDK drifted ~85
+# releases behind. Weekly, grouped so the noise stays manageable.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Patch and minor bumps are the routine hygiene this exists for —
+      # one PR a week rather than one per package.
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    # Majors arrive as individual PRs: they need reading, not batching.
+    ignore:
+      # TypeScript is held at 6.x on purpose. typescript-eslint throws on load
+      # for any TS major >= 7 (a hard version guard, not a config option), and
+      # eslint-config-next bundles it, so TS 7 silently disables lint for the
+      # whole repo. This was merged once and went unnoticed because CI did not
+      # run lint. Drop this ignore when typescript-eslint ships TS >= 7 support
+      # (typescript-eslint#10940) and eslint-config-next picks it up.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # ESLint is held at 9.x for the same reason, one layer up. ESLint 10
+      # removed context.getFilename(), which the eslint-plugin-react bundled by
+      # eslint-config-next still calls, so lint dies at config-load time with
+      # "contextOrFilename.getFilename is not a function". This was closed once
+      # as #40 and Dependabot re-proposed it the same week as #49 — a closed PR
+      # is not a decision it remembers, an ignore is. Drop this when
+      # eslint-config-next ships a plugin set supporting ESLint 10.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly

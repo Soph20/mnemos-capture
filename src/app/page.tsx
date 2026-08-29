@@ -329,7 +329,7 @@ export default function CapturePage() {
               {result.capture.quotes.map((q, i) => (
                 <blockquote key={i} className="text-sm italic pl-3 leading-relaxed"
                   style={{ color: "var(--fg-muted)", borderLeft: "2px solid var(--gold-quote)" }}>
-                  "{q}"
+                  &ldquo;{q}&rdquo;
                 </blockquote>
               ))}
             </div>
@@ -395,7 +395,7 @@ export default function CapturePage() {
                 {mcpKey}
               </code>
               <p className="text-[10px] mt-1" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
-                Save this — it won't be shown again. Any previous key has stopped working.
+                Save this — it won&apos;t be shown again. Any previous key has stopped working.
               </p>
             </div>
             <div>
