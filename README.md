@@ -9,7 +9,10 @@
     <img src="https://img.shields.io/badge/MCP-compatible-D2A657?labelColor=0F162F&style=flat" alt="MCP" />
     <img src="https://img.shields.io/badge/license-MIT-FFFCEB?labelColor=0F162F&style=flat" alt="MIT" />
   </p>
-  <p><sub>Claude · Claude Code · Cursor · Codex · Gemini CLI · VS Code · any MCP-compatible tool</sub></p>
+  <p>
+    <img src="public/works-with.svg" width="720" alt="Works with Claude, Claude Code, Cursor, Codex, Gemini CLI, VS Code, and any MCP-compatible tool" />
+  </p>
+  <p><sub>and any MCP-compatible tool</sub></p>
 </div>
 
 ```mermaid
