@@ -14,20 +14,10 @@
   </p>
 </div>
 
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'ui-sans-serif, system-ui, sans-serif', 'primaryColor': '#0F162F', 'primaryTextColor': '#FFFCEB', 'primaryBorderColor': '#D2A657', 'lineColor': '#D2A657', 'secondaryColor': '#2A62C6', 'tertiaryColor': '#162040'}}}%%
-flowchart LR
-  D["Discover"] --> C["Capture"]
-  C --> B["Brief"]
-  B --> P["Plan"]
-  P --> E["Execute"]
+<p align="center">
+  <img src="public/flow-hero.svg" width="720" alt="Discover → Capture → Brief → Plan → Execute" />
+</p>
 
-  style D fill:#0F162F,stroke:#D2A657,color:#FFFCEB
-  style C fill:#2A62C6,stroke:#2A62C6,color:#FFFCEB
-  style B fill:#0F162F,stroke:#D2A657,color:#FFFCEB
-  style P fill:#0F162F,stroke:#D2A657,color:#FFFCEB
-  style E fill:#D2A657,stroke:#D2A657,color:#0F162F
-```
 
 <p align="center">
   <sub>
@@ -115,7 +105,7 @@ Finish Mnemos onboarding (knowledge repo + LLM key) before connecting. Then ask:
 
 Any other chat app with custom MCP connectors uses this same URL.
 
-### Coding tools
+### AI coding agents
 
 Cursor, Codex, Claude Code, Gemini CLI, VS Code, Windsurf, Cline, Zed, Claude Desktop — if the tool can launch a local process, register this command:
 
@@ -148,24 +138,10 @@ Use the URL when the client supports remote MCP. Use the command when it can lau
 
 ## Workflow
 
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'fontFamily': 'ui-sans-serif, system-ui, sans-serif', 'primaryColor': '#0F162F', 'primaryTextColor': '#FFFCEB', 'primaryBorderColor': '#D2A657', 'lineColor': '#D2A657'}}}%%
-flowchart TD
-  A["Docs · links · notes · transcripts · ideas"] --> B["Capture in Mnemos"]
-  B --> C["Markdown in your GitHub repo"]
-  C --> D["Brief your agents"]
-  D --> E["Generate a plan"]
-  E --> F["Execute"]
-  F --> G["Mark applied"]
+<p align="center">
+  <img src="public/flow-workflow.svg" width="720" alt="Docs and notes → Capture → GitHub Markdown → Brief → Plan → Execute → Mark applied" />
+</p>
 
-  style A fill:#0F162F,stroke:#D2A657,color:#FFFCEB
-  style B fill:#2A62C6,stroke:#2A62C6,color:#FFFCEB
-  style C fill:#0F162F,stroke:#D2A657,color:#FFFCEB
-  style D fill:#0F162F,stroke:#D2A657,color:#FFFCEB
-  style E fill:#0F162F,stroke:#D2A657,color:#FFFCEB
-  style F fill:#D2A657,stroke:#D2A657,color:#0F162F
-  style G fill:#0F162F,stroke:#D2A657,color:#FFFCEB
-```
 
 ### 1. Capture
 

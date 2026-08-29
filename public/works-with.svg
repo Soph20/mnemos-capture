@@ -20,7 +20,7 @@
   </g>
   <text x="710.0" y="110" text-anchor="middle" fill="#FFFCEB" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="12" font-weight="500">Grok</text>
   <line x1="80" y1="132" x2="900" y2="132" stroke="#D2A657" stroke-opacity="0.18" stroke-width="1"/>
-  <text x="490" y="154" text-anchor="middle" fill="#D2A657" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="10" letter-spacing="1.4" font-weight="600">AND THE EDITORS YOU ALREADY USE</text>
+  <text x="490" y="154" text-anchor="middle" fill="#D2A657" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="10" letter-spacing="1.4" font-weight="600">AND THE AI CODING AGENTS</text>
   <rect x="108.0" y="166" width="44" height="44" rx="11" fill="#FFFCEB"/>
   <g transform="translate(116.0,174) scale(1.1667)">
     <path fill="#D97757" fill-rule="evenodd" d="M21 10.5h3v3h-3v3h-1.5v3H18v-3h-1.5v3H15v-3H9v3H7.5v-3H6v3H4.5v-3H3v-3H0v-3h3v-6h18Zm-15 0h1.5v-3H6Zm10.5 0H18v-3h-1.5z"/>

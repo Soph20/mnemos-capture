@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 118" role="img" aria-label="Docs and notes, capture, Markdown in GitHub, brief, plan, execute, mark applied">
+<g transform="rotate(-0.77 133.0 56.0)">
+  <rect x="67.0" y="28.0" width="132.0" height="56.0" rx="15.0" fill="#0F162F" stroke="#D2A657" stroke-width="2.3" stroke-linejoin="round"/>
+</g>
+<g transform="rotate(-1.09 133.0 56.0)" opacity="0.55">
+  <rect x="66.2" y="28.4" width="133.4" height="55.1" rx="13.0" fill="none" stroke="#D2A657" stroke-width="1.15" stroke-linejoin="round"/>
+</g>
+<text x="133.0" y="60.5" text-anchor="middle" fill="#FFFCEB" font-family="ui-rounded, 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" transform="rotate(-0.06 133.0 56.0)">Docs · notes</text>
+<g transform="rotate(-0.74 273.0 56.0)">
+  <rect x="217.0" y="28.0" width="112.0" height="56.0" rx="15.0" fill="#2A62C6" stroke="#2A62C6" stroke-width="2.3" stroke-linejoin="round"/>
+</g>
+<g transform="rotate(-0.93 273.0 56.0)" opacity="0.55">
+  <rect x="216.5" y="27.0" width="113.0" height="56.8" rx="14.9" fill="none" stroke="#2A62C6" stroke-width="1.15" stroke-linejoin="round"/>
+</g>
+<text x="273.0" y="60.5" text-anchor="middle" fill="#FFFCEB" font-family="ui-rounded, 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" transform="rotate(0.25 273.0 56.0)">Capture</text>
+<path d="M 200.0 56.0 Q 207.0 51.7 216.0 56.0" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M 206.0 56.5 L 216.0 56.0 L 210.1 48.0" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="rotate(0.45 422.0 56.0)">
+  <rect x="347.0" y="28.0" width="150.0" height="56.0" rx="15.0" fill="#0F162F" stroke="#D2A657" stroke-width="2.3" stroke-linejoin="round"/>
+</g>
+<g transform="rotate(0.18 422.0 56.0)" opacity="0.55">
+  <rect x="347.4" y="27.8" width="150.7" height="57.9" rx="14.7" fill="none" stroke="#D2A657" stroke-width="1.15" stroke-linejoin="round"/>
+</g>
+<text x="422.0" y="60.5" text-anchor="middle" fill="#FFFCEB" font-family="ui-rounded, 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" transform="rotate(0.35 422.0 56.0)">GitHub Markdown</text>
+<path d="M 330.0 56.0 Q 339.1 52.9 346.0 56.0" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M 336.0 56.7 L 346.0 56.0 L 340.0 48.0" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="rotate(-0.70 565.0 56.0)">
+  <rect x="515.0" y="28.0" width="100.0" height="56.0" rx="15.0" fill="#0F162F" stroke="#D2A657" stroke-width="2.3" stroke-linejoin="round"/>
+</g>
+<g transform="rotate(-0.95 565.0 56.0)" opacity="0.55">
+  <rect x="515.9" y="28.2" width="101.1" height="56.4" rx="16.3" fill="none" stroke="#D2A657" stroke-width="1.15" stroke-linejoin="round"/>
+</g>
+<text x="565.0" y="60.5" text-anchor="middle" fill="#FFFCEB" font-family="ui-rounded, 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" transform="rotate(0.11 565.0 56.0)">Brief</text>
+<path d="M 498.0 56.0 Q 505.3 54.5 514.0 56.0" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M 504.6 59.3 L 514.0 56.0 L 506.2 49.7" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="rotate(-0.18 683.0 56.0)">
+  <rect x="633.0" y="28.0" width="100.0" height="56.0" rx="15.0" fill="#0F162F" stroke="#D2A657" stroke-width="2.3" stroke-linejoin="round"/>
+</g>
+<g transform="rotate(-0.51 683.0 56.0)" opacity="0.55">
+  <rect x="631.9" y="28.2" width="99.9" height="55.3" rx="15.8" fill="none" stroke="#D2A657" stroke-width="1.15" stroke-linejoin="round"/>
+</g>
+<text x="683.0" y="60.5" text-anchor="middle" fill="#FFFCEB" font-family="ui-rounded, 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" transform="rotate(-0.34 683.0 56.0)">Plan</text>
+<path d="M 616.0 56.0 Q 622.3 52.5 632.0 56.0" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M 622.1 57.3 L 632.0 56.0 L 625.1 48.7" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="rotate(-0.11 807.0 56.0)">
+  <rect x="751.0" y="28.0" width="112.0" height="56.0" rx="15.0" fill="#D2A657" stroke="#D2A657" stroke-width="2.3" stroke-linejoin="round"/>
+</g>
+<g transform="rotate(-0.11 807.0 56.0)" opacity="0.55">
+  <rect x="751.6" y="28.1" width="113.3" height="54.9" rx="16.9" fill="none" stroke="#D2A657" stroke-width="1.15" stroke-linejoin="round"/>
+</g>
+<text x="807.0" y="60.5" text-anchor="middle" fill="#0F162F" font-family="ui-rounded, 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" transform="rotate(0.02 807.0 56.0)">Execute</text>
+<path d="M 734.0 56.0 Q 742.8 52.9 750.0 56.0" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M 740.1 57.4 L 750.0 56.0 L 744.2 47.9" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="rotate(-0.84 947.0 56.0)">
+  <rect x="881.0" y="28.0" width="132.0" height="56.0" rx="15.0" fill="#0F162F" stroke="#D2A657" stroke-width="2.3" stroke-linejoin="round"/>
+</g>
+<g transform="rotate(-0.53 947.0 56.0)" opacity="0.55">
+  <rect x="880.5" y="28.5" width="133.6" height="57.9" rx="13.7" fill="none" stroke="#D2A657" stroke-width="1.15" stroke-linejoin="round"/>
+</g>
+<text x="947.0" y="60.5" text-anchor="middle" fill="#FFFCEB" font-family="ui-rounded, 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="600" transform="rotate(-0.24 947.0 56.0)">Mark applied</text>
+<path d="M 864.0 56.0 Q 871.9 57.9 880.0 56.0" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M 872.7 62.8 L 880.0 56.0 L 870.4 53.0" fill="none" stroke="#D2A657" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
