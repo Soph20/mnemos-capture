@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/badge/license-MIT-FFFCEB?labelColor=0F162F&style=flat" alt="MIT" />
   </p>
   <p>
-    <img src="public/works-with.svg" width="720" alt="Works with Claude, Claude Code, Cursor, Codex, Gemini CLI, VS Code, and any MCP-compatible tool" />
+    <img src="public/works-with.svg" width="720" alt="Works with Claude, ChatGPT, Grok, Claude Code, Cursor, Codex, Gemini CLI, VS Code, and any MCP-compatible tool" />
   </p>
 </div>
 
@@ -82,53 +82,42 @@ Same knowledge, same tools, whichever path you pick.
 
 | If you use | Do this | You need |
 | --- | --- | --- |
-| **Claude** (web, desktop, iOS, Android) | Add Mnemos as a custom connector. No terminal. | The MCP URL below |
-| **Claude Code** | Remote URL, or one local command | The MCP URL, or your API key |
-| **Cursor, Codex, Gemini CLI, VS Code, Windsurf, Cline, Zed** | Add Mnemos as a local MCP server | Your Mnemos API key |
+| **Claude, ChatGPT, or Grok** | Paste the same MCP URL as a custom connector. No terminal. | The URL below |
+| **Claude Code, Cursor, Codex, Gemini CLI, VS Code** | The same URL, or one local command | The URL, or your API key |
 | **Just the Mnemos app for now** | Skip this step. Capture today, connect an AI later. | Nothing else |
 
 ---
 
 ## Connect your AI
 
-MCP is how AI tools talk to Mnemos. You connect once. After that, your agents can search, brief, plan, and apply what you've captured.
+MCP is how AI tools talk to Mnemos. You connect once. After that, Claude, ChatGPT, Grok, and your coding agents can all use the same knowledge.
 
-### Claude — custom connector
+### One URL. Every chat app.
 
-No terminal.
-
-1. Open **Settings → Connectors**
-2. Select **Add custom connector**
-3. Name it `Mnemos`
-4. Paste this URL:
+Claude, ChatGPT, and Grok all take a **custom connector**. Same paste, same sign-in.
 
 ```text
 https://mnemos-capture.vercel.app/api/mcp
 ```
 
-5. Sign in with GitHub when Claude asks, and approve access
+1. Open **Connectors** in the app
+2. Add a custom connector named `Mnemos`
+3. Paste the URL
+4. Sign in with GitHub when asked
 
-Finish Mnemos onboarding (knowledge repo + LLM key) before connecting.
+| App | Open this |
+| --- | --- |
+| **Claude** | Settings → Connectors → Add custom connector |
+| **ChatGPT** | Settings → Connectors (turn on Developer Mode first) |
+| **Grok** | [grok.com/connectors](https://grok.com/connectors) → New Connector → Custom |
 
-### Claude Code
+Finish Mnemos onboarding (knowledge repo + LLM key) before connecting. Then ask: *list my inbox* or *brief me*.
 
-Remote — no API key to paste:
+Any other chat app with custom MCP connectors uses this same URL.
 
-```bash
-claude mcp add --transport http mnemos https://mnemos-capture.vercel.app/api/mcp
-```
+### Coding tools
 
-Local command — uses your Mnemos API key:
-
-```bash
-claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
-```
-
-Then start Claude Code. Ask it to `list_inbox` or `briefing` to confirm the connection.
-
-### Other MCP clients
-
-Cursor, Codex, Gemini CLI, VS Code, Windsurf, Cline, Zed, Claude Desktop — register this command:
+Cursor, Codex, Claude Code, Gemini CLI, VS Code, Windsurf, Cline, Zed, Claude Desktop — if the tool can launch a local process, register this command:
 
 ```bash
 npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
@@ -146,6 +135,12 @@ npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
 **Claude Desktop:** Settings → Developer → Edit Config, add the block to `claude_desktop_config.json`, then fully restart Claude Desktop.
+
+Claude Code can skip the key and use the same URL as the chat apps:
+
+```bash
+claude mcp add --transport http mnemos https://mnemos-capture.vercel.app/api/mcp
+```
 
 Use the URL when the client supports remote MCP. Use the command when it can launch a local process. If the tool has no MCP support yet, capture in the [Mnemos app](https://mnemos-capture.vercel.app) and connect later.
 
