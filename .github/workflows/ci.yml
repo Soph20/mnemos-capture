@@ -28,5 +28,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # Lint runs here because it silently broke once and nobody noticed for a
+      # day: a TypeScript major bump made typescript-eslint refuse to load, and
+      # CI only ran typecheck and tests. A check a contributor runs locally but
+      # CI never runs is a check that eventually stops working.
+      - name: Lint
+        run: npm run lint
+
       - name: Unit tests
         run: npm test

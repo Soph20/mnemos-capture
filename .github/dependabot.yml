@@ -16,6 +16,15 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
     # Majors arrive as individual PRs: they need reading, not batching.
+    ignore:
+      # TypeScript is held at 6.x on purpose. typescript-eslint throws on load
+      # for any TS major >= 7 (a hard version guard, not a config option), and
+      # eslint-config-next bundles it, so TS 7 silently disables lint for the
+      # whole repo. This was merged once and went unnoticed because CI did not
+      # run lint. Drop this ignore when typescript-eslint ships TS >= 7 support
+      # (typescript-eslint#10940) and eslint-config-next picks it up.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
