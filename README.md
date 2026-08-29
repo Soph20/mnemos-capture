@@ -110,10 +110,6 @@ https://mnemos-capture.vercel.app/api/mcp
 
 Finish Mnemos onboarding (knowledge repo + LLM key) before connecting.
 
-> Only connect MCP servers you trust. Anthropic does not control the tools provided by custom connectors. [Learn more](https://support.anthropic.com/en/articles/11175166-about-custom-integrations-using-remote-mcp)
-
-ChatGPT / the OpenAI Responses API MCP tool can use the same URL.
-
 ### Claude Code
 
 Remote — no API key to paste:
