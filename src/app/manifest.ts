@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Capture anything. Insights extracted automatically.",
     start_url: "/",
     display: "standalone",
-    background_color: "#000820",
-    theme_color: "#000820",
+    background_color: "#e7e7ed",
+    theme_color: "#e7e7ed",
     icons: [
       {
         src: "/icon-192.png",

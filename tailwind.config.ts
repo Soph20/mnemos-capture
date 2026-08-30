@@ -9,7 +9,7 @@ const config: Config = {
           navy: "#000820",
           blue: "#1c74d8",
           cyan: "#9dd8f5",
-          silver: "#f0f4f8",
+          silver: "#e7e7ed",
           cream: "#fcfcfc",
         },
       },
