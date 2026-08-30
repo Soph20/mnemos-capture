@@ -186,8 +186,9 @@ export default function CapturePage() {
 
       {/* Header */}
       <div className="w-full mb-10">
-        <div className="flex items-center gap-3 mb-1">
-          <img src="/logo.png" alt="Mnemos" className="h-10 w-10 object-contain"
+        <div className="flex items-center gap-3 mb-1 overflow-visible">
+          <img src="/logo.png" alt="Mnemos" width={48} height={48}
+            className="h-12 w-12 object-contain block shrink-0"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
           <h1 className="text-base font-semibold tracking-tight" style={{ color: "var(--fg)" }}>Mnemos</h1>

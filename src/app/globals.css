@@ -30,6 +30,13 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Safari/Chrome will clip a flush-cropped plate at the bitmap edge. */
+img[alt="Mnemos"] {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--fg-muted);

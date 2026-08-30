@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/mnemos-mark.png" alt="Mnemos" width="72" height="72" />
+  <img src="public/mnemos-mark.png" alt="Mnemos" width="80" height="80" />
   <h1>Mnemos</h1>
   <p><strong>Turn what you discover into context your AI agents can use.</strong></p>
   <p>You find useful stuff. Mnemos makes sure your AI agents can use it later.</p>
