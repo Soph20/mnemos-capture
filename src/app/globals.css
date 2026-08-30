@@ -6,37 +6,36 @@
   box-sizing: border-box;
 }
 
-/* ── Dark palette (default) ── */
+/* Chrome μ palette — Dark Space / Electric Blue / Pale Cyan */
 :root {
-  --bg:               #0F162F;
-  --fg:               #FFFCEB;
-  --fg-muted:         #E0D4B6;
-  --gold:             #D2A657;
-  --gold-faint:       rgba(210,166,87,0.2);
-  --gold-low:         rgba(210,166,87,0.25);
-  --gold-mid:         rgba(210,166,87,0.3);
-  --gold-high:        rgba(210,166,87,0.7);
-  --gold-quote:       rgba(210,166,87,0.4);
-  --input-bg:         rgba(255,255,255,0.04);
-  --card-bg:          rgba(255,255,255,0.03);
-  --spinner-track:    rgba(255,252,235,0.2);
+  --bg:               #000820;
+  --fg:               #fcfcfc;
+  --fg-muted:         #9dd8f5;
+  --gold:             #9dd8f5;
+  --gold-faint:       rgba(157,216,245,0.16);
+  --gold-low:         rgba(157,216,245,0.28);
+  --gold-mid:         rgba(157,216,245,0.4);
+  --gold-high:        rgba(157,216,245,0.75);
+  --gold-quote:       rgba(157,216,245,0.45);
+  --input-bg:         rgba(240,244,248,0.04);
+  --card-bg:          rgba(240,244,248,0.03);
+  --spinner-track:    rgba(252,252,252,0.2);
 }
 
-/* ── Light palette ── */
 @media (prefers-color-scheme: light) {
   :root {
-    --bg:             #F5F0E6;
-    --fg:             #1C1A2E;
-    --fg-muted:       #4A4560;
-    --gold:           #9A6F10;
-    --gold-faint:     rgba(154,111,16,0.2);
-    --gold-low:       rgba(154,111,16,0.3);
-    --gold-mid:       rgba(154,111,16,0.35);
-    --gold-high:      rgba(154,111,16,0.8);
-    --gold-quote:     rgba(154,111,16,0.45);
-    --input-bg:       rgba(0,0,0,0.05);
-    --card-bg:        rgba(0,0,0,0.04);
-    --spinner-track:  rgba(28,26,46,0.2);
+    --bg:             #f0f4f8;
+    --fg:             #000820;
+    --fg-muted:       #022867;
+    --gold:           #1c74d8;
+    --gold-faint:     rgba(28,116,216,0.16);
+    --gold-low:       rgba(28,116,216,0.28);
+    --gold-mid:       rgba(28,116,216,0.4);
+    --gold-high:      rgba(28,116,216,0.8);
+    --gold-quote:     rgba(28,116,216,0.45);
+    --input-bg:       rgba(0,8,32,0.05);
+    --card-bg:        rgba(0,8,32,0.04);
+    --spinner-track:  rgba(0,8,32,0.2);
   }
 }
 
@@ -53,4 +52,3 @@ textarea::placeholder {
   color: var(--fg-muted);
   opacity: 0.4;
 }
-

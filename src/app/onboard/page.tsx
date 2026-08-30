@@ -117,7 +117,7 @@ export default function OnboardPage() {
           <a
             href="/"
             className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all flex items-center justify-center"
-            style={{ background: "#2A62C6", color: "#FFFCEB", textDecoration: "none" }}
+            style={{ background: "#1c74d8", color: "#fcfcfc", textDecoration: "none" }}
           >
             Start capturing
           </a>
@@ -157,9 +157,9 @@ export default function OnboardPage() {
                   onClick={() => setProvider(p)}
                   className="rounded-xl py-2 text-xs font-medium transition-all"
                   style={{
-                    background: selected ? "#2A62C6" : "var(--input-bg)",
-                    color: selected ? "#FFFCEB" : "var(--fg-muted)",
-                    border: `1px solid ${selected ? "#2A62C6" : "var(--gold-low)"}`,
+                    background: selected ? "#1c74d8" : "var(--input-bg)",
+                    color: selected ? "#fcfcfc" : "var(--fg-muted)",
+                    border: `1px solid ${selected ? "#1c74d8" : "var(--gold-low)"}`,
                   }}
                 >
                   {PROVIDERS[p].label}
@@ -211,7 +211,7 @@ export default function OnboardPage() {
               checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)}
               className="mt-0.5 accent-current"
-              style={{ accentColor: "#2A62C6" }}
+              style={{ accentColor: "#1c74d8" }}
             />
             <span className="text-[11px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
               Make this repo <strong>public</strong>
@@ -248,9 +248,9 @@ export default function OnboardPage() {
           onClick={() => void handleSubmit()}
           disabled={!repoName.trim() || !apiKey.trim() || pin.length < MIN_PIN_LENGTH || status === "loading"}
           className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all disabled:opacity-25 disabled:cursor-not-allowed"
-          style={{ background: "#2A62C6", color: "#FFFCEB" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#3570d4"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#2A62C6"; }}
+          style={{ background: "#1c74d8", color: "#fcfcfc" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1054b4"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1c74d8"; }}
         >
           {status === "loading" ? (
             <span className="flex items-center justify-center gap-2">

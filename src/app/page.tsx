@@ -187,7 +187,7 @@ export default function CapturePage() {
       {/* Header */}
       <div className="w-full mb-10">
         <div className="flex items-center gap-3 mb-1">
-          <img src="/logo.png" alt="Mnemos" className="h-7 w-auto"
+          <img src="/logo.png" alt="Mnemos" className="h-10 w-10 object-contain"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
           <h1 className="text-base font-semibold tracking-tight" style={{ color: "var(--fg)" }}>Mnemos</h1>
@@ -243,9 +243,9 @@ export default function CapturePage() {
             onClick={() => void handleSubmit()}
             disabled={!content.trim() || status === "loading"}
             className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all disabled:opacity-25 disabled:cursor-not-allowed"
-            style={{ background: "#2A62C6", color: "#FFFCEB" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#3570d4"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#2A62C6"; }}
+            style={{ background: "#1c74d8", color: "#fcfcfc" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1054b4"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1c74d8"; }}
           >
             {status === "loading" ? (
               <span className="flex items-center justify-center gap-2">

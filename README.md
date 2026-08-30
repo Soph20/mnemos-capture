@@ -1,13 +1,13 @@
 <div align="center">
-  <img src="public/mnemos-mark.svg" alt="Mnemos" width="56" height="56" />
+  <img src="public/mnemos-mark.png" alt="Mnemos" width="72" height="72" />
   <h1>Mnemos</h1>
   <p><strong>Turn what you discover into context your AI agents can use.</strong></p>
   <p>You find useful stuff. Mnemos makes sure your AI agents can use it later.</p>
   <p>
-    <a href="https://mnemos-capture.vercel.app"><img src="https://img.shields.io/badge/Open_app-mnemos--capture.vercel.app-2A62C6?labelColor=0F162F&style=flat" alt="Open app" /></a>
-    <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=2A62C6&labelColor=0F162F&style=flat" alt="npm" /></a>
-    <img src="https://img.shields.io/badge/MCP-compatible-D2A657?labelColor=0F162F&style=flat" alt="MCP" />
-    <img src="https://img.shields.io/badge/license-MIT-FFFCEB?labelColor=0F162F&style=flat" alt="MIT" />
+    <a href="https://mnemos-capture.vercel.app"><img src="https://img.shields.io/badge/Open_app-mnemos--capture.vercel.app-1c74d8?labelColor=000820&style=flat" alt="Open app" /></a>
+    <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
+    <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
+    <img src="https://img.shields.io/badge/license-MIT-f0f4f8?labelColor=000820&style=flat" alt="MIT" />
   </p>
   <p>
     <img src="public/works-with.svg" width="720" alt="Works with Claude, ChatGPT, Grok, Claude Code, Cursor, Codex, Gemini CLI, VS Code, and any MCP-compatible tool" />
