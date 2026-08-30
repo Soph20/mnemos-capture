@@ -113,7 +113,7 @@ export function OPTIONS(): NextResponse {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
-// GET opens a server→client SSE stream. Mnemos has no server-initiated messages,
+// GET opens a server→client SSE stream. mnemos has no server-initiated messages,
 // so per the spec it MAY decline with 405 — the client just won't open a stream.
 export function GET(): NextResponse {
   return new NextResponse(null, { status: 405, headers: { ...CORS, Allow: "POST, DELETE, OPTIONS" } });
@@ -203,11 +203,11 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
               protocolVersion,
               capabilities: { tools: {} },
               // `title`, `websiteUrl`, and `icons` are best-effort branding hints:
-              // clients that support them can show the Mnemos name and logo instead
+              // clients that support them can show the mnemos name and logo instead
               // of a generated letter avatar. Unknown fields are ignored by others.
               serverInfo: {
                 name: "mnemos",
-                title: "Mnemos",
+                title: "mnemos",
                 version: "1.0.0",
                 websiteUrl: env.appUrl,
                 icons: [

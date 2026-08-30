@@ -187,11 +187,11 @@ export default function CapturePage() {
       {/* Header */}
       <div className="w-full mb-10">
         <div className="flex items-center gap-3 mb-1 overflow-visible">
-          <img src="/logo.png" alt="Mnemos" width={48} height={48}
+          <img src="/logo.png" alt="mnemos" width={48} height={48}
             className="h-12 w-12 object-contain block shrink-0"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
-          <h1 className="text-base font-semibold tracking-tight" style={{ color: "var(--fg)" }}>Mnemos</h1>
+          <h1 className="text-base font-semibold tracking-tight" style={{ color: "var(--fg)" }}>mnemos</h1>
           <button
             onClick={() => window.location.reload()}
             aria-label="Refresh page"
@@ -371,7 +371,7 @@ export default function CapturePage() {
         {!mcpKey ? (
           <>
             <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--fg-muted)", opacity: 0.7 }}>
-              Generate an MCP key to use Mnemos from Claude Code and other agents.
+              Generate an MCP key to use mnemos from Claude Code and other agents.
               This rotates your key — any existing one stops working.
             </p>
             <button

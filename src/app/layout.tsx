@@ -2,12 +2,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Mnemos",
+  title: "mnemos",
   description: "Capture anything. Insights extracted automatically.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Mnemos",
+    title: "mnemos",
   },
 };
 

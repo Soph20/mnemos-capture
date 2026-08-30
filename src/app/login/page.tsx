@@ -88,11 +88,11 @@ export default function LoginPage() {
 
         {/* Logo + wordmark */}
         <div className="flex flex-col items-center mb-10">
-          <img src="/logo.png" alt="Mnemos" width={160} height={160}
+          <img src="/logo.png" alt="mnemos" width={160} height={160}
             className="w-40 h-40 object-contain block mb-4"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
-          <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>Mnemos</h1>
+          <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>mnemos</h1>
           <p className="text-sm mt-1" style={{ color: "var(--fg-muted)", opacity: 0.6 }}>
             Knowledge capture for agentic workflows.
           </p>

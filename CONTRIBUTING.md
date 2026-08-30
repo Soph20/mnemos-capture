@@ -1,11 +1,11 @@
-# Contributing to Mnemos
+# Contributing to mnemos
 
-Thanks for looking. Mnemos is a small project with a large surface — an MCP server, a Next.js app, a
+Thanks for looking. mnemos is a small project with a large surface — an MCP server, a Next.js app, a
 CLI, and OAuth — so this page is about how to change it safely rather than about process ceremony.
 
 ## Before you start
 
-Open an issue first for anything beyond a bug fix or a doc correction. Mnemos holds people's GitHub
+Open an issue first for anything beyond a bug fix or a doc correction. mnemos holds people's GitHub
 tokens and LLM API keys, so changes near auth, storage, or the MCP surface deserve a conversation
 before the code exists.
 
@@ -67,7 +67,7 @@ Do not open a public issue for a vulnerability. Report it privately through
 
 ## Self-hosting
 
-Mnemos is MIT licensed, so you may run your own instance. It is not a supported path and there is no
+mnemos is MIT licensed, so you may run your own instance. It is not a supported path and there is no
 deployment guide: a self-hosted copy does not receive the security fixes made here, and this project
 has shipped several that matter. The hosted instance at
 [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the maintained way to use it.

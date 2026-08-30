@@ -129,7 +129,7 @@ export function setupHooks(
   writeSettings(settings);
 
   if (!opts.silent) {
-    console.log("Mnemos inbox hook installed.");
+    console.log("mnemos inbox hook installed.");
     console.log(`Location: ${CLAUDE_SETTINGS_PATH}`);
     if (opts.briefing) {
       console.log("At the start of each Claude Code session you'll see a full project briefing.");
@@ -183,7 +183,7 @@ export function setupPreToolHook(
   writeSettings(settings);
 
   if (!opts.silent) {
-    console.log("Mnemos vault hook installed (PreToolCall).");
+    console.log("mnemos vault hook installed (PreToolCall).");
     console.log("Your knowledge vault will surface relevant captures as you edit files.");
   }
 }
@@ -343,7 +343,7 @@ export async function inboxCheck(
     const count = parseInt(match[1] as string, 10);
     if (count > 0) {
       process.stdout.write(
-        `Mnemos: ${count} capture${count === 1 ? "" : "s"} in inbox — run list_inbox to review\n`,
+        `mnemos: ${count} capture${count === 1 ? "" : "s"} in inbox — run list_inbox to review\n`,
       );
     }
   } catch {

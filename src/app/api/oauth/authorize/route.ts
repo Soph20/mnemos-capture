@@ -46,7 +46,7 @@ function escapeHtml(s: string): string {
 }
 
 function errorPage(message: string, status = 400): NextResponse {
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mnemos — authorization error</title></head><body style="font-family:system-ui,sans-serif;background:#efeef3;color:#000820;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px;"><div style="max-width:26rem;text-align:center;"><h1 style="font-size:1.1rem;">Authorization error</h1><p style="opacity:0.8;line-height:1.5;">${message}</p></div></body></html>`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>mnemos — authorization error</title></head><body style="font-family:system-ui,sans-serif;background:#efeef3;color:#000820;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px;"><div style="max-width:26rem;text-align:center;"><h1 style="font-size:1.1rem;">Authorization error</h1><p style="opacity:0.8;line-height:1.5;">${message}</p></div></body></html>`;
   return new NextResponse(html, { status, headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
@@ -117,7 +117,7 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
     return redirectError(redirectUri, p.state, "invalid_request", "PKCE with code_challenge_method=S256 is required.");
   }
 
-  // Require a signed-in Mnemos user. If absent, bounce through GitHub login and
+  // Require a signed-in mnemos user. If absent, bounce through GitHub login and
   // resume this exact authorization request afterwards.
   const user = await getSession();
   if (!user) {
@@ -136,7 +136,7 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
   // but the knowledge repo must exist or every MCP tool would fail.
   if (!user.github_repo) {
     return errorPage(
-      "Your Mnemos account isn't fully set up yet. Finish onboarding at " +
+      "Your mnemos account isn't fully set up yet. Finish onboarding at " +
         `${env.appUrl}/onboard, then reconnect.`,
     );
   }
@@ -157,10 +157,10 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
   const hidden = (name: string, value: string) =>
     `<input type="hidden" name="${name}" value="${value.replace(/"/g, "&quot;")}">`;
 
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mnemos — connect</title></head><body style="font-family:system-ui,sans-serif;background:#efeef3;color:#000820;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px;">
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>mnemos — connect</title></head><body style="font-family:system-ui,sans-serif;background:#efeef3;color:#000820;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px;">
 <form method="POST" action="/api/oauth/authorize" style="max-width:24rem;width:100%;background:#fcfcfc;border:1px solid rgba(28,116,216,0.2);border-radius:16px;padding:28px;">
-  <img src="/icon-192.png" alt="Mnemos" width="56" height="56" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 0 16px;" />
-  <h1 style="font-size:1.15rem;margin:0 0 8px;">Connect to Mnemos</h1>
+  <img src="/icon-192.png" alt="mnemos" width="56" height="56" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 0 16px;" />
+  <h1 style="font-size:1.15rem;margin:0 0 8px;">Connect to mnemos</h1>
   <p style="opacity:0.8;line-height:1.5;margin:0 0 4px;"><strong>${escapeHtml(clientName)}</strong> wants to access your knowledge hub.</p>
   <p style="opacity:0.6;line-height:1.5;font-size:0.85rem;margin:0 0 12px;">Signed in as <strong>${escapeHtml(user.github_username)}</strong>. It will be able to capture, search, and apply your captures over MCP.</p>
   <p style="opacity:0.75;line-height:1.4;font-size:0.8rem;margin:0 0 20px;padding:10px;border-radius:8px;background:rgba(28,116,216,0.08);border:1px solid rgba(28,116,216,0.2);">Access will be sent to <strong style="word-break:break-all;">${escapeHtml(redirectOrigin)}</strong>. Only approve if you recognize this destination.</p>
