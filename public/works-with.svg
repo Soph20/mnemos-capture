@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 248" role="img" aria-label="Works with Claude, ChatGPT, Grok, Claude Code, Cursor, Codex, Gemini CLI, VS Code, and any MCP-compatible tool">
-  <rect width="980" height="248" rx="20" fill="#e7e7ed"/>
+  <rect width="980" height="248" rx="20" fill="#efeef3"/>
   <rect x="0.75" y="0.75" width="978.5" height="246.5" rx="19.25" fill="none" stroke="#1c74d8" stroke-opacity="0.35" stroke-width="1.5"/>
   <text x="490" y="28" text-anchor="middle" fill="#1c74d8" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="11" letter-spacing="1.6" font-weight="600">SAME URL · CLAUDE · CHATGPT · GROK</text>
   <rect x="248.0" y="42" width="44" height="44" rx="11" fill="#fcfcfc"/>

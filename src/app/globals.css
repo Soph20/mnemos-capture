@@ -6,9 +6,9 @@
   box-sizing: border-box;
 }
 
-/* Chrome μ on #e7e7ed. Dark Space is night mode only. */
+/* Canvas matches the logo plate (#efeef3), one color across the app. */
 :root {
-  --bg:               #e7e7ed;
+  --bg:               #efeef3;
   --fg:               #000820;
   --fg-muted:         #022867;
   --gold:             #1c74d8;
@@ -20,23 +20,6 @@
   --input-bg:         rgba(0,8,32,0.05);
   --card-bg:          rgba(0,8,32,0.04);
   --spinner-track:    rgba(0,8,32,0.2);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:             #000820;
-    --fg:             #fcfcfc;
-    --fg-muted:       #9dd8f5;
-    --gold:           #9dd8f5;
-    --gold-faint:     rgba(157,216,245,0.16);
-    --gold-low:       rgba(157,216,245,0.28);
-    --gold-mid:       rgba(157,216,245,0.4);
-    --gold-high:      rgba(157,216,245,0.75);
-    --gold-quote:     rgba(157,216,245,0.45);
-    --input-bg:       rgba(240,244,248,0.04);
-    --card-bg:        rgba(240,244,248,0.03);
-    --spinner-track:  rgba(252,252,252,0.2);
-  }
 }
 
 body {
