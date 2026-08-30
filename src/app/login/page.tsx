@@ -94,7 +94,7 @@ export default function LoginPage() {
           />
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>mnemos</h1>
           <p className="text-sm mt-1" style={{ color: "var(--fg-muted)", opacity: 0.6 }}>
-            Knowledge capture for agentic workflows.
+            A knowledge graph for your AI.
           </p>
         </div>
 
