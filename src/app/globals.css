@@ -31,7 +31,7 @@ body {
 }
 
 /* Safari/Chrome will clip a flush-cropped plate at the bitmap edge. */
-img[alt="Mnemos"] {
+img[alt="mnemos"] {
   display: block;
   flex-shrink: 0;
   overflow: visible;

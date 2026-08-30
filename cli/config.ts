@@ -1,7 +1,7 @@
 /**
- * Mnemos CLI config — stores which AI assistant kos should drive, and an
+ * mnemos CLI config — stores which AI assistant kos should drive, and an
  * optional API key, in ~/.mnemos/config.json. Provider/agent-agnostic: the
- * user tells Mnemos the exact command to launch their assistant.
+ * user tells mnemos the exact command to launch their assistant.
  */
 
 import { homedir } from "os";

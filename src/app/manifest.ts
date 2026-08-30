@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Mnemos",
-    short_name: "Mnemos",
+    name: "mnemos",
+    short_name: "mnemos",
     description: "Capture anything. Insights extracted automatically.",
     start_url: "/",
     display: "standalone",

@@ -1,4 +1,4 @@
-# Mnemos Capture — Engineering Notes
+# mnemos Capture — Engineering Notes
 
 ## Debugging learnings
 

@@ -1,8 +1,8 @@
 /**
- * kos — Mnemos' Knowledge Operations orchestrator.
+ * kos — mnemos' Knowledge Operations orchestrator.
  *
  * Drives whatever AI assistant the user configured (`mnemos config set agent ...`)
- * to implement a generated plan in an isolated git worktree. Mnemos owns the
+ * to implement a generated plan in an isolated git worktree. mnemos owns the
  * harness-independent parts: fetching the plan, the worktree, and reporting the
  * Verification Checklist. The assistant is a black box — model-agnostic by design.
  */
@@ -63,7 +63,7 @@ function run(cmd: string, cwd?: string): string {
 export async function kos(apiKey: string, opts: { plan?: string } = {}): Promise<void> {
   const cfg = readConfig();
   if (!cfg.agent) {
-    console.error("No agent configured. Tell Mnemos which AI assistant to drive:\n");
+    console.error("No agent configured. Tell mnemos which AI assistant to drive:\n");
     console.error('  mnemos config set agent "claude -p"               # Claude Code');
     console.error('  mnemos config set agent "codex exec"              # Codex');
     console.error('  mnemos config set agent "aider --yes --message"   # Aider');

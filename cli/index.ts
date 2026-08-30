@@ -70,7 +70,7 @@ async function main(): Promise<void> {
 
   // Default: open the hosted app
   console.log("");
-  console.log("  Mnemos — Knowledge capture for agentic workflows\n");
+  console.log("  mnemos — Knowledge capture for agentic workflows\n");
   console.log(`  Open ${HOSTED_URL} to start capturing.`);
   console.log("");
   console.log("  First time? Sign in with GitHub — setup takes 30 seconds.");
@@ -88,10 +88,10 @@ async function main(): Promise<void> {
 
 function printHelp(): void {
   console.log(`
-  Mnemos — Knowledge capture for agentic workflows
+  mnemos — Knowledge capture for agentic workflows
 
   Usage:
-    npx mnemos-capture                                         Open Mnemos in your browser
+    npx mnemos-capture                                         Open mnemos in your browser
     npx mnemos-capture serve-mcp --key KEY                     Start the MCP server for Claude Code
     npx mnemos-capture setup-hooks --key KEY                   Install inbox count hook (fast)
     npx mnemos-capture setup-hooks --key KEY --briefing        Install full briefing hook (uses LLM)
@@ -109,7 +109,7 @@ function printHelp(): void {
     curate            — Validate URLs and flag stale captures
 
   kos — implement plans with your own AI assistant (model-agnostic):
-    1. Tell Mnemos which assistant to drive (once):
+    1. Tell mnemos which assistant to drive (once):
          mnemos config set agent "claude -p"      # or "codex exec", "aider --yes --message"
     2. Generate a plan via the generate_plan MCP tool.
     3. Run: mnemos kos --key YOUR_KEY

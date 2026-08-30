@@ -131,7 +131,7 @@ export default function OnboardPage() {
       <div className="w-full max-w-sm space-y-4">
 
         <div className="flex flex-col items-center mb-6">
-          <img src="/logo.png" alt="Mnemos" width={96} height={96}
+          <img src="/logo.png" alt="mnemos" width={96} height={96}
             className="w-24 h-24 object-contain block mb-4"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />

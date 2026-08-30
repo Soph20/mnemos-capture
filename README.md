@@ -1,8 +1,7 @@
 <div align="center">
-  <img src="public/mnemos-mark.png" alt="Mnemos" width="80" height="80" />
-  <h1>Mnemos</h1>
+  <img src="public/mnemos-mark.png" alt="mnemos" width="80" height="80" />
+  <h1>mnemos</h1>
   <p><strong>Turn what you discover into context your AI agents can use.</strong></p>
-  <p>You find useful stuff. Mnemos makes sure your AI agents can use it later.</p>
   <p>
     <a href="https://mnemos-capture.vercel.app"><img src="https://img.shields.io/badge/Open_app-mnemos--capture.vercel.app-1c74d8?labelColor=000820&style=flat" alt="Open app" /></a>
     <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
@@ -31,13 +30,13 @@
 
 ---
 
-## Why Mnemos?
+## Why mnemos?
 
 The problem isn't finding information. It's putting what you learn to work.
 
 Your agents only know what they were trained on, what's in the current prompt, and what's in the repo you opened. They don't know the article you read this morning, the decision you made last sprint, or the pattern that finally worked.
 
-Capture something once. Mnemos turns it into structured Markdown, stores it in a GitHub repo you own, and makes it available to the AI tools you already use.
+You find useful stuff. mnemos makes sure your AI agents can use it later by turning it into structured .md, stores it in a GitHub repo you own, and makes it available to the AI coding agents you already use.
 
 ---
 
@@ -49,12 +48,12 @@ You do not need a terminal to start.
 
 Open **[mnemos-capture.vercel.app](https://mnemos-capture.vercel.app)** and sign in with GitHub.
 
-Mnemos will:
+mnemos will:
 
 1. Create a **private** GitHub repo for your knowledge (you can opt to make it public)
 2. Ask for your LLM provider API key — Anthropic, OpenAI, or Google. Your key, your cost.
 3. Let you set a PIN (6+ characters) for quick unlock on this device
-4. Show your **Mnemos API key** once — save it if you want to connect a coding tool
+4. Show your **mnemos API key** once — save it if you want to connect a coding tool
 
 That's the whole setup. No repo to clone. No database. No CLI required.
 
@@ -62,7 +61,7 @@ That's the whole setup. No repo to clone. No database. No CLI required.
 
 In the app, paste a URL, a note, a doc excerpt, a transcript, or an idea, then hit **Capture**.
 
-Mnemos extracts the **core idea**, **key takeaways**, **where to apply it**, and the **capture type**, then commits Markdown to your GitHub repo.
+mnemos extracts the **core idea**, **key takeaways**, **where to apply it**, and the **capture type**, then commits Markdown to your GitHub repo.
 
 On a phone: open the app → **Share → Add to Home Screen**. It runs like a native app.
 
@@ -74,13 +73,13 @@ Same knowledge, same tools, whichever path you pick.
 | --- | --- | --- |
 | **Claude, ChatGPT, or Grok** | Paste the same MCP URL as a custom connector. No terminal. | The URL below |
 | **Claude Code, Cursor, Codex, Gemini CLI, VS Code** | The same URL, or one local command | The URL, or your API key |
-| **Just the Mnemos app for now** | Skip this step. Capture today, connect an AI later. | Nothing else |
+| **Just the mnemos app for now** | Skip this step. Capture today, connect an AI later. | Nothing else |
 
 ---
 
 ## Connect your AI
 
-MCP is how AI tools talk to Mnemos. You connect once. After that, Claude, ChatGPT, Grok, and your coding agents can all use the same knowledge.
+MCP is how AI tools talk to mnemos. You connect once. After that, Claude, ChatGPT, Grok, and your coding agents can all use the same knowledge.
 
 ### One URL. Every chat app.
 
@@ -91,7 +90,7 @@ https://mnemos-capture.vercel.app/api/mcp
 ```
 
 1. Open **Connectors** in the app
-2. Add a custom connector named `Mnemos`
+2. Add a custom connector named `mnemos`
 3. Paste the URL
 4. Sign in with GitHub when asked
 
@@ -101,7 +100,7 @@ https://mnemos-capture.vercel.app/api/mcp
 | **ChatGPT** | Settings → Connectors (turn on Developer Mode first) |
 | **Grok** | [grok.com/connectors](https://grok.com/connectors) → New Connector → Custom |
 
-Finish Mnemos onboarding (knowledge repo + LLM key) before connecting. Then ask: *list my inbox* or *brief me*.
+Finish mnemos onboarding (knowledge repo + LLM key) before connecting. Then ask: *list my inbox* or *brief me*.
 
 Any other chat app with custom MCP connectors uses this same URL.
 
@@ -132,7 +131,7 @@ Claude Code can skip the key and use the same URL as the chat apps:
 claude mcp add --transport http mnemos https://mnemos-capture.vercel.app/api/mcp
 ```
 
-Use the URL when the client supports remote MCP. Use the command when it can launch a local process. If the tool has no MCP support yet, capture in the [Mnemos app](https://mnemos-capture.vercel.app) and connect later.
+Use the URL when the client supports remote MCP. Use the command when it can launch a local process. If the tool has no MCP support yet, capture in the [mnemos app](https://mnemos-capture.vercel.app) and connect later.
 
 ---
 
@@ -147,7 +146,7 @@ Use the URL when the client supports remote MCP. Use the command when it can lau
 
 Paste anything text-based: papers, docs, posts, GitHub repos, notes, decisions, ideas, transcripts.
 
-Mnemos detects whether you pasted a URL, a short note, or longer text. No manual tagging required.
+mnemos detects whether you pasted a URL, a short note, or longer text. No manual tagging required.
 
 From a connected agent:
 
@@ -159,7 +158,7 @@ capture "The Mom Test: don't ask if your idea is good. Ask about the person's re
 
 At the start of a work session, ask your agent for a briefing — or install the Claude Code hook below.
 
-Mnemos looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
+mnemos looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
 
 ### 3. Plan
 
@@ -295,18 +294,18 @@ npx -y mnemos-capture@latest <command>
 
 Captures live as structured Markdown in **your** GitHub repository. Private by default.
 
-- **No lock-in** — clone it, move it, delete Mnemos, keep the files
+- **No lock-in** — clone it, move it, delete mnemos, keep the files
 - **No proprietary format** — every capture is a readable `.md` file
 - **No training on your data** — captures are sent only to the LLM provider you chose, with the key you supplied, to extract the insight you asked for
 - **Any tool can read it** — anything that reads Git or speaks MCP
 - **BYOK** — your provider, your key, your cost
-- **Never commit your Mnemos API key** to source control
+- **Never commit your mnemos API key** to source control
 
-## What Mnemos stores, and where
+## What mnemos stores, and where
 
 The whole point of this repo being public is that you can check these claims rather than trust them.
 
-**Your captures are never stored by Mnemos.** They are written straight to your own GitHub repo as Markdown (`src/lib/github.ts`). There is no captures table. Delete the app and your knowledge is untouched.
+**Your captures are never stored by mnemos.** They are written straight to your own GitHub repo as Markdown (`src/lib/github.ts`). There is no captures table. Delete the app and your knowledge is untouched.
 
 **The database holds only account plumbing** (`src/lib/db.ts`):
 
@@ -335,7 +334,7 @@ No analytics, no telemetry, no third-party tracking.
 | --- | --- |
 | GitHub token | Encrypted at rest (AES-256-GCM). Uses the `repo` scope, required to read and write a **private** knowledge hub |
 | Your LLM API key | Encrypted at rest (AES-256-GCM) |
-| Your MCP API key | Hashed — never recoverable, not even by Mnemos |
+| Your MCP API key | Hashed — never recoverable, not even by mnemos |
 | Your PIN | Salted scrypt hash |
 
 Your MCP key is shown exactly once. If you lose it, generate a new one.
@@ -348,7 +347,7 @@ Your MCP key is shown exactly once. If you lose it, generate a new one.
 
 ## Cost
 
-Mnemos is BYOK. You bring your own API key. Mnemos never charges you for inference.
+mnemos is BYOK. You bring your own API key. mnemos never charges you for inference.
 
 Extraction runs on a fast, low-cost model (Claude Haiku 4.5 by default):
 
@@ -372,7 +371,7 @@ Briefing, planning, and synthesis only run when you ask for them.
 
 ## Local development
 
-You do not need to run Mnemos to use it — the hosted instance at [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is for working on the code.
+You do not need to run mnemos to use it — the hosted instance at [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is for working on the code.
 
 | | |
 | --- | --- |
@@ -441,7 +440,7 @@ Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bibtex
 @misc{2026mnemos,
-  title        = {Mnemos: A Knowledge Pipeline for AI Agents},
+  title        = {mnemos: A Knowledge Pipeline for AI Agents},
   author       = {Sofia Padron Valdez},
   year         = 2026,
   journal      = {GitHub repository},
