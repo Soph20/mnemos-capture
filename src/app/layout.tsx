@@ -3,6 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "mnemos",
+  applicationName: "mnemos",
   description: "Capture anything. Insights extracted automatically.",
   appleWebApp: {
     capable: true,
@@ -37,6 +38,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+        <meta name="apple-mobile-web-app-title" content="mnemos" />
+        <meta name="application-name" content="mnemos" />
       </head>
       <body>{children}</body>
     </html>

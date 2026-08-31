@@ -6,8 +6,8 @@
       <img src="public/mnemos-hero-light.gif" width="220" height="220" alt="mnemos">
     </picture>
   </a>
-  <h1>mnemos</h1>
-  <p><strong>Turn what you discover into context your AI agents can use.</strong></p>
+  <p><strong>mnemos</strong></p>
+  <p>Turn what you discover into context your AI agents can use.</p>
   <p>
     <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
@@ -24,8 +24,6 @@
     · <a href="#your-context-stays-in-github">Security</a>
   </sub>
 </p>
-
----
 
 ## Why mnemos?
 
