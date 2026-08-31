@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import SettingsDrawer, { type Me } from "@/components/SettingsDrawer";
+import BrandMark from "@/components/BrandMark";
 
 interface CaptureResult {
   capture: {
@@ -152,10 +153,7 @@ export default function CapturePage() {
       {/* Header */}
       <div className="w-full mb-10">
         <div className="flex items-center gap-3 mb-1 overflow-visible">
-          <img src="/logo.png" alt="mnemos" width={48} height={48}
-            className="h-12 w-12 object-contain block shrink-0"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
+          <BrandMark size={48} className="h-12 w-12" />
           <h1 className="text-base font-semibold tracking-tight" style={{ color: "var(--fg)" }}>mnemos</h1>
           <SettingsDrawer me={me} onMe={setMe} newVersionAvailable={newVersionAvailable} />
         </div>
@@ -194,9 +192,9 @@ export default function CapturePage() {
             onClick={() => void handleSubmit()}
             disabled={!content.trim() || status === "loading"}
             className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all disabled:opacity-25 disabled:cursor-not-allowed"
-            style={{ background: "#1c74d8", color: "#fcfcfc" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1054b4"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1c74d8"; }}
+            style={{ background: "var(--btn)", color: "var(--btn-fg)" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--btn-hover)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--btn)"; }}
           >
             {status === "loading" ? (
               <span className="flex items-center justify-center gap-2">

@@ -6,11 +6,11 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          navy: "#000820",
-          blue: "#1c74d8",
-          cyan: "#9dd8f5",
-          silver: "#efeef3",
-          cream: "#fcfcfc",
+          navy: "#0B1120",
+          blue: "#2E5A9A",
+          cyan: "#3EB0EA",
+          silver: "#E4EDF6",
+          cream: "#E4EDF6",
         },
       },
     },

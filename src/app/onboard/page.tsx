@@ -4,6 +4,7 @@
 const MIN_PIN_LENGTH = 6;
 
 import { useState } from "react";
+import BrandMark from "@/components/BrandMark";
 
 const INPUT_STYLE: React.CSSProperties = {
   background: "var(--input-bg)",
@@ -117,7 +118,7 @@ export default function OnboardPage() {
           <a
             href="/"
             className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all flex items-center justify-center"
-            style={{ background: "#1c74d8", color: "#fcfcfc", textDecoration: "none" }}
+            style={{ background: "var(--btn)", color: "var(--btn-fg)", textDecoration: "none" }}
           >
             Start capturing
           </a>
@@ -131,10 +132,7 @@ export default function OnboardPage() {
       <div className="w-full max-w-sm space-y-4">
 
         <div className="flex flex-col items-center mb-6">
-          <img src="/logo.png" alt="mnemos" width={96} height={96}
-            className="w-24 h-24 object-contain block mb-4"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
+          <BrandMark size={96} className="w-24 h-24 mb-4" />
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>
             Set up your knowledge hub
           </h1>
@@ -158,9 +156,9 @@ export default function OnboardPage() {
                   onClick={() => setProvider(p)}
                   className="rounded-xl py-2 text-xs font-medium transition-all"
                   style={{
-                    background: selected ? "#1c74d8" : "var(--input-bg)",
-                    color: selected ? "#fcfcfc" : "var(--fg-muted)",
-                    border: `1px solid ${selected ? "#1c74d8" : "var(--gold-low)"}`,
+                    background: selected ? "var(--btn)" : "var(--input-bg)",
+                    color: selected ? "var(--btn-fg)" : "var(--fg-muted)",
+                    border: `1px solid ${selected ? "var(--btn)" : "var(--gold-low)"}`,
                   }}
                 >
                   {PROVIDERS[p].label}
@@ -212,7 +210,7 @@ export default function OnboardPage() {
               checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)}
               className="mt-0.5 accent-current"
-              style={{ accentColor: "#1c74d8" }}
+              style={{ accentColor: "var(--accent)" }}
             />
             <span className="text-[11px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
               Make this repo <strong>public</strong>
@@ -249,9 +247,9 @@ export default function OnboardPage() {
           onClick={() => void handleSubmit()}
           disabled={!repoName.trim() || !apiKey.trim() || pin.length < MIN_PIN_LENGTH || status === "loading"}
           className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all disabled:opacity-25 disabled:cursor-not-allowed"
-          style={{ background: "#1c74d8", color: "#fcfcfc" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1054b4"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1c74d8"; }}
+          style={{ background: "var(--btn)", color: "var(--btn-fg)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--btn-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--btn)"; }}
         >
           {status === "loading" ? (
             <span className="flex items-center justify-center gap-2">

@@ -46,7 +46,16 @@ function escapeHtml(s: string): string {
 }
 
 function errorPage(message: string, status = 400): NextResponse {
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>mnemos — authorization error</title></head><body style="font-family:system-ui,sans-serif;background:#efeef3;color:#000820;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px;"><div style="max-width:26rem;text-align:center;"><h1 style="font-size:1.1rem;">Authorization error</h1><p style="opacity:0.8;line-height:1.5;">${message}</p></div></body></html>`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>mnemos — authorization error</title><style>
+:root{color-scheme:light dark}
+.logo-dark{display:none!important}
+@media(prefers-color-scheme:dark){
+  body{background:#0B1120!important;color:#E4EDF6!important}
+  form{background:#121A2C!important;border-color:rgba(62,176,234,.25)!important}
+  .logo-light{display:none!important}
+  .logo-dark{display:block!important}
+}
+</style></head><body style="font-family:system-ui,sans-serif;background:#E4EDF6;color:#0B1120;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px;"><div style="max-width:26rem;text-align:center;"><h1 style="font-size:1.1rem;">Authorization error</h1><p style="opacity:0.8;line-height:1.5;">${message}</p></div></body></html>`;
   return new NextResponse(html, { status, headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
@@ -157,13 +166,22 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
   const hidden = (name: string, value: string) =>
     `<input type="hidden" name="${name}" value="${value.replace(/"/g, "&quot;")}">`;
 
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>mnemos — connect</title></head><body style="font-family:system-ui,sans-serif;background:#efeef3;color:#000820;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px;">
-<form method="POST" action="/api/oauth/authorize" style="max-width:24rem;width:100%;background:#fcfcfc;border:1px solid rgba(28,116,216,0.2);border-radius:16px;padding:28px;">
-  <img src="/icon-192.png" alt="mnemos" width="56" height="56" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 0 16px;" />
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>mnemos — connect</title><style>
+:root{color-scheme:light dark}
+.logo-dark{display:none!important}
+@media(prefers-color-scheme:dark){
+  body{background:#0B1120!important;color:#E4EDF6!important}
+  form{background:#121A2C!important;border-color:rgba(62,176,234,.25)!important}
+  .logo-light{display:none!important}
+  .logo-dark{display:block!important}
+}
+</style></head><body style="font-family:system-ui,sans-serif;background:#E4EDF6;color:#0B1120;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:24px;">
+<form method="POST" action="/api/oauth/authorize" style="max-width:24rem;width:100%;background:#ffffff;border:1px solid rgba(46,90,154,0.22);border-radius:16px;padding:28px;">
+  <img src="/logo.png" alt="mnemos" width="56" height="56" class="logo-light" style="width:56px;height:56px;object-fit:contain;display:block;margin:0 0 16px;" /><img src="/logo-dark.png" alt="" width="56" height="56" class="logo-dark" style="width:56px;height:56px;object-fit:contain;display:none;margin:0 0 16px;" />
   <h1 style="font-size:1.15rem;margin:0 0 8px;">Connect to mnemos</h1>
   <p style="opacity:0.8;line-height:1.5;margin:0 0 4px;"><strong>${escapeHtml(clientName)}</strong> wants to access your knowledge hub.</p>
   <p style="opacity:0.6;line-height:1.5;font-size:0.85rem;margin:0 0 12px;">Signed in as <strong>${escapeHtml(user.github_username)}</strong>. It will be able to capture, search, and apply your captures over MCP.</p>
-  <p style="opacity:0.75;line-height:1.4;font-size:0.8rem;margin:0 0 20px;padding:10px;border-radius:8px;background:rgba(28,116,216,0.08);border:1px solid rgba(28,116,216,0.2);">Access will be sent to <strong style="word-break:break-all;">${escapeHtml(redirectOrigin)}</strong>. Only approve if you recognize this destination.</p>
+  <p style="opacity:0.75;line-height:1.4;font-size:0.8rem;margin:0 0 20px;padding:10px;border-radius:8px;background:rgba(46,90,154,0.10);border:1px solid rgba(46,90,154,0.22);">Access will be sent to <strong style="word-break:break-all;">${escapeHtml(redirectOrigin)}</strong>. Only approve if you recognize this destination.</p>
   ${hidden("response_type", p.responseType)}
   ${hidden("client_id", p.clientId)}
   ${hidden("redirect_uri", redirectUri)}
@@ -173,8 +191,8 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
   ${hidden("code_challenge_method", p.codeChallengeMethod)}
   ${hidden("resource", p.resource)}
   <div style="display:flex;gap:10px;">
-    <button type="submit" name="action" value="deny" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(0,8,32,0.2);background:transparent;color:#000820;font-size:0.9rem;cursor:pointer;">Deny</button>
-    <button type="submit" name="action" value="approve" style="flex:2;padding:12px;border-radius:10px;border:none;background:#1c74d8;color:#fcfcfc;font-weight:600;font-size:0.9rem;cursor:pointer;">Approve</button>
+    <button type="submit" name="action" value="deny" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(11,17,32,0.2);background:transparent;color:#0B1120;font-size:0.9rem;cursor:pointer;">Deny</button>
+    <button type="submit" name="action" value="approve" style="flex:2;padding:12px;border-radius:10px;border:none;background:#2E5A9A;color:#E4EDF6;font-weight:600;font-size:0.9rem;cursor:pointer;">Approve</button>
   </div>
 </form>
 </body></html>`;

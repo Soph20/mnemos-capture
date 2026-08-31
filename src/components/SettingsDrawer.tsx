@@ -41,7 +41,7 @@ function applyTheme(theme: Theme) {
   document.documentElement.setAttribute("data-theme", theme);
   try { localStorage.setItem("mnemos-theme", theme); } catch { /* ignore */ }
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", theme === "dark" ? "#000820" : "#efeef3");
+  if (meta) meta.setAttribute("content", theme === "dark" ? "#0B1120" : "#E4EDF6");
 }
 
 function mcpCommand(key: string): string {
@@ -485,7 +485,7 @@ export default function SettingsDrawer({
                       onClick={() => void saveName()}
                       disabled={profileStatus === "saving" || !displayName.trim() || displayName.trim() === me?.displayName}
                       className="mt-2 text-sm font-medium rounded-xl px-3 py-2 transition-opacity disabled:opacity-30"
-                      style={{ background: "var(--gold)", color: "#fcfcfc" }}
+                      style={{ background: "var(--btn)", color: "var(--btn-fg)" }}
                     >
                       {profileStatus === "saving" ? "Saving…" : profileStatus === "saved" ? "Saved" : "Save name"}
                     </button>
@@ -603,7 +603,7 @@ export default function SettingsDrawer({
                             className="rounded-xl py-2 text-sm font-medium capitalize"
                             style={{
                               background: active ? "var(--gold)" : "transparent",
-                              color: active ? "#fcfcfc" : "var(--fg)",
+                              color: active ? "var(--btn-fg)" : "var(--fg)",
                               border: `1px solid ${active ? "var(--gold)" : "var(--gold-mid)"}`,
                             }}
                           >
@@ -623,7 +623,7 @@ export default function SettingsDrawer({
                         type="button"
                         onClick={() => window.location.reload()}
                         className="mt-2 text-sm font-medium rounded-xl px-3 py-2"
-                        style={{ background: "var(--gold)", color: "#fcfcfc" }}
+                        style={{ background: "var(--btn)", color: "var(--btn-fg)" }}
                       >
                         Update to latest
                       </button>

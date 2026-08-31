@@ -6,22 +6,33 @@
   box-sizing: border-box;
 }
 
-/* Canvas matches the logo plate (#efeef3), one color across the app. */
+/*
+  Palette (same four colors in both themes):
+    #0B1120  ink / dark canvas
+    #E4EDF6  paper / light canvas
+    #2E5A9A  buttons
+    #3EB0EA  accent
+  Light inverts canvas and text so contrast holds.
+*/
 :root {
-  --bg:               #efeef3;
-  --fg:               #000820;
-  --fg-muted:         #022867;
-  --gold:             #1c74d8;
-  --gold-faint:       rgba(28,116,216,0.14);
-  --gold-low:         rgba(28,116,216,0.26);
-  --gold-mid:         rgba(28,116,216,0.4);
-  --gold-high:        rgba(28,116,216,0.8);
-  --gold-quote:       rgba(28,116,216,0.45);
-  --input-bg:         rgba(0,8,32,0.05);
-  --card-bg:          rgba(0,8,32,0.04);
-  --spinner-track:    rgba(0,8,32,0.2);
-  --scrim:            rgba(0,8,32,0.28);
-  --drawer-shadow:    0 12px 40px rgba(0,8,32,0.18);
+  --bg:               #E4EDF6;
+  --fg:               #0B1120;
+  --fg-muted:         #2E5A9A;
+  --gold:             #2E5A9A;
+  --accent:           #3EB0EA;
+  --btn:              #2E5A9A;
+  --btn-hover:        #24487C;
+  --btn-fg:           #E4EDF6;
+  --gold-faint:       rgba(46,90,154,0.12);
+  --gold-low:         rgba(46,90,154,0.22);
+  --gold-mid:         rgba(46,90,154,0.4);
+  --gold-high:        rgba(46,90,154,0.75);
+  --gold-quote:       rgba(46,90,154,0.45);
+  --input-bg:         rgba(11,17,32,0.05);
+  --card-bg:          rgba(11,17,32,0.04);
+  --spinner-track:    rgba(11,17,32,0.2);
+  --scrim:            rgba(11,17,32,0.28);
+  --drawer-shadow:    0 12px 40px rgba(11,17,32,0.16);
   --danger:           #b42318;
   --motion-quick:     150ms;
   --motion-fast:      250ms;
@@ -30,19 +41,23 @@
 }
 
 html[data-theme="dark"] {
-  --bg:               #000820;
-  --fg:               #fcfcfc;
-  --fg-muted:         #9dd8f5;
-  --gold:             #1c74d8;
-  --gold-faint:       rgba(157,216,245,0.12);
-  --gold-low:         rgba(157,216,245,0.22);
-  --gold-mid:         rgba(28,116,216,0.5);
-  --gold-high:        rgba(157,216,245,0.75);
-  --gold-quote:       rgba(157,216,245,0.4);
-  --input-bg:         rgba(252,252,252,0.06);
-  --card-bg:          rgba(252,252,252,0.05);
-  --spinner-track:    rgba(252,252,252,0.2);
-  --scrim:            rgba(0,4,16,0.55);
+  --bg:               #0B1120;
+  --fg:               #E4EDF6;
+  --fg-muted:         #3EB0EA;
+  --gold:             #3EB0EA;
+  --accent:           #3EB0EA;
+  --btn:              #2E5A9A;
+  --btn-hover:        #3A6CB5;
+  --btn-fg:           #E4EDF6;
+  --gold-faint:       rgba(62,176,234,0.12);
+  --gold-low:         rgba(62,176,234,0.22);
+  --gold-mid:         rgba(46,90,154,0.55);
+  --gold-high:        rgba(62,176,234,0.8);
+  --gold-quote:       rgba(62,176,234,0.45);
+  --input-bg:         rgba(228,237,246,0.06);
+  --card-bg:          rgba(228,237,246,0.05);
+  --spinner-track:    rgba(228,237,246,0.2);
+  --scrim:            rgba(5,8,16,0.6);
   --drawer-shadow:    -8px 0 40px rgba(0,0,0,0.45);
   --danger:           #ff7b72;
 }
@@ -60,12 +75,28 @@ button:not(:disabled),
   cursor: pointer;
 }
 
-/* Safari/Chrome will clip a flush-cropped plate at the bitmap edge. */
 img[alt="mnemos"] {
   display: block;
   flex-shrink: 0;
   overflow: visible;
 }
+
+.brand-mark {
+  display: inline-flex;
+  position: relative;
+  flex-shrink: 0;
+  overflow: visible;
+  line-height: 0;
+}
+.brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.brand-mark-dark { display: none; }
+html[data-theme="dark"] .brand-mark-light { display: none !important; }
+html[data-theme="dark"] .brand-mark-dark { display: block; }
 
 input::placeholder,
 textarea::placeholder {
