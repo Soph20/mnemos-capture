@@ -16,7 +16,7 @@
 <p align="center">
   <sub>
     <a href="#start-here">Start</a>
-    · <a href="#connect-your-ai">Connect</a>
+    · <a href="#connect-your-ai-coding-agents">Connect</a>
     · <a href="#workflow">Workflow</a>
     · <a href="#mcp-tools">Tools</a>
     · <a href="#your-context-stays-in-github">Security</a>
@@ -60,7 +60,7 @@ mnemos extracts the **core idea**, **key takeaways**, **where to apply it**, and
 
 On a phone: open the app → **Share → Add to Home Screen**. It runs like a native app.
 
-### 3. Connect the AI you already use
+### 3. Connect the AI coding agents you already use
 
 Same knowledge, same tools, whichever path you pick.
 
@@ -72,7 +72,7 @@ Same knowledge, same tools, whichever path you pick.
 
 ---
 
-## Connect your AI
+## Connect your AI coding agents
 
 MCP is how AI tools talk to mnemos. You connect once. After that, Claude, ChatGPT, Grok, and your coding agents can all use the same knowledge.
 
