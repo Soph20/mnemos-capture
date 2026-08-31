@@ -1,5 +1,9 @@
 <div align="center">
-  <img src="public/mnemos-mark.png" alt="mnemos" width="80" height="80" />
+  <br>
+  <a href="https://mnemos-capture.vercel.app">
+    <img src="public/mnemos-hero-light.mp4" width="220" alt="mnemos" media="(prefers-color-scheme: light)">
+    <img src="public/mnemos-hero-dark.mp4" width="220" alt="mnemos" media="(prefers-color-scheme: dark)">
+  </a>
   <h1>mnemos</h1>
   <p><strong>Turn what you discover into context your AI agents can use.</strong></p>
   <p>
@@ -8,15 +12,7 @@
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
     <img src="https://img.shields.io/badge/license-MIT-f0f4f8?labelColor=000820&style=flat" alt="MIT" />
   </p>
-  <p>
-    <img src="public/works-with.svg" width="720" alt="Works with Claude, ChatGPT, Grok, Claude Code, Cursor, Codex, Gemini CLI, VS Code, and any MCP-compatible tool" />
-  </p>
 </div>
-
-<p align="center">
-  <img src="public/flow-hero.svg" width="720" alt="Discover → Capture → Brief → Plan → Execute" />
-</p>
-
 
 <p align="center">
   <sub>
