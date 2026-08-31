@@ -443,7 +443,7 @@ export default function SettingsDrawer({
                       <p className="text-sm font-medium truncate" style={{ color: "var(--fg)" }}>
                         {me?.displayName ?? "—"}
                       </p>
-                      <p className="text-xs truncate" style={{ color: "var(--fg-muted)", opacity: 0.7 }}>
+                      <p className="text-xs truncate" style={{ color: "var(--fg-muted)" }}>
                         @{me?.githubUsername ?? ""}
                       </p>
                       <div className="flex gap-3 mt-1">
@@ -453,7 +453,7 @@ export default function SettingsDrawer({
                         </button>
                         {me?.hasCustomAvatar && (
                           <button type="button" onClick={() => void resetAvatar()}
-                            className="text-xs" style={{ color: "var(--fg-muted)", opacity: 0.7 }}>
+                            className="text-xs" style={{ color: "var(--fg-muted)" }}>
                             Use GitHub
                           </button>
                         )}
@@ -469,7 +469,7 @@ export default function SettingsDrawer({
                   </div>
                   <div>
                     <label className="block text-[10px] font-medium uppercase tracking-widest mb-1.5"
-                      style={{ color: "var(--fg-muted)", opacity: 0.7 }}>
+                      style={{ color: "var(--fg-muted)" }}>
                       Name
                     </label>
                     <input
@@ -502,7 +502,7 @@ export default function SettingsDrawer({
                 <div className="rounded-2xl p-4 space-y-5" style={CARD_STYLE}>
                   <div>
                     <p className="text-sm font-medium mb-1" style={{ color: "var(--fg)" }}>Connect with your AI agent</p>
-                    <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--fg-muted)", opacity: 0.75 }}>
+                    <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--fg-muted)" }}>
                       Generate an MCP key to use mnemos from terminal. This action rotates your key — any existing one stops working.
                     </p>
                     {!mcpKey ? (
@@ -529,7 +529,7 @@ export default function SettingsDrawer({
                           <code className="text-xs block p-2 rounded-lg break-all" style={{ background: "var(--input-bg)", color: "var(--fg-muted)" }}>
                             {mcpKey}
                           </code>
-                          <p className="text-[10px] mt-1" style={{ color: "var(--fg-muted)", opacity: 0.5 }}>
+                          <p className="text-[10px] mt-1" style={{ color: "var(--fg-muted)" }}>
                             Save this — it will not be shown again. Closing settings discards it.
                           </p>
                         </div>
@@ -555,7 +555,7 @@ export default function SettingsDrawer({
 
                   <div style={{ borderTop: "1px solid var(--gold-faint)", paddingTop: 16 }}>
                     <p className="text-sm font-medium mb-1" style={{ color: "var(--fg)" }}>Change PIN</p>
-                    <p className="text-xs mb-3" style={{ color: "var(--fg-muted)", opacity: 0.75 }}>
+                    <p className="text-xs mb-3" style={{ color: "var(--fg-muted)" }}>
                       Quick unlock on this device. Minimum 6 characters.
                     </p>
                     <div className="space-y-2">
@@ -615,7 +615,7 @@ export default function SettingsDrawer({
                   </div>
                   <div style={{ borderTop: "1px solid var(--gold-faint)", paddingTop: 16 }}>
                     <p className="text-sm font-medium" style={{ color: "var(--fg)" }}>Version</p>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--fg-muted)", opacity: 0.75 }}>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--fg-muted)" }}>
                       {me?.version ?? "—"}
                     </p>
                     {newVersionAvailable ? (
@@ -628,7 +628,7 @@ export default function SettingsDrawer({
                         Update to latest
                       </button>
                     ) : (
-                      <p className="text-xs mt-2" style={{ color: "var(--fg-muted)", opacity: 0.55 }}>
+                      <p className="text-xs mt-2" style={{ color: "var(--fg-muted)" }}>
                         You are on the latest version.
                       </p>
                     )}

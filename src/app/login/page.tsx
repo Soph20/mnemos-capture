@@ -91,7 +91,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center mb-10">
           <BrandMark size={160} className="w-40 h-40 mb-4" />
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>mnemos</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--fg-muted)", opacity: 0.6 }}>
+          <p className="text-sm mt-1" style={{ color: "var(--fg-muted)" }}>
             A knowledge graph for your AI.
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function LoginPage() {
         {pinAvailable && (
         <div className="flex items-center gap-3 py-2">
           <div className="flex-1 h-px" style={{ background: "var(--gold-faint)" }} />
-          <span className="text-xs" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>or</span>
+          <span className="text-xs" style={{ color: "var(--fg-muted)" }}>or</span>
           <div className="flex-1 h-px" style={{ background: "var(--gold-faint)" }} />
         </div>
         )}
@@ -133,7 +133,7 @@ export default function LoginPage() {
         ) : (
           <div className="space-y-2.5 rounded-2xl p-4" style={CARD_STYLE}>
             {pinUser && (
-              <p className="text-xs text-center pb-0.5" style={{ color: "var(--fg-muted)", opacity: 0.6 }}>
+              <p className="text-xs text-center pb-0.5" style={{ color: "var(--fg-muted)" }}>
                 Unlocking as <strong>{pinUser}</strong>
               </p>
             )}
@@ -163,7 +163,7 @@ export default function LoginPage() {
           </div>
         ))}
 
-        <p className="text-[11px] text-center pt-4" style={{ color: "var(--fg-muted)", opacity: 0.3 }}>
+        <p className="text-[11px] text-center pt-4" style={{ color: "var(--fg-muted)" }}>
           First time? Sign in with GitHub to get started.
         </p>
       </div>

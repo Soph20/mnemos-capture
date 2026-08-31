@@ -103,7 +103,7 @@ export default function OnboardPage() {
               <code className="text-xs block p-2 rounded-lg break-all" style={{ background: "var(--input-bg)", color: "var(--fg-muted)" }}>
                 {result.apiKey}
               </code>
-              <p className="text-[10px] mt-1" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
+              <p className="text-[10px] mt-1" style={{ color: "var(--fg-muted)" }}>
                 Save this — it won&apos;t be shown again.
               </p>
             </div>
@@ -136,7 +136,7 @@ export default function OnboardPage() {
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>
             Set up your knowledge hub
           </h1>
-          <p className="text-sm mt-1 text-center" style={{ color: "var(--fg-muted)", opacity: 0.6 }}>
+          <p className="text-sm mt-1 text-center" style={{ color: "var(--fg-muted)" }}>
             Three things and you&apos;re capturing.
           </p>
         </div>
@@ -180,7 +180,7 @@ export default function OnboardPage() {
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--gold-low)"; }}
           />
-          <p className="text-[11px]" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
+          <p className="text-[11px]" style={{ color: "var(--fg-muted)" }}>
             {providerInfo.blurb} <a href={providerInfo.keysUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "underline" }}>Get yours here</a>. Your key, your cost — BYOK.
           </p>
         </div>
@@ -200,7 +200,7 @@ export default function OnboardPage() {
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--gold-low)"; }}
           />
-          <p className="text-[11px]" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
+          <p className="text-[11px]" style={{ color: "var(--fg-muted)" }}>
             We&apos;ll create this repo on your GitHub. Your captures live here.
           </p>
 
@@ -214,7 +214,7 @@ export default function OnboardPage() {
             />
             <span className="text-[11px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
               Make this repo <strong>public</strong>
-              <span className="block" style={{ opacity: 0.55 }}>
+              <span className="block">
                 Off by default — your hub is private, visible only to you. Turn this on
                 only if you want everything you capture to be readable by anyone.
               </span>
@@ -238,7 +238,7 @@ export default function OnboardPage() {
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--gold-low)"; }}
           />
-          <p className="text-[11px]" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
+          <p className="text-[11px]" style={{ color: "var(--fg-muted)" }}>
             For quick access from your phone — no GitHub login needed.
           </p>
         </div>

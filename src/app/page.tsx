@@ -157,7 +157,7 @@ export default function CapturePage() {
           <h1 className="text-base font-semibold tracking-tight" style={{ color: "var(--fg)" }}>mnemos</h1>
           <SettingsDrawer me={me} onMe={setMe} newVersionAvailable={newVersionAvailable} />
         </div>
-        <p className="text-sm pl-10" style={{ color: "var(--fg-muted)", opacity: 0.7 }}>
+        <p className="text-sm pl-10" style={{ color: "var(--fg-muted)" }}>
           Find something. Use it with AI agents.
         </p>
       </div>
@@ -264,7 +264,7 @@ export default function CapturePage() {
             <ul className="space-y-2.5">
               {result.capture.takeaways.map((t, i) => (
                 <li key={i} className="flex gap-2.5 text-sm leading-relaxed">
-                  <span className="mt-0.5 shrink-0 select-none" style={{ color: "var(--gold)", opacity: 0.5 }}>–</span>
+                  <span className="mt-0.5 shrink-0 select-none" style={{ color: "var(--gold)" }}>–</span>
                   <span style={{ color: "var(--fg-muted)" }}>{t}</span>
                 </li>
               ))}
@@ -293,7 +293,7 @@ export default function CapturePage() {
           )}
 
           {/* Filename */}
-          <p className="text-[10px] text-center pt-1 font-mono" style={{ color: "var(--gold)", opacity: 0.35 }}>
+          <p className="text-[10px] text-center pt-1 font-mono" style={{ color: "var(--fg-muted)" }}>
             {result.filename}
           </p>
 

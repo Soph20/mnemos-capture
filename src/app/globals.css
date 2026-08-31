@@ -76,32 +76,31 @@ button:not(:disabled),
 }
 
 img[alt="mnemos"] {
-  display: block;
   flex-shrink: 0;
   overflow: visible;
 }
 
 .brand-mark {
-  display: inline-flex;
-  position: relative;
+  display: inline-grid;
+  place-items: center;
   flex-shrink: 0;
-  overflow: visible;
   line-height: 0;
+  overflow: hidden;
 }
-.brand-mark img {
-  display: block;
+.brand-mark > img {
+  grid-area: 1 / 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-.brand-mark-dark { display: none; }
-html[data-theme="dark"] .brand-mark-light { display: none !important; }
-html[data-theme="dark"] .brand-mark-dark { display: block; }
+.brand-mark > .brand-mark-light { display: block; }
+.brand-mark > .brand-mark-dark { display: none; }
+html[data-theme="dark"] .brand-mark > .brand-mark-light { display: none; }
+html[data-theme="dark"] .brand-mark > .brand-mark-dark { display: block; }
 
 input::placeholder,
 textarea::placeholder {
   color: var(--fg-muted);
-  opacity: 0.4;
 }
 
 @media (prefers-reduced-motion: reduce) {
