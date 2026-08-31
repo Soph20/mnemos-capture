@@ -1,8 +1,8 @@
 <div align="center">
   <br>
   <a href="https://mnemos-capture.vercel.app">
-    <img src="public/mnemos-hero-light.mp4#gh-light-mode-only" width="220" alt="mnemos">
-    <img src="public/mnemos-hero-dark.mp4#gh-dark-mode-only" width="220" alt="mnemos">
+    <img src="public/mnemos-hero-light.gif#gh-light-mode-only" width="220" alt="mnemos">
+    <img src="public/mnemos-hero-dark.gif#gh-dark-mode-only" width="220" alt="mnemos">
   </a>
   <h1>mnemos</h1>
   <p><strong>Turn what you discover into context your AI agents can use.</strong></p>
