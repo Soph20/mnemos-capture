@@ -11,8 +11,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon-light.png", media: "(prefers-color-scheme: light)" },
-      { url: "/favicon-dark.png", media: "(prefers-color-scheme: dark)" },
+      { url: "/favicon-light.png", sizes: "192x192", type: "image/png", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-dark.png", sizes: "192x192", type: "image/png", media: "(prefers-color-scheme: dark)" },
+      { url: "/favicon-32-light.png", sizes: "32x32", type: "image/png", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-32-dark.png", sizes: "32x32", type: "image/png", media: "(prefers-color-scheme: dark)" },
     ],
     apple: "/apple-icon.png",
   },
