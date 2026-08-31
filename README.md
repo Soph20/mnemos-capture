@@ -1,13 +1,12 @@
 <div align="center">
   <br>
   <a href="https://mnemos-capture.vercel.app">
-    <img src="public/logo.png#gh-light-mode-only" width="160" height="160" alt="mnemos">
-    <img src="public/logo-dark.png#gh-dark-mode-only" width="160" height="160" alt="mnemos">
+    <img src="public/mnemos-hero-light.mp4#gh-light-mode-only" width="220" alt="mnemos">
+    <img src="public/mnemos-hero-dark.mp4#gh-dark-mode-only" width="220" alt="mnemos">
   </a>
   <h1>mnemos</h1>
   <p><strong>Turn what you discover into context your AI agents can use.</strong></p>
   <p>
-    <a href="https://mnemos-capture.vercel.app"><img src="https://img.shields.io/badge/Open_app-mnemos--capture.vercel.app-1c74d8?labelColor=000820&style=flat" alt="Open app" /></a>
     <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
     <img src="https://img.shields.io/badge/license-MIT-f0f4f8?labelColor=000820&style=flat" alt="MIT" />
