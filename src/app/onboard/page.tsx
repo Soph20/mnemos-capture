@@ -107,9 +107,9 @@ export default function OnboardPage() {
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--gold)" }}>Connect to Claude Code</p>
+              <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--gold)" }}>Connect with your AI agent</p>
               <code className="text-xs block p-2 rounded-lg break-all" style={{ background: "var(--input-bg)", color: "var(--fg-muted)" }}>
-                claude mcp add mnemos -- npx mnemos-capture serve-mcp --key {result.apiKey}
+                npx -y mnemos-capture@latest serve-mcp --key {result.apiKey}
               </code>
             </div>
           </div>

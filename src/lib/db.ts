@@ -201,6 +201,7 @@ export async function updateUserProfile(
   userId: number,
   fields: { displayName?: string | null; avatarData?: string | null },
 ): Promise<void> {
+  // In-app profile only. Never writes back to GitHub.
   await ensureProfileColumns();
   if (fields.displayName !== undefined) {
     await sql`UPDATE users SET display_name = ${fields.displayName} WHERE id = ${userId}`;
