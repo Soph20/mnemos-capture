@@ -37,55 +37,65 @@ function mePayload(user: {
 }
 
 export async function GET(): Promise<NextResponse> {
-  const user = await getSession();
-  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  await ensureProfileColumns();
-  return NextResponse.json(mePayload(user));
+  try {
+    const user = await getSession();
+    if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    await ensureProfileColumns();
+    return NextResponse.json(mePayload(user));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load profile";
+    return NextResponse.json({ error: `[me] ${message}` }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
-  const user = await getSession();
-  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
-  let body: { displayName?: unknown; avatarData?: unknown };
   try {
-    body = await req.json() as { displayName?: unknown; avatarData?: unknown };
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+    const user = await getSession();
+    if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-  const fields: { displayName?: string | null; avatarData?: string | null } = {};
-
-  if ("displayName" in body) {
-    if (typeof body.displayName !== "string") {
-      return NextResponse.json({ error: "Name must be a string." }, { status: 400 });
+    let body: { displayName?: unknown; avatarData?: unknown };
+    try {
+      body = await req.json() as { displayName?: unknown; avatarData?: unknown };
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
-    const error = validateDisplayName(body.displayName);
-    if (error) return NextResponse.json({ error }, { status: 400 });
-    fields.displayName = body.displayName.trim();
-  }
 
-  if ("avatarData" in body) {
-    if (body.avatarData === null) {
-      fields.avatarData = null;
-    } else if (typeof body.avatarData === "string") {
-      const error = validateAvatarData(body.avatarData);
+    const fields: { displayName?: string | null; avatarData?: string | null } = {};
+
+    if ("displayName" in body) {
+      if (typeof body.displayName !== "string") {
+        return NextResponse.json({ error: "Name must be a string." }, { status: 400 });
+      }
+      const error = validateDisplayName(body.displayName);
       if (error) return NextResponse.json({ error }, { status: 400 });
-      fields.avatarData = body.avatarData;
-    } else {
-      return NextResponse.json({ error: "Invalid image." }, { status: 400 });
+      fields.displayName = body.displayName.trim();
     }
-  }
 
-  if (fields.displayName === undefined && fields.avatarData === undefined) {
-    return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
-  }
+    if ("avatarData" in body) {
+      if (body.avatarData === null) {
+        fields.avatarData = null;
+      } else if (typeof body.avatarData === "string") {
+        const error = validateAvatarData(body.avatarData);
+        if (error) return NextResponse.json({ error }, { status: 400 });
+        fields.avatarData = body.avatarData;
+      } else {
+        return NextResponse.json({ error: "Invalid image." }, { status: 400 });
+      }
+    }
 
-  await updateUserProfile(user.id, fields);
-  const next = {
-    ...user,
-    display_name: fields.displayName !== undefined ? fields.displayName : user.display_name,
-    avatar_data: fields.avatarData !== undefined ? fields.avatarData : user.avatar_data,
-  };
-  return NextResponse.json(mePayload(next));
+    if (fields.displayName === undefined && fields.avatarData === undefined) {
+      return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+    }
+
+    await updateUserProfile(user.id, fields);
+    const next = {
+      ...user,
+      display_name: fields.displayName !== undefined ? fields.displayName : user.display_name,
+      avatar_data: fields.avatarData !== undefined ? fields.avatarData : user.avatar_data,
+    };
+    return NextResponse.json(mePayload(next));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to update profile";
+    return NextResponse.json({ error: `[me] ${message}` }, { status: 500 });
+  }
 }
