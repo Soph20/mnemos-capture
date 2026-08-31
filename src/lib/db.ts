@@ -14,6 +14,8 @@ export interface User {
   api_key: string | null;
   llm_provider: LlmProvider;
   llm_api_key: string | null;
+  display_name: string | null;
+  avatar_data: string | null;
   /** Bumped to revoke every outstanding session and OAuth token for this user. */
   token_version: number;
   created_at: Date;
@@ -55,6 +57,8 @@ export async function initDb(): Promise<void> {
       api_key TEXT UNIQUE,
       llm_provider TEXT DEFAULT 'anthropic',
       llm_api_key TEXT,
+      display_name TEXT,
+      avatar_data TEXT,
       token_version INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW()
     )
@@ -62,6 +66,8 @@ export async function initDb(): Promise<void> {
 
   // Additive migration for databases created before token_version existed.
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_data TEXT`;
 
   // Refresh tokens are tracked so they can be single-use with reuse detection
   // (OAuth 2.1 for public clients). Only the jti is stored, never the token.
@@ -189,6 +195,29 @@ export async function updateUserRepo(userId: number, repo: string): Promise<void
 
 export async function updateUserPin(userId: number, pinHash: string): Promise<void> {
   await sql`UPDATE users SET pin_hash = ${pinHash} WHERE id = ${userId}`;
+}
+
+export async function updateUserProfile(
+  userId: number,
+  fields: { displayName?: string | null; avatarData?: string | null },
+): Promise<void> {
+  // In-app profile only. Never writes back to GitHub.
+  await ensureProfileColumns();
+  if (fields.displayName !== undefined) {
+    await sql`UPDATE users SET display_name = ${fields.displayName} WHERE id = ${userId}`;
+  }
+  if (fields.avatarData !== undefined) {
+    await sql`UPDATE users SET avatar_data = ${fields.avatarData} WHERE id = ${userId}`;
+  }
+}
+
+let profileColumnsReady = false;
+
+export async function ensureProfileColumns(): Promise<void> {
+  if (profileColumnsReady) return;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_data TEXT`;
+  profileColumnsReady = true;
 }
 
 /**

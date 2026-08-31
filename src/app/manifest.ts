@@ -4,11 +4,14 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "mnemos",
     short_name: "mnemos",
-    description: "Capture anything. Insights extracted automatically.",
+    description: "A knowledge graph for your AI",
     start_url: "/",
+    scope: "/",
+    id: "/",
     display: "standalone",
-    background_color: "#efeef3",
-    theme_color: "#efeef3",
+    lang: "en",
+    background_color: "#E4EDF6",
+    theme_color: "#E4EDF6",
     icons: [
       {
         src: "/icon-192.png",

@@ -4,6 +4,7 @@
 const MIN_PIN_LENGTH = 6;
 
 import { useState } from "react";
+import BrandMark from "@/components/BrandMark";
 
 const INPUT_STYLE: React.CSSProperties = {
   background: "var(--input-bg)",
@@ -102,14 +103,14 @@ export default function OnboardPage() {
               <code className="text-xs block p-2 rounded-lg break-all" style={{ background: "var(--input-bg)", color: "var(--fg-muted)" }}>
                 {result.apiKey}
               </code>
-              <p className="text-[10px] mt-1" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
+              <p className="text-[10px] mt-1" style={{ color: "var(--fg-muted)" }}>
                 Save this — it won&apos;t be shown again.
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--gold)" }}>Connect to Claude Code</p>
+              <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--gold)" }}>Connect with your AI agent</p>
               <code className="text-xs block p-2 rounded-lg break-all" style={{ background: "var(--input-bg)", color: "var(--fg-muted)" }}>
-                claude mcp add mnemos -- npx mnemos-capture serve-mcp --key {result.apiKey}
+                npx -y mnemos-capture@latest serve-mcp --key {result.apiKey}
               </code>
             </div>
           </div>
@@ -117,7 +118,7 @@ export default function OnboardPage() {
           <a
             href="/"
             className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all flex items-center justify-center"
-            style={{ background: "#1c74d8", color: "#fcfcfc", textDecoration: "none" }}
+            style={{ background: "var(--btn)", color: "var(--btn-fg)", textDecoration: "none" }}
           >
             Start capturing
           </a>
@@ -131,14 +132,11 @@ export default function OnboardPage() {
       <div className="w-full max-w-sm space-y-4">
 
         <div className="flex flex-col items-center mb-6">
-          <img src="/logo.png" alt="mnemos" width={96} height={96}
-            className="w-24 h-24 object-contain block mb-4"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
+          <BrandMark size={96} className="w-24 h-24 mb-4" />
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>
             Set up your knowledge hub
           </h1>
-          <p className="text-sm mt-1 text-center" style={{ color: "var(--fg-muted)", opacity: 0.6 }}>
+          <p className="text-sm mt-1 text-center" style={{ color: "var(--fg-muted)" }}>
             Three things and you&apos;re capturing.
           </p>
         </div>
@@ -158,9 +156,9 @@ export default function OnboardPage() {
                   onClick={() => setProvider(p)}
                   className="rounded-xl py-2 text-xs font-medium transition-all"
                   style={{
-                    background: selected ? "#1c74d8" : "var(--input-bg)",
-                    color: selected ? "#fcfcfc" : "var(--fg-muted)",
-                    border: `1px solid ${selected ? "#1c74d8" : "var(--gold-low)"}`,
+                    background: selected ? "var(--btn)" : "var(--input-bg)",
+                    color: selected ? "var(--btn-fg)" : "var(--fg-muted)",
+                    border: `1px solid ${selected ? "var(--btn)" : "var(--gold-low)"}`,
                   }}
                 >
                   {PROVIDERS[p].label}
@@ -182,7 +180,7 @@ export default function OnboardPage() {
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--gold-low)"; }}
           />
-          <p className="text-[11px]" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
+          <p className="text-[11px]" style={{ color: "var(--fg-muted)" }}>
             {providerInfo.blurb} <a href={providerInfo.keysUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--gold)", textDecoration: "underline" }}>Get yours here</a>. Your key, your cost — BYOK.
           </p>
         </div>
@@ -202,7 +200,7 @@ export default function OnboardPage() {
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--gold-low)"; }}
           />
-          <p className="text-[11px]" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
+          <p className="text-[11px]" style={{ color: "var(--fg-muted)" }}>
             We&apos;ll create this repo on your GitHub. Your captures live here.
           </p>
 
@@ -212,11 +210,11 @@ export default function OnboardPage() {
               checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)}
               className="mt-0.5 accent-current"
-              style={{ accentColor: "#1c74d8" }}
+              style={{ accentColor: "var(--accent)" }}
             />
             <span className="text-[11px] leading-relaxed" style={{ color: "var(--fg-muted)" }}>
               Make this repo <strong>public</strong>
-              <span className="block" style={{ opacity: 0.55 }}>
+              <span className="block">
                 Off by default — your hub is private, visible only to you. Turn this on
                 only if you want everything you capture to be readable by anyone.
               </span>
@@ -240,7 +238,7 @@ export default function OnboardPage() {
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--gold-low)"; }}
           />
-          <p className="text-[11px]" style={{ color: "var(--fg-muted)", opacity: 0.4 }}>
+          <p className="text-[11px]" style={{ color: "var(--fg-muted)" }}>
             For quick access from your phone — no GitHub login needed.
           </p>
         </div>
@@ -249,9 +247,9 @@ export default function OnboardPage() {
           onClick={() => void handleSubmit()}
           disabled={!repoName.trim() || !apiKey.trim() || pin.length < MIN_PIN_LENGTH || status === "loading"}
           className="w-full py-3.5 rounded-2xl font-medium text-sm transition-all disabled:opacity-25 disabled:cursor-not-allowed"
-          style={{ background: "#1c74d8", color: "#fcfcfc" }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1054b4"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#1c74d8"; }}
+          style={{ background: "var(--btn)", color: "var(--btn-fg)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--btn-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--btn)"; }}
         >
           {status === "loading" ? (
             <span className="flex items-center justify-center gap-2">

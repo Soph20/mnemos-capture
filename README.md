@@ -1,13 +1,14 @@
 <div align="center">
   <br>
   <a href="https://mnemos-capture.vercel.app">
-    <img src="public/mnemos-hero-light.mp4" width="220" alt="mnemos" media="(prefers-color-scheme: light)">
-    <img src="public/mnemos-hero-dark.mp4" width="220" alt="mnemos" media="(prefers-color-scheme: dark)">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="public/mnemos-hero-dark.gif">
+      <img src="public/mnemos-hero-light.gif" width="220" height="220" alt="mnemos">
+    </picture>
   </a>
-  <h1>mnemos</h1>
-  <p><strong>Turn what you discover into context your AI agents can use.</strong></p>
+  <p><strong>mnemos</strong></p>
+  <p>Turn what you discover into context your AI agents can use.</p>
   <p>
-    <a href="https://mnemos-capture.vercel.app"><img src="https://img.shields.io/badge/Open_app-mnemos--capture.vercel.app-1c74d8?labelColor=000820&style=flat" alt="Open app" /></a>
     <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
     <img src="https://img.shields.io/badge/license-MIT-f0f4f8?labelColor=000820&style=flat" alt="MIT" />
@@ -17,14 +18,12 @@
 <p align="center">
   <sub>
     <a href="#start-here">Start</a>
-    · <a href="#connect-your-ai">Connect</a>
+    · <a href="#connect-your-ai-coding-agents">Connect</a>
     · <a href="#workflow">Workflow</a>
     · <a href="#mcp-tools">Tools</a>
     · <a href="#your-context-stays-in-github">Security</a>
   </sub>
 </p>
-
----
 
 ## Why mnemos?
 
@@ -61,7 +60,7 @@ mnemos extracts the **core idea**, **key takeaways**, **where to apply it**, and
 
 On a phone: open the app → **Share → Add to Home Screen**. It runs like a native app.
 
-### 3. Connect the AI you already use
+### 3. Connect the AI coding agents you already use
 
 Same knowledge, same tools, whichever path you pick.
 
@@ -73,7 +72,7 @@ Same knowledge, same tools, whichever path you pick.
 
 ---
 
-## Connect your AI
+## Connect your AI coding agents
 
 MCP is how AI tools talk to mnemos. You connect once. After that, Claude, ChatGPT, Grok, and your coding agents can all use the same knowledge.
 
