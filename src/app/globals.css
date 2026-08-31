@@ -20,6 +20,31 @@
   --input-bg:         rgba(0,8,32,0.05);
   --card-bg:          rgba(0,8,32,0.04);
   --spinner-track:    rgba(0,8,32,0.2);
+  --scrim:            rgba(0,8,32,0.28);
+  --drawer-shadow:    0 12px 40px rgba(0,8,32,0.18);
+  --danger:           #b42318;
+  --motion-quick:     150ms;
+  --motion-fast:      250ms;
+  --motion-medium:    350ms;
+  --ease-out:         cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-theme="dark"] {
+  --bg:               #000820;
+  --fg:               #fcfcfc;
+  --fg-muted:         #9dd8f5;
+  --gold:             #1c74d8;
+  --gold-faint:       rgba(157,216,245,0.12);
+  --gold-low:         rgba(157,216,245,0.22);
+  --gold-mid:         rgba(28,116,216,0.5);
+  --gold-high:        rgba(157,216,245,0.75);
+  --gold-quote:       rgba(157,216,245,0.4);
+  --input-bg:         rgba(252,252,252,0.06);
+  --card-bg:          rgba(252,252,252,0.05);
+  --spinner-track:    rgba(252,252,252,0.2);
+  --scrim:            rgba(0,4,16,0.55);
+  --drawer-shadow:    -8px 0 40px rgba(0,0,0,0.45);
+  --danger:           #ff7b72;
 }
 
 body {
@@ -28,6 +53,11 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100dvh;
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
 }
 
 /* Safari/Chrome will clip a flush-cropped plate at the bitmap edge. */
@@ -41,4 +71,12 @@ input::placeholder,
 textarea::placeholder {
   color: var(--fg-muted);
   opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-quick: 1ms;
+    --motion-fast: 1ms;
+    --motion-medium: 1ms;
+  }
 }

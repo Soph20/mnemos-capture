@@ -18,9 +18,14 @@ export const viewport: Viewport = {
   themeColor: "#efeef3",
 };
 
+const THEME_BOOT = `(function(){try{var t=localStorage.getItem("mnemos-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+      </head>
       <body>{children}</body>
     </html>
   );
