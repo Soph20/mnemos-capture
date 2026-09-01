@@ -7,7 +7,7 @@
     </picture>
   </a>
   <p><strong>mnemos</strong></p>
-  <p>Turn what you discover into context your AI agents can use.</p>
+  <p>Turn what you discover into context your AI workers can use.</p>
   <p>
     <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
@@ -33,6 +33,7 @@
 - [What's inside](#whats-inside)
 - [Your context stays in GitHub](#your-context-stays-in-github)
 - [CLI](#cli)
+- [Evolution](#evolution)
 - [License](#license)
 
 ## How it works
@@ -385,9 +386,14 @@ Extraction runs on a fast, low-cost model (Claude Haiku 4.5 by default):
 
 Briefing, planning, and synthesis only run when you ask for them.
 
-## Roadmap
+## Evolution
 
-Contextual retrieval — rank captures by the agent's current task, not only keyword overlap.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/flow-evolution-dark.svg">
+    <img src="public/flow-evolution-light.svg" width="720" alt="Evolution: 01 Connected Knowledge, 02 Agent Context, 03 Learning Graph">
+  </picture>
+</p>
 
 Working on the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -399,7 +405,7 @@ If you use mnemos in published work:
 
 ```bibtex
 @misc{2026mnemos,
-  title        = {mnemos: A Knowledge Pipeline for AI Agents},
+  title        = {mnemos: A Knowledge Graph for AI workers},
   author       = {Sofia Padron Valdez},
   year         = 2026,
   journal      = {GitHub repository},
