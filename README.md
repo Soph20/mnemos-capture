@@ -2,8 +2,8 @@
   <br>
   <a href="https://mnemos-capture.vercel.app">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="public/mnemos-hero-dark.gif">
-      <img src="public/mnemos-hero-light.gif" width="128" height="128" alt="mnemos">
+      <source media="(prefers-color-scheme: dark)" srcset="public/mnemos-hero-dark.png">
+      <img src="public/mnemos-hero-light.png" width="160" height="160" alt="mnemos">
     </picture>
   </a>
   <p><strong>mnemos</strong></p>
