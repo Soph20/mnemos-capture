@@ -92,7 +92,7 @@ export default function LoginPage() {
           <BrandMark size={160} className="w-40 h-40 mb-4" />
           <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>mnemos</h1>
           <p className="text-sm mt-1" style={{ color: "var(--fg-muted)" }}>
-            A knowledge graph for your AI.
+            A knowledge graph for your AI workers.
           </p>
         </div>
 
