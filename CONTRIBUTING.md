@@ -14,8 +14,43 @@ to a PR.
 
 ## Getting it running
 
-See [Local development](README.md#local-development) in the README: prerequisites, the five
-environment variables, and the one-time `init-db` call. `init-db` must succeed before sign-in works.
+You do not need to run mnemos to use it — the hosted instance at [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is for working on the code.
+
+| | |
+| --- | --- |
+| Node.js | 20.9 or later (Next.js 16 requires it) |
+| PostgreSQL | any reachable instance — local, Neon, or Vercel Postgres |
+| GitHub OAuth app | [create one](https://github.com/settings/developers) with callback `http://localhost:3000/api/auth/callback` |
+
+```bash
+git clone https://github.com/Soph20/mnemos-capture.git
+cd mnemos-capture
+npm ci
+cp .env.example .env
+```
+
+| Variable | Where it comes from |
+| --- | --- |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | your GitHub OAuth app |
+| `POSTGRES_URL` | your Postgres connection string |
+| `SESSION_SECRET` | `openssl rand -hex 32` — also derives the credential-encryption key |
+| `ADMIN_SECRET` | any random string; guards `/api/init-db` |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` |
+
+```bash
+npm run dev
+# in another shell, once — creates the tables (idempotent)
+curl -X POST http://localhost:3000/api/init-db -H "x-admin-secret: $ADMIN_SECRET"
+```
+
+Sign in at `http://localhost:3000` with GitHub. **`init-db` must succeed before sign-in works.**
+
+```bash
+MNEMOS_API_URL=http://localhost:3000/api/mcp node dist/cli/index.js serve-mcp --key <key>
+```
+
+**After any schema change**, `init-db` must run again. From GitHub: **Actions → Initialize database → Run workflow**.
+
 
 ## The checks
 
@@ -71,3 +106,18 @@ mnemos is MIT licensed, so you may run your own instance. It is not a supported 
 deployment guide: a self-hosted copy does not receive the security fixes made here, and this project
 has shipped several that matter. The hosted instance at
 [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the maintained way to use it.
+
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Framework | Next.js 16 (App Router), React 19 |
+| Language | TypeScript |
+| Database | Vercel Postgres |
+| Auth | GitHub OAuth · OAuth 2.1 + PKCE for MCP connectors |
+| Storage | GitHub Contents API — your captures live in your repo |
+| Agent interface | Model Context Protocol (Streamable HTTP + stdio proxy) |
+| LLM | Anthropic SDK · OpenAI and Google via REST (BYOK) |
+| Styling | Tailwind CSS |
+| Tests | Vitest (unit) · Playwright (e2e) |
+
