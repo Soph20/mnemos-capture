@@ -387,9 +387,7 @@ Briefing, planning, and synthesis only run when you ask for them.
 
 ## Roadmap
 
-**Shipped** — hosted web + PWA, GitHub-backed Markdown repo, remote MCP connector, local stdio proxy, BYOK (Anthropic, OpenAI, Google), Claude Code hooks, `kos` orchestrator.
-
-**Planned** — Chrome extension, adapters for tools without MCP, voice memo capture, one gateway key across providers, `kos` per-step model switching and `--detach`.
+Contextual retrieval — rank captures by the agent's current task, not only keyword overlap.
 
 Working on the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -397,6 +395,15 @@ Working on the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 [MIT License](./LICENSE)
 
-<div align="center">
-  <p><a href="https://github.com/Soph20">Sofía Padrón Valdez</a> — builder, AI systems architect.</p>
-</div>
+If you use mnemos in published work:
+
+```bibtex
+@misc{2026mnemos,
+  title        = {mnemos: A Knowledge Pipeline for AI Agents},
+  author       = {Sofia Padron Valdez},
+  year         = 2026,
+  journal      = {GitHub repository},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/Soph20/mnemos-capture}}
+}
+```
