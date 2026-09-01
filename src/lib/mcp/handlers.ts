@@ -478,7 +478,7 @@ export async function handleGeneratePlan(
     // Plan save is best-effort — return the plan text regardless
   }
 
-  return `${planText}\n\n---\nPlan saved to \`plans/${planFilename}\`\n\nTo implement it in an isolated worktree with your own AI assistant, run:\n\n    mnemos kos --plan ${planFilename}\n\n(First time? Set your assistant once: \`mnemos config set agent "claude -p"\` — or "codex exec", "aider --yes --message", etc. Omit --plan to run the most recent plan.)`;
+  return `${planText}\n\n---\nPlan saved to \`plans/${planFilename}\`\n\nTo implement it in an isolated worktree with your own AI worker, run:\n\n    mnemos kos --plan ${planFilename}\n\n(First time? Set your worker once: \`mnemos config set agent "claude -p"\` — or "codex exec", "aider --yes --message", etc. Omit --plan to run the most recent plan.)`;
 }
 
 export async function handleListPlans(

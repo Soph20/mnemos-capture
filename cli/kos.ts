@@ -63,7 +63,7 @@ function run(cmd: string, cwd?: string): string {
 export async function kos(apiKey: string, opts: { plan?: string } = {}): Promise<void> {
   const cfg = readConfig();
   if (!cfg.agent) {
-    console.error("No agent configured. Tell mnemos which AI assistant to drive:\n");
+    console.error("No agent configured. Tell mnemos which AI worker to drive:\n");
     console.error('  mnemos config set agent "claude -p"               # Claude Code');
     console.error('  mnemos config set agent "codex exec"              # Codex');
     console.error('  mnemos config set agent "aider --yes --message"   # Aider');

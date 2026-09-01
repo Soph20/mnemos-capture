@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "mnemos",
     short_name: "mnemos",
-    description: "A knowledge graph for your AI",
+    description: "A knowledge graph for your AI workers",
     start_url: "/",
     scope: "/",
     id: "/",
