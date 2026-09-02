@@ -40,7 +40,7 @@ Xmu builds that bridge.
 - [What's inside](#whats-inside)
 - [Your context stays in GitHub](#your-context-stays-in-github)
 - [CLI](#cli)
-- [Evolution](#evolution)
+- [Roadmap](#roadmap)
 - [License](#license)
 
 ## How it works
@@ -389,14 +389,10 @@ Extraction runs on a fast, low-cost model (Claude Haiku 4.5 by default):
 
 Briefing, planning, and synthesis only run when you ask for them.
 
-## Evolution
+## Roadmap
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/flow-evolution-dark.svg">
-    <img src="public/flow-evolution-light.svg" width="720" alt="Evolution: 03 Learning Graph, 04 Knowledge Graph for Teams">
-  </picture>
-</p>
+- **Learning Graph** — Applied work feeds the next brief. The graph compounds.
+- **Knowledge Graph for Teams** — One graph the team and their AI workers share and compound.
 
 Working on the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
