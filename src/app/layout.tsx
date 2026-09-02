@@ -12,12 +12,15 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon-light.png", sizes: "192x192", type: "image/png", media: "(prefers-color-scheme: light)" },
-      { url: "/favicon-dark.png", sizes: "192x192", type: "image/png", media: "(prefers-color-scheme: dark)" },
+      { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
       { url: "/favicon-32-light.png", sizes: "32x32", type: "image/png", media: "(prefers-color-scheme: light)" },
       { url: "/favicon-32-dark.png", sizes: "32x32", type: "image/png", media: "(prefers-color-scheme: dark)" },
+      { url: "/favicon-light.png", sizes: "192x192", type: "image/png", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-dark.png", sizes: "192x192", type: "image/png", media: "(prefers-color-scheme: dark)" },
     ],
-    apple: "/apple-icon.png",
+    apple: "/apple-icon",
   },
 };
 
