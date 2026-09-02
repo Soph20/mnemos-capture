@@ -3,10 +3,10 @@
   <a href="https://mnemos-capture.vercel.app">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="public/mnemos-hero-dark.gif">
-      <img src="public/mnemos-hero-light.gif" width="160" height="160" alt="mnemos">
+      <img src="public/mnemos-hero-light.gif" width="160" height="160" alt="Xmu">
     </picture>
   </a>
-  <p><strong>mnemos</strong></p>
+  <p><strong>Xmu</strong></p>
   <p>
     <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
@@ -16,11 +16,11 @@
 
 ## Xmu
 
-mnemos is the knowledge graph that bridges human knowledge and AI work.
+Xmu is the knowledge graph that bridges human knowledge and AI work.
 
 Humans are constantly exposed to useful knowledge, domain expertise, and external input. But there is no bridge between what humans know and what their AI workers know and do.
 
-mnemos builds that bridge.
+Xmu builds that bridge.
 
 It captures what humans know, connects it into a knowledge graph, and continuously compounds that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
 
@@ -52,7 +52,7 @@ The problem isn't finding information. It's putting what you learn to work.
 
 Your AI workers only know what they were trained on, what's in the current prompt, and what's in the repo you opened. They don't know the article you read this morning, the decision you made last sprint, or the pattern that finally worked.
 
-You find useful stuff. mnemos turns it into structured Markdown, stores it in a GitHub repo you own, and makes it available to the AI workers you already use.
+You find useful stuff. Xmu turns it into structured Markdown, stores it in a GitHub repo you own, and makes it available to the AI workers you already use.
 
 You connect once. After that, Claude, ChatGPT, Grok, Cursor, Codex — same knowledge.
 
@@ -64,12 +64,12 @@ You do not need a terminal to start.
 
 Open **[mnemos-capture.vercel.app](https://mnemos-capture.vercel.app)** and sign in with GitHub.
 
-mnemos will:
+Xmu will:
 
 1. Create a **private** GitHub repo for your knowledge (you can opt to make it public)
 2. Ask for your LLM provider API key — Anthropic, OpenAI, or Google. Your key, your cost.
 3. Let you set a PIN (6+ characters) for quick unlock on this device
-4. Show your **mnemos API key** once — save it if you want to connect an AI worker
+4. Show your **Xmu API key** once — save it if you want to connect an AI worker
 
 That's the whole setup. No repo to clone. No database. No CLI required.
 
@@ -77,7 +77,7 @@ That's the whole setup. No repo to clone. No database. No CLI required.
 
 In the app, paste a URL, a note, a doc excerpt, a transcript, or an idea, then hit **Capture**.
 
-mnemos extracts the **core idea**, **key takeaways**, **where to apply it**, and the **capture type**, then commits Markdown to your GitHub repo.
+Xmu extracts the **core idea**, **key takeaways**, **where to apply it**, and the **capture type**, then commits Markdown to your GitHub repo.
 
 On a phone: open the app → **Share → Add to Home Screen**. It runs like a native app.
 
@@ -87,7 +87,7 @@ Skip this if you only want the app today. When you're ready, pick your tool unde
 
 ## Connect your AI workers
 
-MCP is how AI workers talk to mnemos. Two primitives, reused everywhere:
+MCP is how AI workers talk to Xmu. Two primitives, reused everywhere:
 
 ```text
 https://mnemos-capture.vercel.app/api/mcp
@@ -97,12 +97,12 @@ https://mnemos-capture.vercel.app/api/mcp
 npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
-Use the **URL** when the app has custom connectors (no terminal). Use the **command** when the tool can launch a local process. Finish mnemos onboarding before connecting, then ask: *list my inbox* or *brief me*.
+Use the **URL** when the app has custom connectors (no terminal). Use the **command** when the tool can launch a local process. Finish Xmu onboarding before connecting, then ask: *list my inbox* or *brief me*.
 
 ### Claude
 
 1. Settings → Connectors → Add custom connector
-2. Name it `mnemos`
+2. Name it `Xmu`
 3. Paste `https://mnemos-capture.vercel.app/api/mcp`
 4. Sign in with GitHub when asked
 
@@ -110,14 +110,14 @@ Use the **URL** when the app has custom connectors (no terminal). Use the **comm
 
 1. Turn on **Developer Mode**
 2. Settings → Connectors → Add custom connector
-3. Name it `mnemos`
+3. Name it `Xmu`
 4. Paste `https://mnemos-capture.vercel.app/api/mcp`
 5. Sign in with GitHub when asked
 
 ### Grok
 
 1. Open [grok.com/connectors](https://grok.com/connectors) → New Connector → Custom
-2. Name it `mnemos`
+2. Name it `Xmu`
 3. Paste `https://mnemos-capture.vercel.app/api/mcp`
 4. Sign in with GitHub when asked
 
@@ -217,7 +217,7 @@ If the tool has **custom connectors**, paste the URL. If it can launch a local p
 
 **Claude Desktop:** Settings → Developer → Edit Config, add the block to `claude_desktop_config.json`, then fully restart.
 
-No MCP support yet? Capture in the [mnemos app](https://mnemos-capture.vercel.app) and connect later.
+No MCP support yet? Capture in the [Xmu app](https://mnemos-capture.vercel.app) and connect later.
 
 ## Workflow
 
@@ -225,7 +225,7 @@ No MCP support yet? Capture in the [mnemos app](https://mnemos-capture.vercel.ap
   <img src="public/flow-workflow.svg" width="720" alt="Docs and notes → Capture → GitHub Markdown → Brief → Plan → Execute → Mark applied" />
 </p>
 
-1. **Capture** — Paste anything text-based: papers, docs, posts, GitHub repos, notes, decisions, ideas, transcripts. mnemos detects a URL, a short note, or longer text. No manual tagging.
+1. **Capture** — Paste anything text-based: papers, docs, posts, GitHub repos, notes, decisions, ideas, transcripts. Xmu detects a URL, a short note, or longer text. No manual tagging.
 
    From a connected worker:
 
@@ -233,7 +233,7 @@ No MCP support yet? Capture in the [mnemos app](https://mnemos-capture.vercel.ap
    capture "The Mom Test: don't ask if your idea is good. Ask about the person's real behavior, current workflow, and past spending."
    ```
 
-2. **Brief** — At the start of a work session, ask your worker for a briefing. mnemos looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
+2. **Brief** — At the start of a work session, ask your worker for a briefing. Xmu looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
 
 3. **Plan** — Select the captures you want and ask your worker to call `generate_plan`. Each plan is Markdown: codebase mapping, implementation steps with effort tiers (`simple`, `complex`, `architectural`), and a verification checklist.
 
@@ -333,18 +333,18 @@ npx -y mnemos-capture@latest <command>
 
 Captures live as structured Markdown in **your** GitHub repository. Private by default.
 
-- **No lock-in** — clone it, move it, delete mnemos, keep the files
+- **No lock-in** — clone it, move it, delete Xmu, keep the files
 - **No proprietary format** — every capture is a readable `.md` file
 - **No training on your data** — captures are sent only to the LLM provider you chose, with the key you supplied, to extract the insight you asked for
 - **Any tool can read it** — anything that reads Git or speaks MCP
 - **BYOK** — your provider, your key, your cost
-- **Never commit your mnemos API key** to source control
+- **Never commit your Xmu API key** to source control
 
-### What mnemos stores, and where
+### What Xmu stores, and where
 
 The whole point of this repo being public is that you can check these claims rather than trust them.
 
-**Your captures are never stored by mnemos.** They are written straight to your own GitHub repo as Markdown (`src/lib/github.ts`). There is no captures table. Delete the app and your knowledge is untouched.
+**Your captures are never stored by Xmu.** They are written straight to your own GitHub repo as Markdown (`src/lib/github.ts`). There is no captures table. Delete the app and your knowledge is untouched.
 
 **The database holds only account plumbing** (`src/lib/db.ts`):
 
@@ -373,7 +373,7 @@ No analytics, no telemetry, no third-party tracking.
 | --- | --- |
 | GitHub token | Encrypted at rest (AES-256-GCM). Uses the `repo` scope, required to read and write a **private** knowledge hub |
 | Your LLM API key | Encrypted at rest (AES-256-GCM) |
-| Your MCP API key | Hashed — never recoverable, not even by mnemos |
+| Your MCP API key | Hashed — never recoverable, not even by Xmu |
 | Your PIN | Salted scrypt hash |
 
 Your MCP key is shown exactly once. If you lose it, generate a new one.
@@ -384,7 +384,7 @@ Your MCP key is shown exactly once. If you lose it, generate a new one.
 
 ## Cost
 
-mnemos is BYOK. You bring your own API key. mnemos never charges you for inference.
+Xmu is BYOK. You bring your own API key. Xmu never charges you for inference.
 
 Extraction runs on a fast, low-cost model (Claude Haiku 4.5 by default):
 
@@ -411,11 +411,11 @@ Working on the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 [MIT License](./LICENSE)
 
-If you use mnemos in published work:
+If you use Xmu in published work:
 
 ```bibtex
 @misc{2026mnemos,
-  title        = {mnemos: A Knowledge Graph for AI workers},
+  title        = {Xmu: A Knowledge Graph for AI workers},
   author       = {Sofia Padron Valdez},
   year         = 2026,
   journal      = {GitHub repository},

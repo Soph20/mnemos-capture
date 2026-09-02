@@ -542,7 +542,7 @@ export async function handleVaultScan(
   const firstTakeaway = takeawaysMatch?.[1]?.split("\n").find((l) => l.startsWith("- ")) ?? "";
   const basename = topMatch.filename.split("/").pop() ?? topMatch.filename;
 
-  return `mnemos vault match (score: ${Math.round(topMatch.score * 100)}%):
+  return `Xmu vault match (score: ${Math.round(topMatch.score * 100)}%):
 
 **${basename.replace(/\.md$/, "")}**
 ${coreIdea}

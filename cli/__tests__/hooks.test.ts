@@ -246,7 +246,7 @@ describe("vaultCheck", () => {
 
   it("outputs vault match when fetch returns a high-score match", async () => {
     fetchSpy.mockReturnValue(makeMcpResponse(
-      "mnemos vault match (score: 87%):\n\n**2026-05-01-error-ctx**\nCore idea here.\n- Key takeaway\n\nApply it? Run: `apply_capture` with filename: `inbox/2026-05-01-error-ctx.md`",
+      "Xmu vault match (score: 87%):\n\n**2026-05-01-error-ctx**\nCore idea here.\n- Key takeaway\n\nApply it? Run: `apply_capture` with filename: `inbox/2026-05-01-error-ctx.md`",
     ));
 
     const { vaultCheck } = await import("../hooks.js");

@@ -90,7 +90,7 @@ export default function LoginPage() {
         {/* Logo + wordmark */}
         <div className="flex flex-col items-center mb-10">
           <BrandMark size={160} className="w-40 h-40 mb-4" />
-          <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>mnemos</h1>
+          <h1 className="text-lg font-semibold tracking-tight" style={{ color: "var(--fg)" }}>Xmu</h1>
           <p className="text-sm mt-1" style={{ color: "var(--fg-muted)" }}>
             A knowledge graph for your AI workers.
           </p>

@@ -1,4 +1,4 @@
-# mnemos Capture — Engineering Notes
+# Xmu — Engineering Notes
 
 ## Debugging learnings
 

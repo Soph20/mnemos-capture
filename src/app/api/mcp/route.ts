@@ -203,11 +203,11 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
               protocolVersion,
               capabilities: { tools: {} },
               // `title`, `websiteUrl`, and `icons` are best-effort branding hints:
-              // clients that support them can show the mnemos name and logo instead
+              // clients that support them can show the Xmu name and logo instead
               // of a generated letter avatar. Unknown fields are ignored by others.
               serverInfo: {
                 name: "mnemos",
-                title: "mnemos",
+                title: "Xmu",
                 version: "1.0.0",
                 websiteUrl: env.appUrl,
                 icons: [

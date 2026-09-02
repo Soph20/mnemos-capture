@@ -11,7 +11,7 @@ export default function BrandMark({
     <span className={`brand-mark ${className}`.trim()} style={{ width: size, height: size }}>
       <img
         src="/logo.png"
-        alt="mnemos"
+        alt="Xmu"
         width={size}
         height={size}
         className="brand-mark-light"

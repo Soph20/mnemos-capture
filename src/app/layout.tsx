@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "mnemos",
-  applicationName: "mnemos",
-  description: "Capture anything. Insights extracted automatically.",
+  title: "Xmu",
+  applicationName: "Xmu",
+  description: "A knowledge graph for your AI workers.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "mnemos",
+    title: "Xmu",
   },
   icons: {
     icon: [
@@ -38,8 +38,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
-        <meta name="apple-mobile-web-app-title" content="mnemos" />
-        <meta name="application-name" content="mnemos" />
+        <meta name="apple-mobile-web-app-title" content="Xmu" />
+        <meta name="application-name" content="Xmu" />
       </head>
       <body>{children}</body>
     </html>

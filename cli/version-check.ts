@@ -63,7 +63,7 @@ export async function maybeSelfUpgrade(): Promise<boolean> {
   if (!latest || !isNewer(latest, current)) return false;
 
   process.stderr.write(
-    `mnemos: upgrading to v${latest} (was v${current})...\n`,
+    `Xmu: upgrading to v${latest} (was v${current})...\n`,
   );
 
   const child = spawn(

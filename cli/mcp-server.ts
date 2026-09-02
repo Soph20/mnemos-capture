@@ -37,7 +37,7 @@ async function proxyToHosted(apiKey: string, msg: JsonRpcMessage): Promise<void>
     });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "unknown error";
-    rpcError(msg.id, `Could not reach mnemos at ${HOSTED_URL}: ${detail}`);
+    rpcError(msg.id, `Could not reach Xmu at ${HOSTED_URL}: ${detail}`);
     return;
   }
 
@@ -71,7 +71,7 @@ export function interpretResponse(
   if (!type.includes("application/json")) {
     const snippet = body.trim().slice(0, 200).replace(/\s+/g, " ");
     return {
-      error: `mnemos returned a non-JSON response (HTTP ${status}${
+      error: `Xmu returned a non-JSON response (HTTP ${status}${
         type ? `, ${type}` : ""
       })${snippet ? `: ${snippet}` : ""}`,
     };
@@ -80,7 +80,7 @@ export function interpretResponse(
   try {
     return { data: JSON.parse(body) as Record<string, unknown> };
   } catch {
-    return { error: `mnemos returned malformed JSON (HTTP ${status}).` };
+    return { error: `Xmu returned malformed JSON (HTTP ${status}).` };
   }
 }
 
@@ -122,7 +122,7 @@ export async function serveMcp(): Promise<void> {
     // Non-fatal — hook setup should never block the MCP server from starting
   }
 
-  process.stderr.write("mnemos MCP server starting (proxying to hosted instance)...\n");
+  process.stderr.write("Xmu MCP server starting (proxying to hosted instance)...\n");
 
   let buffer = "";
   process.stdin.setEncoding("utf-8");
