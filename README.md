@@ -14,8 +14,19 @@
   </p>
 </div>
 
+## Xmu
+
+mnemos is the knowledge graph that bridges human knowledge and AI work.
+
+Humans are constantly exposed to useful knowledge, domain expertise, and external input. But there is no bridge between what humans know and what their AI workers know and do.
+
+mnemos builds that bridge.
+
+It captures what humans know, connects it into a knowledge graph, and continuously compounds that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
+
 ## Table of Contents
 
+- [Xmu](#xmu)
 - [How it works](#how-it-works)
 - [Start here](#start-here)
 - [Connect your AI workers](#connect-your-ai-workers)
