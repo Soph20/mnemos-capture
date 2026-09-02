@@ -22,8 +22,6 @@ Humans are constantly exposed to useful knowledge, domain expertise, and externa
 
 Xmu builds that bridge.
 
-It captures what humans know, connects it into a knowledge graph, and continuously compounds that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
-
 ## Table of Contents
 
 - [Xmu](#xmu)
