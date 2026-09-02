@@ -158,7 +158,7 @@ export default function CapturePage() {
           <SettingsDrawer me={me} onMe={setMe} newVersionAvailable={newVersionAvailable} />
         </div>
         <p className="text-sm pl-10" style={{ color: "var(--fg-muted)" }}>
-          Find something. Use it with AI agents.
+          Find something. Use it with AI workers.
         </p>
       </div>
 

@@ -501,7 +501,7 @@ export default function SettingsDrawer({
                 <SectionLabel>Credentials</SectionLabel>
                 <div className="rounded-2xl p-4 space-y-5" style={CARD_STYLE}>
                   <div>
-                    <p className="text-sm font-medium mb-1" style={{ color: "var(--fg)" }}>Connect with your AI agent</p>
+                    <p className="text-sm font-medium mb-1" style={{ color: "var(--fg)" }}>Connect with your AI worker</p>
                     <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--fg-muted)" }}>
                       Generate an MCP key to use mnemos from terminal. This action rotates your key — any existing one stops working.
                     </p>
@@ -535,7 +535,7 @@ export default function SettingsDrawer({
                         </div>
                         <div>
                           <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--gold)" }}>
-                            Add to your agent
+                            Add to your worker
                           </p>
                           <code className="text-xs block p-2 rounded-lg break-all" style={{ background: "var(--input-bg)", color: "var(--fg-muted)" }}>
                             {mcpCommand(mcpKey)}

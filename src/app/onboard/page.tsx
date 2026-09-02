@@ -108,7 +108,7 @@ export default function OnboardPage() {
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--gold)" }}>Connect with your AI agent</p>
+              <p className="text-[10px] font-medium uppercase tracking-widest mb-1" style={{ color: "var(--gold)" }}>Connect with your AI worker</p>
               <code className="text-xs block p-2 rounded-lg break-all" style={{ background: "var(--input-bg)", color: "var(--fg-muted)" }}>
                 npx -y mnemos-capture@latest serve-mcp --key {result.apiKey}
               </code>

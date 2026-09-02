@@ -70,12 +70,12 @@ async function main(): Promise<void> {
 
   // Default: open the hosted app
   console.log("");
-  console.log("  mnemos — Knowledge capture for agentic workflows\n");
+  console.log("  mnemos — A knowledge graph for your AI workers\n");
   console.log(`  Open ${HOSTED_URL} to start capturing.`);
   console.log("");
   console.log("  First time? Sign in with GitHub — setup takes 30 seconds.");
   console.log("");
-  console.log("  Connect to Claude Code:");
+  console.log("  Connect an AI worker:");
   console.log("  claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY");
   console.log("");
 
@@ -88,27 +88,27 @@ async function main(): Promise<void> {
 
 function printHelp(): void {
   console.log(`
-  mnemos — Knowledge capture for agentic workflows
+  mnemos — A knowledge graph for your AI workers
 
   Usage:
     npx mnemos-capture                                         Open mnemos in your browser
-    npx mnemos-capture serve-mcp --key KEY                     Start the MCP server for Claude Code
+    npx mnemos-capture serve-mcp --key KEY                     Start the MCP server for your AI worker
     npx mnemos-capture setup-hooks --key KEY                   Install inbox count hook (fast)
     npx mnemos-capture setup-hooks --key KEY --briefing        Install full briefing hook (uses LLM)
     npx mnemos-capture setup-hooks --key KEY --vault           Install vault hook (PreToolCall)
     npx mnemos-capture setup-hooks --key KEY --briefing --vault  Install both hooks
-    npx mnemos-capture config set agent "claude -p"            Set which AI assistant kos drives
+    npx mnemos-capture config set agent "claude -p"            Set which AI worker kos drives
     npx mnemos-capture kos --key KEY [--plan FILE]             Implement a plan in an isolated worktree
     npx mnemos-capture help                                    Show this help
 
-  MCP tools (via your AI assistant):
+  MCP tools (via your AI worker):
     briefing          — Session-start briefing with ranked insights to apply
     generate_plan     — Turn selected captures into a full implementation plan
     list_plans        — List or read saved implementation plans
     vault_scan        — Scan all captures for relevance to current activity
     curate            — Validate URLs and flag stale captures
 
-  kos — implement plans with your own AI assistant (model-agnostic):
+  kos — implement plans with your own AI worker (model-agnostic):
     1. Tell mnemos which assistant to drive (once):
          mnemos config set agent "claude -p"      # or "codex exec", "aider --yes --message"
     2. Generate a plan via the generate_plan MCP tool.

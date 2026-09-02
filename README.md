@@ -2,12 +2,11 @@
   <br>
   <a href="https://mnemos-capture.vercel.app">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="public/mnemos-hero-dark.png">
-      <img src="public/mnemos-hero-light.png" width="160" height="160" alt="mnemos">
+      <source media="(prefers-color-scheme: dark)" srcset="public/mnemos-hero-dark.gif">
+      <img src="public/mnemos-hero-light.gif" width="160" height="160" alt="mnemos">
     </picture>
   </a>
   <p><strong>mnemos</strong></p>
-  <p>Turn what you discover into context your AI workers can use.</p>
   <p>
     <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
@@ -15,11 +14,22 @@
   </p>
 </div>
 
+## Xmu
+
+mnemos is the knowledge graph that bridges human knowledge and AI work.
+
+Humans are constantly exposed to useful knowledge, domain expertise, and external input. But there is no bridge between what humans know and what their AI workers know and do.
+
+mnemos builds that bridge.
+
+It captures what humans know, connects it into a knowledge graph, and continuously compounds that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
+
 ## Table of Contents
 
+- [Xmu](#xmu)
 - [How it works](#how-it-works)
 - [Start here](#start-here)
-- [Connect](#connect)
+- [Connect your AI workers](#connect-your-ai-workers)
   - [Claude](#claude)
   - [ChatGPT](#chatgpt)
   - [Grok](#grok)
@@ -40,9 +50,9 @@
 
 The problem isn't finding information. It's putting what you learn to work.
 
-Your agents only know what they were trained on, what's in the current prompt, and what's in the repo you opened. They don't know the article you read this morning, the decision you made last sprint, or the pattern that finally worked.
+Your AI workers only know what they were trained on, what's in the current prompt, and what's in the repo you opened. They don't know the article you read this morning, the decision you made last sprint, or the pattern that finally worked.
 
-You find useful stuff. mnemos turns it into structured Markdown, stores it in a GitHub repo you own, and makes it available to the AI coding agents you already use.
+You find useful stuff. mnemos turns it into structured Markdown, stores it in a GitHub repo you own, and makes it available to the AI workers you already use.
 
 You connect once. After that, Claude, ChatGPT, Grok, Cursor, Codex — same knowledge.
 
@@ -59,7 +69,7 @@ mnemos will:
 1. Create a **private** GitHub repo for your knowledge (you can opt to make it public)
 2. Ask for your LLM provider API key — Anthropic, OpenAI, or Google. Your key, your cost.
 3. Let you set a PIN (6+ characters) for quick unlock on this device
-4. Show your **mnemos API key** once — save it if you want to connect a coding tool
+4. Show your **mnemos API key** once — save it if you want to connect an AI worker
 
 That's the whole setup. No repo to clone. No database. No CLI required.
 
@@ -71,13 +81,13 @@ mnemos extracts the **core idea**, **key takeaways**, **where to apply it**, and
 
 On a phone: open the app → **Share → Add to Home Screen**. It runs like a native app.
 
-### 3. Connect an agent (optional)
+### 3. Connect a worker (optional)
 
-Skip this if you only want the app today. When you're ready, pick your tool under [Connect](#connect). Capture now, connect later — the knowledge is already in your repo.
+Skip this if you only want the app today. When you're ready, pick your tool under [Connect your AI workers](#connect-your-ai-workers). Capture now, connect later — the knowledge is already in your repo.
 
-## Connect
+## Connect your AI workers
 
-MCP is how AI tools talk to mnemos. Two primitives, reused everywhere:
+MCP is how AI workers talk to mnemos. Two primitives, reused everywhere:
 
 ```text
 https://mnemos-capture.vercel.app/api/mcp
@@ -136,7 +146,7 @@ npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --briefing --vault
 | Claude Code CLI, VS Code / JetBrains extensions, desktop app | Yes |
 | Claude Code on the web | No — hooks are local files |
 
-If hooks aren't available, tell your agent: *At session start, call `list_inbox` or `briefing`.*
+If hooks aren't available, tell your worker: *At session start, call `list_inbox` or `briefing`.*
 
 ### Cursor
 
@@ -217,17 +227,17 @@ No MCP support yet? Capture in the [mnemos app](https://mnemos-capture.vercel.ap
 
 1. **Capture** — Paste anything text-based: papers, docs, posts, GitHub repos, notes, decisions, ideas, transcripts. mnemos detects a URL, a short note, or longer text. No manual tagging.
 
-   From a connected agent:
+   From a connected worker:
 
    ```text
    capture "The Mom Test: don't ask if your idea is good. Ask about the person's real behavior, current workflow, and past spending."
    ```
 
-2. **Brief** — At the start of a work session, ask your agent for a briefing. mnemos looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
+2. **Brief** — At the start of a work session, ask your worker for a briefing. mnemos looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
 
-3. **Plan** — Select the captures you want and ask your agent to call `generate_plan`. Each plan is Markdown: codebase mapping, implementation steps with effort tiers (`simple`, `complex`, `architectural`), and a verification checklist.
+3. **Plan** — Select the captures you want and ask your worker to call `generate_plan`. Each plan is Markdown: codebase mapping, implementation steps with effort tiers (`simple`, `complex`, `architectural`), and a verification checklist.
 
-4. **Execute** — Hand the plan to your agent in the current session, or run it in an isolated git worktree:
+4. **Execute** — Hand the plan to your worker in the current session, or run it in an isolated git worktree:
 
    ```bash
    npx -y mnemos-capture@latest config set agent "claude -p"
@@ -391,7 +401,7 @@ Briefing, planning, and synthesis only run when you ask for them.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="public/flow-evolution-dark.svg">
-    <img src="public/flow-evolution-light.svg" width="720" alt="Evolution: 01 Connected Knowledge, 02 Agent Context, 03 Learning Graph">
+    <img src="public/flow-evolution-light.svg" width="720" alt="Evolution: 01 Connected Knowledge, 02 Agent Context, 03 Learning Graph, 04 Knowledge Graph for Teams">
   </picture>
 </p>
 
