@@ -401,7 +401,7 @@ Briefing, planning, and synthesis only run when you ask for them.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="public/flow-evolution-dark.svg">
-    <img src="public/flow-evolution-light.svg" width="720" alt="Evolution: 01 Connected Knowledge, 02 Agent Context, 03 Learning Graph">
+    <img src="public/flow-evolution-light.svg" width="720" alt="Evolution: 01 Connected Knowledge, 02 Agent Context, 03 Learning Graph, 04 Knowledge Graph for Teams">
   </picture>
 </p>
 
