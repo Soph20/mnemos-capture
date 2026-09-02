@@ -1,6 +1,6 @@
 # Security Policy
 
-mnemos holds credentials on your behalf — a GitHub OAuth token, your LLM API key, and
+Xmu holds credentials on your behalf — a GitHub OAuth token, your LLM API key, and
 an MCP key — so security reports are welcome and taken seriously.
 
 ## Reporting a vulnerability
@@ -32,10 +32,10 @@ storage, the MCP tool surface, and server-side request handling.
 - Findings that require an already-compromised GitHub account or a compromised device.
 - Vulnerabilities in GitHub, Vercel, or your chosen LLM provider — report those upstream.
 
-## What mnemos already does
+## What Xmu already does
 
 Documented in the README under
-[What mnemos stores, and where](README.md#what-mnemos-stores-and-where): captures are never
+[What Xmu stores, and where](README.md#what-xmu-stores-and-where): captures are never
 stored server-side, GitHub and LLM credentials are encrypted at rest, the MCP key is stored
 hashed, PINs use salted scrypt, PIN unlock is bound to a device that has completed GitHub
 sign-in, and server-side URL fetching is guarded against SSRF across redirects.

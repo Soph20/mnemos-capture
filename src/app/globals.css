@@ -75,7 +75,7 @@ button:not(:disabled),
   cursor: pointer;
 }
 
-img[alt="mnemos"] {
+img[alt="Xmu"] {
   flex-shrink: 0;
   overflow: visible;
 }

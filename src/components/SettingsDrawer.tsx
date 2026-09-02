@@ -503,7 +503,7 @@ export default function SettingsDrawer({
                   <div>
                     <p className="text-sm font-medium mb-1" style={{ color: "var(--fg)" }}>Connect with your AI worker</p>
                     <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--fg-muted)" }}>
-                      Generate an MCP key to use mnemos from terminal. This action rotates your key — any existing one stops working.
+                      Generate an MCP key to use Xmu from terminal. This action rotates your key — any existing one stops working.
                     </p>
                     {!mcpKey ? (
                       <>

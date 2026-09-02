@@ -1,11 +1,11 @@
-# Contributing to mnemos
+# Contributing to Xmu
 
-Thanks for looking. mnemos is a small project with a large surface — an MCP server, a Next.js app, a
+Thanks for looking. Xmu is a small project with a large surface — an MCP server, a Next.js app, a
 CLI, and OAuth — so this page is about how to change it safely rather than about process ceremony.
 
 ## Before you start
 
-Open an issue first for anything beyond a bug fix or a doc correction. mnemos holds people's GitHub
+Open an issue first for anything beyond a bug fix or a doc correction. Xmu holds people's GitHub
 tokens and LLM API keys, so changes near auth, storage, or the MCP surface deserve a conversation
 before the code exists.
 
@@ -14,7 +14,7 @@ to a PR.
 
 ## Getting it running
 
-You do not need to run mnemos to use it — the hosted instance at [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is for working on the code.
+You do not need to run Xmu to use it — the hosted instance at [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is for working on the code.
 
 | | |
 | --- | --- |
@@ -102,7 +102,7 @@ Do not open a public issue for a vulnerability. Report it privately through
 
 ## Self-hosting
 
-mnemos is MIT licensed, so you may run your own instance. It is not a supported path and there is no
+Xmu is MIT licensed, so you may run your own instance. It is not a supported path and there is no
 deployment guide: a self-hosted copy does not receive the security fixes made here, and this project
 has shipped several that matter. The hosted instance at
 [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the maintained way to use it.

@@ -72,7 +72,7 @@ async function createKnowledgeRepo(
   // Create repo
   const createRes = await githubApiPost(token, "/user/repos", {
     name: repoName,
-    description: "Knowledge hub for mnemos — captured insights routed to agentic workflows",
+    description: "Knowledge hub for Xmu — captured insights routed to agentic workflows",
     private: !isPublic,
     auto_init: true,
   });
@@ -103,7 +103,7 @@ async function createKnowledgeRepo(
   const readmeRes = await githubApiGet(token, `/repos/${fullRepo}/contents/README.md`);
   const readmeSha = readmeRes.ok ? ((readmeRes.data as { sha: string }).sha) : undefined;
 
-  const readmeContent = `# My Knowledge Hub\n\nCaptures from [mnemos](https://github.com/Soph20/mnemos-capture) land here automatically.\n\nAll captures go to \`inbox/\` as structured Markdown files. Each file contains the core idea, key takeaways, quotes, tags, and an "Applied to" field linking the insight to something actionable.\n`;
+  const readmeContent = `# My Knowledge Hub\n\nCaptures from [Xmu](https://github.com/Soph20/mnemos-capture) land here automatically.\n\nAll captures go to \`inbox/\` as structured Markdown files. Each file contains the core idea, key takeaways, quotes, tags, and an "Applied to" field linking the insight to something actionable.\n`;
 
   const readmeBody: Record<string, unknown> = {
     message: "Add knowledge hub README",

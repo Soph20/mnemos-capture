@@ -154,7 +154,7 @@ export default function CapturePage() {
       <div className="w-full mb-10">
         <div className="flex items-center gap-3 mb-1 overflow-visible">
           <BrandMark size={48} className="h-12 w-12" />
-          <h1 className="text-base font-semibold tracking-tight" style={{ color: "var(--fg)" }}>mnemos</h1>
+          <h1 className="text-base font-semibold tracking-tight" style={{ color: "var(--fg)" }}>Xmu</h1>
           <SettingsDrawer me={me} onMe={setMe} newVersionAvailable={newVersionAvailable} />
         </div>
         <p className="text-sm pl-10" style={{ color: "var(--fg-muted)" }}>
