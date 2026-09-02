@@ -6,7 +6,6 @@
       <img src="public/mnemos-hero-light.gif" width="160" height="160" alt="Xmu">
     </picture>
   </a>
-  <p><strong>Xmu</strong></p>
   <p>
     <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
@@ -21,8 +20,6 @@ Xmu is the knowledge graph that bridges human knowledge and AI work.
 Humans are constantly exposed to useful knowledge, domain expertise, and external input. But there is no bridge between what humans know and what their AI workers know and do.
 
 Xmu builds that bridge.
-
-It captures what humans know, connects it into a knowledge graph, and continuously compounds that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
 
 ## Table of Contents
 
@@ -48,13 +45,9 @@ It captures what humans know, connects it into a knowledge graph, and continuous
 
 ## How it works
 
-The problem isn't finding information. It's putting what you learn to work.
+You find useful stuff, you capture through the web app, then Xmu connects it into a knowledge graph, and makes it available to the AI workers you already use.
 
-Your AI workers only know what they were trained on, what's in the current prompt, and what's in the repo you opened. They don't know the article you read this morning, the decision you made last sprint, or the pattern that finally worked.
-
-You find useful stuff. Xmu turns it into structured Markdown, stores it in a GitHub repo you own, and makes it available to the AI workers you already use.
-
-You connect once. After that, Claude, ChatGPT, Grok, Cursor, Codex — same knowledge.
+Xmu will continuously compound that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
 
 ## Start here
 
