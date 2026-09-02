@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 456" role="img" aria-label="Evolution: Connected Knowledge, Agent Context, Learning Graph, Knowledge Graph for Teams">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 664" role="img" aria-label="Evolution: Connected Knowledge, Agent Context, Learning Graph, Knowledge Graph for Teams, Chrome extension, Voice memo">
   <text x="480" y="28" text-anchor="middle" fill="#2E5A9A" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="11" font-weight="600" letter-spacing="0.28em">EVOLUTION</text>
 
   <line x1="470" y1="138" x2="490" y2="138" stroke="#3EB0EA" stroke-width="1.25"/>
@@ -7,6 +7,10 @@
   <circle cx="480" cy="238" r="2.2" fill="#3EB0EA"/>
   <line x1="470" y1="346" x2="490" y2="346" stroke="#3EB0EA" stroke-width="1.25"/>
   <circle cx="480" cy="346" r="2.2" fill="#3EB0EA"/>
+  <line x1="480" y1="436" x2="480" y2="456" stroke="#3EB0EA" stroke-width="1.25"/>
+  <circle cx="480" cy="446" r="2.2" fill="#3EB0EA"/>
+  <line x1="470" y1="554" x2="490" y2="554" stroke="#3EB0EA" stroke-width="1.25"/>
+  <circle cx="480" cy="554" r="2.2" fill="#3EB0EA"/>
 
   <rect x="16" y="52" width="454" height="176" rx="20" fill="#ffffff" stroke="#d5d5dc"/>
   <text x="44" y="88" fill="#3EB0EA" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="13" font-weight="600" letter-spacing="0.08em">01</text>
@@ -27,4 +31,14 @@
   <text x="518" y="296" fill="#3EB0EA" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="13" font-weight="600" letter-spacing="0.08em">04</text>
   <text x="518" y="332" fill="#0B1120" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="18" font-weight="600">Knowledge Graph for Teams</text>
   <text x="518" y="364" fill="#5a6270" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="13">One graph the team and their AI workers share and compound.</text>
+
+  <rect x="16" y="468" width="454" height="176" rx="20" fill="#ffffff" stroke="#d5d5dc"/>
+  <text x="44" y="504" fill="#3EB0EA" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="13" font-weight="600" letter-spacing="0.08em">05</text>
+  <text x="44" y="540" fill="#0B1120" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="18" font-weight="600">Chrome extension</text>
+  <text x="44" y="572" fill="#5a6270" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="13">Capture from the page you are on, without leaving the browser.</text>
+
+  <rect x="490" y="468" width="454" height="176" rx="20" fill="#ffffff" stroke="#d5d5dc"/>
+  <text x="518" y="504" fill="#3EB0EA" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="13" font-weight="600" letter-spacing="0.08em">06</text>
+  <text x="518" y="540" fill="#0B1120" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="18" font-weight="600">Voice memo</text>
+  <text x="518" y="572" fill="#5a6270" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="13">Speak it. Xmu turns it into a capture.</text>
 </svg>
