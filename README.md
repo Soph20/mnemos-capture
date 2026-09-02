@@ -393,6 +393,8 @@ Briefing, planning, and synthesis only run when you ask for them.
 
 - **Learning Graph** — Applied work feeds the next brief. The graph compounds.
 - **Knowledge Graph for Teams** — One graph the team and their AI workers share and compound.
+- **Chrome extension** — Capture from the page you are on, without leaving the browser.
+- **Voice memo** — Speak it. Xmu turns it into a capture.
 
 Working on the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
