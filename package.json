@@ -44,7 +44,7 @@
     "README.md"
   ],
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.121.0",
+    "@anthropic-ai/sdk": "^0.122.0",
     "@vercel/postgres": "^0.10.0",
     "next": "^16.1.6",
     "react": "^19.0.0",
