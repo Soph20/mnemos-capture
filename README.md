@@ -108,11 +108,10 @@ Name the connector `Xmu`, paste `https://mnemos-capture.vercel.app/api/mcp`, sig
 
 #### ChatGPT
 
-1. Go to plugins
-2. Settings → plugins → browse plugins
-3. Name it Xmu
-4. Paste `https://mnemos-capture.vercel.app/api/mcp`
-5. Sign in with GitHub when asked
+1. Settings → Plugins → Browse plugins
+2. Name it Xmu
+3. Paste `https://mnemos-capture.vercel.app/api/mcp`
+4. Sign in with GitHub when asked
 
 #### Grok
 
