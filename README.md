@@ -30,7 +30,16 @@ Xmu builds that bridge.
 - [Start here](#start-here)
 - [Connect your AI workers](#connect-your-ai-workers)
   - [On the web](#on-the-web)
+    - [Claude](#claude)
+    - [ChatGPT](#chatgpt)
+    - [Grok](#grok)
   - [In the terminal](#in-the-terminal)
+    - [Cursor](#cursor)
+    - [VS Code](#vs-code)
+    - [Codex](#codex)
+    - [Gemini CLI](#gemini-cli)
+    - [Claude Code](#claude-code)
+    - [Claude Desktop](#claude-desktop)
 - [Workflow](#workflow)
 - [What's inside](#whats-inside)
 - [Your context stays in GitHub](#your-context-stays-in-github)
@@ -93,11 +102,11 @@ npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 
 Name the connector `Xmu`, paste `https://mnemos-capture.vercel.app/api/mcp`, sign in with GitHub when asked.
 
-**Claude**
+#### Claude
 
 1. Settings → Connectors → Add custom connector
 
-**ChatGPT**
+#### ChatGPT
 
 1. Go to plugins
 2. Settings → plugins → browse plugins
@@ -105,7 +114,7 @@ Name the connector `Xmu`, paste `https://mnemos-capture.vercel.app/api/mcp`, sig
 4. Paste `https://mnemos-capture.vercel.app/api/mcp`
 5. Sign in with GitHub when asked
 
-**Grok**
+#### Grok
 
 1. Open [grok.com/connectors](https://grok.com/connectors) → New Connector → Custom
 
@@ -124,16 +133,31 @@ Register the command in your tool's MCP config:
 }
 ```
 
-| Tool | Where |
-| --- | --- |
-| Cursor | `.cursor/mcp.json` or `~/.cursor/mcp.json` |
-| VS Code / Copilot Chat | `.vscode/mcp.json` |
-| Codex | `~/.codex/config.toml` (`[mcp_servers.mnemos]`) |
-| Gemini CLI | `gemini mcp add mnemos npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY` |
-| Claude Code | `claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY` |
-| Claude Desktop | Settings → Developer → Edit Config |
+#### Cursor
 
-Claude Code can also use the URL, no API key:
+`.cursor/mcp.json` or `~/.cursor/mcp.json`
+
+#### VS Code
+
+`.vscode/mcp.json` (Copilot Chat uses the same file)
+
+#### Codex
+
+`~/.codex/config.toml` under `[mcp_servers.mnemos]`
+
+#### Gemini CLI
+
+```bash
+gemini mcp add mnemos npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+```
+
+#### Claude Code
+
+```bash
+claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+```
+
+Or the URL, no API key:
 
 ```bash
 claude mcp add --transport http mnemos https://mnemos-capture.vercel.app/api/mcp
@@ -146,6 +170,10 @@ npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --briefing --vault
 ```
 
 Hooks are local files — they run in the CLI and editor extensions, not in the browser.
+
+#### Claude Desktop
+
+Settings → Developer → Edit Config, then fully restart.
 
 No MCP support yet? Capture in the [Xmu app](https://mnemos-capture.vercel.app) and connect later.
 
