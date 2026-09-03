@@ -40,6 +40,7 @@ Xmu builds that bridge.
     - [Gemini CLI](#gemini-cli)
     - [Claude Code](#claude-code)
     - [Claude Desktop](#claude-desktop)
+    - [Anything MCP](#anything-mcp)
 - [Workflow](#workflow)
 - [What's inside](#whats-inside)
 - [Your context stays in GitHub](#your-context-stays-in-github)
@@ -119,7 +120,17 @@ Name the connector `Xmu`, paste `https://mnemos-capture.vercel.app/api/mcp`, sig
 
 ### In the terminal
 
-Register the command in your tool's MCP config:
+The same command works in every CLI — Cursor, Codex, Gemini CLI, VS Code, Claude Code, or anything that can launch a local MCP server:
+
+```bash
+npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+```
+
+Register that command in the tool you use.
+
+#### Cursor
+
+Add this to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (all projects):
 
 ```json
 {
@@ -132,17 +143,36 @@ Register the command in your tool's MCP config:
 }
 ```
 
-#### Cursor
-
-`.cursor/mcp.json` or `~/.cursor/mcp.json`
+Or Cursor Settings → MCP → Add new MCP server, same command.
 
 #### VS Code
 
-`.vscode/mcp.json` (Copilot Chat uses the same file)
+Add this to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "mnemos": {
+      "command": "npx",
+      "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
+    }
+  }
+}
+```
+
+GitHub Copilot Chat in VS Code uses the same file.
 
 #### Codex
 
-`~/.codex/config.toml` under `[mcp_servers.mnemos]`
+Codex CLI — add this to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.mnemos]
+command = "npx"
+args = ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
+```
+
+Codex App: Settings → MCP → add the same `npx` command.
 
 #### Gemini CLI
 
@@ -172,7 +202,33 @@ Hooks are local files — they run in the CLI and editor extensions, not in the 
 
 #### Claude Desktop
 
-Settings → Developer → Edit Config, then fully restart.
+Settings → Developer → Edit Config. Add the same `npx` block to `claude_desktop_config.json`, then fully restart:
+
+```json
+{
+  "mcpServers": {
+    "mnemos": {
+      "command": "npx",
+      "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
+    }
+  }
+}
+```
+
+#### Anything MCP
+
+If the tool can launch a local process, register the same `npx` command. If it has **custom connectors** instead, paste the URL (that's the [web](#on-the-web) path).
+
+```json
+{
+  "mcpServers": {
+    "mnemos": {
+      "command": "npx",
+      "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
+    }
+  }
+}
+```
 
 No MCP support yet? Capture in the [Xmu app](https://mnemos-capture.vercel.app) and connect later.
 
