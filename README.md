@@ -6,6 +6,8 @@
       <img src="public/mnemos-hero-light.gif" width="160" height="160" alt="Xmu">
     </picture>
   </a>
+  <br>
+  <br>
   <p>
     <a href="https://www.npmjs.com/package/mnemos-capture"><img src="https://img.shields.io/npm/v/mnemos-capture?color=1c74d8&labelColor=000820&style=flat" alt="npm" /></a>
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
@@ -27,20 +29,23 @@ Xmu builds that bridge.
 - [How it works](#how-it-works)
 - [Start here](#start-here)
 - [Connect your AI workers](#connect-your-ai-workers)
-  - [Claude](#claude)
-  - [ChatGPT](#chatgpt)
-  - [Grok](#grok)
-  - [Claude Code](#claude-code)
-  - [Cursor](#cursor)
-  - [Codex](#codex)
-  - [Gemini CLI](#gemini-cli)
-  - [VS Code](#vs-code)
-  - [Anything MCP](#anything-mcp)
+  - [On the web](#on-the-web)
+    - [Claude](#claude)
+    - [ChatGPT](#chatgpt)
+    - [Grok](#grok)
+  - [In the terminal](#in-the-terminal)
+    - [Cursor](#cursor)
+    - [VS Code](#vs-code)
+    - [Codex](#codex)
+    - [Gemini CLI](#gemini-cli)
+    - [Claude Code](#claude-code)
+    - [Claude Desktop](#claude-desktop)
+    - [Anything MCP](#anything-mcp)
 - [Workflow](#workflow)
 - [What's inside](#whats-inside)
 - [Your context stays in GitHub](#your-context-stays-in-github)
 - [CLI](#cli)
-- [Evolution](#evolution)
+- [Roadmap](#roadmap)
 - [License](#license)
 
 ## How it works
@@ -80,7 +85,9 @@ Skip this if you only want the app today. When you're ready, pick your tool unde
 
 ## Connect your AI workers
 
-MCP is how AI workers talk to Xmu. Two primitives, reused everywhere:
+Xmu is LLM-agnostic. Any worker that speaks MCP can use the same knowledge.
+
+Two primitives:
 
 ```text
 https://mnemos-capture.vercel.app/api/mcp
@@ -90,58 +97,38 @@ https://mnemos-capture.vercel.app/api/mcp
 npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
-Use the **URL** when the app has custom connectors (no terminal). Use the **command** when the tool can launch a local process. Finish Xmu onboarding before connecting, then ask: *list my inbox* or *brief me*.
+**On the web** — paste the URL (no terminal). **In the terminal** — run the command. Finish Xmu onboarding first, then ask: *list my inbox* or *brief me*.
 
-### Claude
+### On the web
+
+Name the connector `Xmu`, paste `https://mnemos-capture.vercel.app/api/mcp`, sign in with GitHub when asked.
+
+#### Claude
 
 1. Settings → Connectors → Add custom connector
-2. Name it `Xmu`
+
+#### ChatGPT
+
+1. Settings → Plugins → Browse plugins
+2. Name it Xmu
 3. Paste `https://mnemos-capture.vercel.app/api/mcp`
 4. Sign in with GitHub when asked
 
-### ChatGPT
-
-1. Turn on **Developer Mode**
-2. Settings → Connectors → Add custom connector
-3. Name it `Xmu`
-4. Paste `https://mnemos-capture.vercel.app/api/mcp`
-5. Sign in with GitHub when asked
-
-### Grok
+#### Grok
 
 1. Open [grok.com/connectors](https://grok.com/connectors) → New Connector → Custom
-2. Name it `Xmu`
-3. Paste `https://mnemos-capture.vercel.app/api/mcp`
-4. Sign in with GitHub when asked
 
-### Claude Code
+### In the terminal
 
-Remote (no API key):
+The same command works in every CLI — Cursor, Codex, Gemini CLI, VS Code, Claude Code, or anything that can launch a local MCP server:
 
 ```bash
-claude mcp add --transport http mnemos https://mnemos-capture.vercel.app/api/mcp
+npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
-Local:
+Register that command in the tool you use.
 
-```bash
-claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
-```
-
-Optional session hooks (MCP works without them):
-
-```bash
-npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --briefing --vault
-```
-
-| Surface | Hooks |
-| --- | --- |
-| Claude Code CLI, VS Code / JetBrains extensions, desktop app | Yes |
-| Claude Code on the web | No — hooks are local files |
-
-If hooks aren't available, tell your worker: *At session start, call `list_inbox` or `briefing`.*
-
-### Cursor
+#### Cursor
 
 Add this to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (all projects):
 
@@ -158,25 +145,7 @@ Add this to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (all projects):
 
 Or Cursor Settings → MCP → Add new MCP server, same command.
 
-### Codex
-
-Add this to `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.mnemos]
-command = "npx"
-args = ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
-```
-
-Codex App: Settings → MCP → add the same command.
-
-### Gemini CLI
-
-```bash
-gemini mcp add mnemos npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
-```
-
-### VS Code
+#### VS Code
 
 Add this to `.vscode/mcp.json`:
 
@@ -191,11 +160,49 @@ Add this to `.vscode/mcp.json`:
 }
 ```
 
-GitHub Copilot Chat in VS Code: Settings → MCP → add the same server.
+GitHub Copilot Chat in VS Code uses the same file.
 
-### Anything MCP
+#### Codex
 
-If the tool has **custom connectors**, paste the URL. If it can launch a local process, register this:
+Codex CLI — add this to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.mnemos]
+command = "npx"
+args = ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
+```
+
+Codex App: Settings → MCP → add the same `npx` command.
+
+#### Gemini CLI
+
+```bash
+gemini mcp add mnemos npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+```
+
+#### Claude Code
+
+```bash
+claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+```
+
+Or the URL, no API key:
+
+```bash
+claude mcp add --transport http mnemos https://mnemos-capture.vercel.app/api/mcp
+```
+
+Optional session hooks (MCP works without them):
+
+```bash
+npx -y mnemos-capture@latest setup-hooks --key YOUR_API_KEY --briefing --vault
+```
+
+Hooks are local files — they run in the CLI and editor extensions, not in the browser.
+
+#### Claude Desktop
+
+Settings → Developer → Edit Config. Add the same `npx` block to `claude_desktop_config.json`, then fully restart:
 
 ```json
 {
@@ -208,7 +215,20 @@ If the tool has **custom connectors**, paste the URL. If it can launch a local p
 }
 ```
 
-**Claude Desktop:** Settings → Developer → Edit Config, add the block to `claude_desktop_config.json`, then fully restart.
+#### Anything MCP
+
+If the tool can launch a local process, register the same `npx` command. If it has **custom connectors** instead, paste the URL (that's the [web](#on-the-web) path).
+
+```json
+{
+  "mcpServers": {
+    "mnemos": {
+      "command": "npx",
+      "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
+    }
+  }
+}
+```
 
 No MCP support yet? Capture in the [Xmu app](https://mnemos-capture.vercel.app) and connect later.
 
@@ -389,14 +409,12 @@ Extraction runs on a fast, low-cost model (Claude Haiku 4.5 by default):
 
 Briefing, planning, and synthesis only run when you ask for them.
 
-## Evolution
+## Roadmap
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/flow-evolution-dark.svg">
-    <img src="public/flow-evolution-light.svg" width="720" alt="Evolution: 01 Connected Knowledge, 02 Agent Context, 03 Learning Graph, 04 Knowledge Graph for Teams">
-  </picture>
-</p>
+- **Learning Graph** — Applied work feeds the next brief. The graph compounds.
+- **Knowledge Graph for Teams** — One graph the team and their AI workers share and compound.
+- **Chrome extension** — Capture from the page you are on, without leaving the browser.
+- **Voice memo** — Speak it. Xmu turns it into a capture.
 
 Working on the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
