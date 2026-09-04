@@ -41,7 +41,7 @@ const PROVIDERS: Record<Provider, { label: string; placeholder: string; keysUrl:
 };
 
 export default function OnboardPage() {
-  const [repoName, setRepoName] = useState("mnemos-knowledge");
+  const [repoName, setRepoName] = useState("xmu-knowledge");
   const [provider, setProvider] = useState<Provider>("anthropic");
   const [apiKey, setApiKey] = useState("");
   const [pin, setPin] = useState("");
@@ -194,7 +194,7 @@ export default function OnboardPage() {
             type="text"
             value={repoName}
             onChange={(e) => setRepoName(e.target.value)}
-            placeholder="mnemos-knowledge"
+            placeholder="xmu-knowledge"
             className="w-full rounded-xl px-3 py-2.5 text-sm transition-colors focus:outline-none"
             style={INPUT_STYLE}
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--gold-high)"; }}

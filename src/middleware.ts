@@ -26,7 +26,7 @@ export function middleware(req: NextRequest): NextResponse {
   }
 
   // Check for session cookie
-  const session = req.cookies.get("mnemos_session");
+  const session = req.cookies.get("xmu_session") ?? req.cookies.get("mnemos_session");
   if (!session) {
     // API routes must always return JSON — never redirect to the /login HTML page.
     // A 307 → 200 HTML login page makes client `res.json()` throw

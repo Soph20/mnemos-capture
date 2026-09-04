@@ -76,7 +76,7 @@ export function issueRefreshToken(
   clientId: string,
   tokenVersion: number,
 ): { token: string; jti: string; expiresAt: Date } {
-  const jti = `mnemos_rt_${crypto.randomBytes(24).toString("hex")}`;
+  const jti = `xmu_rt_${crypto.randomBytes(24).toString("hex")}`;
   const token = issueToken("refresh", userId, clientId, REFRESH_TOKEN_TTL_SECONDS, tokenVersion, jti);
   return { token, jti, expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000) };
 }
@@ -137,11 +137,11 @@ export function verifyPkce(verifier: string, challenge: string, method: string):
 // ── Random identifiers ──
 
 export function randomAuthCode(): string {
-  return `mnemos_ac_${crypto.randomBytes(32).toString("hex")}`;
+  return `xmu_ac_${crypto.randomBytes(32).toString("hex")}`;
 }
 
 export function randomClientId(): string {
-  return `mnemos_client_${crypto.randomBytes(16).toString("hex")}`;
+  return `xmu_client_${crypto.randomBytes(16).toString("hex")}`;
 }
 
 // ── Metadata ──

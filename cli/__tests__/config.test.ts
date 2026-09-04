@@ -9,8 +9,8 @@ describe("config", () => {
   let origHome: string | undefined;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "mnemos-config-test-"));
-    configPath = join(tmpDir, ".mnemos", "config.json");
+    tmpDir = mkdtempSync(join(tmpdir(), "xmu-config-test-"));
+    configPath = join(tmpDir, ".xmu", "config.json");
     origHome = process.env["HOME"];
     process.env["HOME"] = tmpDir;
     // Module-level CONFIG_DIR is computed from homedir() at import — reset cache
@@ -43,15 +43,24 @@ describe("config", () => {
 
   it("preserves other fields when updating one", async () => {
     const { setConfigField, readConfig } = await import("../config.js");
-    setConfigField("key", "mnemos_abc123");
+    setConfigField("key", "xmu_abc123");
     setConfigField("agent", "codex exec");
     const cfg = readConfig();
-    expect(cfg.key).toBe("mnemos_abc123");
+    expect(cfg.key).toBe("xmu_abc123");
     expect(cfg.agent).toBe("codex exec");
   });
 
   it("throws on an unknown config field", async () => {
     const { setConfigField } = await import("../config.js");
     expect(() => setConfigField("provider", "openai")).toThrow(/Unknown config field/);
+  });
+
+  it("reads a legacy ~/.mnemos/config.json", async () => {
+    const { mkdirSync, writeFileSync } = await import("fs");
+    const legacyDir = join(tmpDir, ".mnemos");
+    mkdirSync(legacyDir);
+    writeFileSync(join(legacyDir, "config.json"), JSON.stringify({ agent: "claude -p" }) + "\n");
+    const { readConfig } = await import("../config.js");
+    expect(readConfig().agent).toBe("claude -p");
   });
 });

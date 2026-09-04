@@ -28,7 +28,7 @@ const CARD_STYLE: React.CSSProperties = {
 
 function readTheme(): Theme {
   try {
-    const stored = localStorage.getItem("mnemos-theme");
+    const stored = localStorage.getItem("xmu-theme") ?? localStorage.getItem("mnemos-theme");
     if (stored === "dark" || stored === "light") return stored;
   } catch { /* private mode */ }
   if (typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "dark") {
@@ -39,7 +39,7 @@ function readTheme(): Theme {
 
 function applyTheme(theme: Theme) {
   document.documentElement.setAttribute("data-theme", theme);
-  try { localStorage.setItem("mnemos-theme", theme); } catch { /* ignore */ }
+  try { localStorage.setItem("xmu-theme", theme); } catch { /* ignore */ }
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", theme === "dark" ? "#0B1120" : "#E4EDF6");
 }
