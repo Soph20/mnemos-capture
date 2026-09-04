@@ -4,7 +4,8 @@ import { getUserById } from "./db";
 import { env } from "./env";
 import type { User } from "./db";
 
-const SESSION_COOKIE = "mnemos_session";
+const SESSION_COOKIE = "xmu_session";
+const LEGACY_SESSION_COOKIE = "mnemos_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 /**
@@ -81,11 +82,12 @@ export async function createSession(userId: number, tokenVersion = 0): Promise<v
     maxAge: SESSION_MAX_AGE,
     path: "/",
   });
+  cookieStore.delete(LEGACY_SESSION_COOKIE);
 }
 
 export async function getSession(): Promise<User | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  const token = cookieStore.get(SESSION_COOKIE)?.value ?? cookieStore.get(LEGACY_SESSION_COOKIE)?.value;
   if (!token) return null;
 
   const payload = decode(token);
@@ -103,4 +105,5 @@ export async function getSession(): Promise<User | null> {
 export async function destroySession(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete(LEGACY_SESSION_COOKIE);
 }

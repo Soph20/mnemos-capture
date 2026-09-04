@@ -46,7 +46,7 @@ curl -X POST http://localhost:3000/api/init-db -H "x-admin-secret: $ADMIN_SECRET
 Sign in at `http://localhost:3000` with GitHub. **`init-db` must succeed before sign-in works.**
 
 ```bash
-MNEMOS_API_URL=http://localhost:3000/api/mcp node dist/cli/index.js serve-mcp --key <key>
+XMU_API_URL=http://localhost:3000/api/mcp node dist/cli/index.js serve-mcp --key <key>
 ```
 
 **After any schema change**, `init-db` must run again. From GitHub: **Actions → Initialize database → Run workflow**.

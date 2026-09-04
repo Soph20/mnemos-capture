@@ -19,7 +19,8 @@ import { cookies } from "next/headers";
 import crypto from "crypto";
 import { env } from "./env";
 
-const DEVICE_COOKIE = "mnemos_device";
+const DEVICE_COOKIE = "xmu_device";
+const LEGACY_DEVICE_COOKIE = "mnemos_device";
 /** Long-lived: this marks a device as known, it is not a session. */
 export const DEVICE_MAX_AGE = 60 * 60 * 24 * 180; // 180 days
 
@@ -75,6 +76,7 @@ export function verifyDeviceToken(token: string): DevicePayload | null {
 }
 
 export const DEVICE_COOKIE_NAME = DEVICE_COOKIE;
+export const LEGACY_DEVICE_COOKIE_NAME = LEGACY_DEVICE_COOKIE;
 
 /** Cookie options shared by the routes that set this cookie. */
 export function deviceCookieOptions(): {
@@ -96,7 +98,7 @@ export function deviceCookieOptions(): {
 /** Read and verify the device cookie from the incoming request. */
 export async function getDevicePayload(): Promise<DevicePayload | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(DEVICE_COOKIE)?.value;
+  const token = cookieStore.get(DEVICE_COOKIE)?.value ?? cookieStore.get(LEGACY_DEVICE_COOKIE)?.value;
   if (!token) return null;
   return verifyDeviceToken(token);
 }

@@ -1,10 +1,10 @@
 // MCP server that runs locally via stdio and proxies to the hosted mnemos API.
-// Used by Claude Code: claude mcp add mnemos -- npx mnemos-capture serve-mcp --key <api-key>
+// Used by Claude Code: claude mcp add xmu -- npx mnemos-capture serve-mcp --key <api-key>
 
 const DEFAULT_HOSTED_URL = "https://mnemos-capture.vercel.app/api/mcp";
 
 /** Override for pointing the proxy at a local instance during development. */
-const HOSTED_URL = process.env.MNEMOS_API_URL ?? DEFAULT_HOSTED_URL;
+const HOSTED_URL = process.env.XMU_API_URL ?? process.env.MNEMOS_API_URL ?? DEFAULT_HOSTED_URL;
 
 interface JsonRpcMessage {
   jsonrpc: "2.0";
