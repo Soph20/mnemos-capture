@@ -97,6 +97,8 @@ https://mnemos-capture.vercel.app/api/mcp
 npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
+The CLI binary is **`xmu`** (also `mnemos-capture`). `npx` still uses the package name until a standalone `xmu` package ships. An MCP server already registered as `mnemos` keeps working.
+
 **On the web** — paste the URL (no terminal). **In the terminal** — run the command. Finish Xmu onboarding first, then ask: *list my inbox* or *brief me*.
 
 ### On the web
@@ -135,7 +137,7 @@ Add this to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (all projects):
 ```json
 {
   "mcpServers": {
-    "mnemos": {
+    "xmu": {
       "command": "npx",
       "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
     }
@@ -152,7 +154,7 @@ Add this to `.vscode/mcp.json`:
 ```json
 {
   "servers": {
-    "mnemos": {
+    "xmu": {
       "command": "npx",
       "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
     }
@@ -167,7 +169,7 @@ GitHub Copilot Chat in VS Code uses the same file.
 Codex CLI — add this to `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.mnemos]
+[mcp_servers.xmu]
 command = "npx"
 args = ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
 ```
@@ -177,19 +179,19 @@ Codex App: Settings → MCP → add the same `npx` command.
 #### Gemini CLI
 
 ```bash
-gemini mcp add mnemos npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+gemini mcp add xmu npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
 #### Claude Code
 
 ```bash
-claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+claude mcp add xmu -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
 Or the URL, no API key:
 
 ```bash
-claude mcp add --transport http mnemos https://mnemos-capture.vercel.app/api/mcp
+claude mcp add --transport http xmu https://mnemos-capture.vercel.app/api/mcp
 ```
 
 Optional session hooks (MCP works without them):
@@ -207,7 +209,7 @@ Settings → Developer → Edit Config. Add the same `npx` block to `claude_desk
 ```json
 {
   "mcpServers": {
-    "mnemos": {
+    "xmu": {
       "command": "npx",
       "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
     }
@@ -222,7 +224,7 @@ If the tool can launch a local process, register the same `npx` command. If it h
 ```json
 {
   "mcpServers": {
-    "mnemos": {
+    "xmu": {
       "command": "npx",
       "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
     }
@@ -325,7 +327,7 @@ You don't have to memorize these. Ask in plain language: "save this", "what do I
 
 ## CLI
 
-No global install required.
+No global install required. The binary is **`xmu`** (also `mnemos-capture`). Via npx:
 
 ```bash
 npx -y mnemos-capture@latest <command>

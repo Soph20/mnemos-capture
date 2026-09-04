@@ -1,15 +1,34 @@
 /**
- * mnemos CLI config — stores which AI assistant kos should drive, and an
- * optional API key, in ~/.mnemos/config.json. Provider/agent-agnostic: the
- * user tells mnemos the exact command to launch their assistant.
+ * Xmu CLI config — stores which AI assistant kos should drive, and an
+ * optional API key, in ~/.xmu/config.json. Falls back to ~/.mnemos/config.json.
  */
 
 import { homedir } from "os";
 import { join } from "path";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 
-const CONFIG_DIR = join(homedir(), ".mnemos");
-const CONFIG_PATH = join(CONFIG_DIR, "config.json");
+function xmuDir(): string {
+  return join(homedir(), ".xmu");
+}
+
+function legacyDir(): string {
+  return join(homedir(), ".mnemos");
+}
+
+function xmuPath(): string {
+  return join(xmuDir(), "config.json");
+}
+
+function legacyPath(): string {
+  return join(legacyDir(), "config.json");
+}
+
+/** Path we currently read from: new dir if present, else the mnemos fallback. */
+function readPath(): string {
+  if (existsSync(xmuPath())) return xmuPath();
+  if (existsSync(legacyPath())) return legacyPath();
+  return xmuPath();
+}
 
 export interface MnemosConfig {
   /** Shell command that launches the user's AI assistant, e.g. "claude -p". */
@@ -22,17 +41,19 @@ const ALLOWED_FIELDS = ["agent", "key"] as const;
 type ConfigField = (typeof ALLOWED_FIELDS)[number];
 
 export function readConfig(): MnemosConfig {
-  if (!existsSync(CONFIG_PATH)) return {};
+  const path = readPath();
+  if (!existsSync(path)) return {};
   try {
-    return JSON.parse(readFileSync(CONFIG_PATH, "utf-8")) as MnemosConfig;
+    return JSON.parse(readFileSync(path, "utf-8")) as MnemosConfig;
   } catch {
     return {};
   }
 }
 
 export function writeConfig(cfg: MnemosConfig): void {
-  if (!existsSync(CONFIG_DIR)) mkdirSync(CONFIG_DIR, { recursive: true });
-  writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2) + "\n");
+  const dir = xmuDir();
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  writeFileSync(xmuPath(), JSON.stringify(cfg, null, 2) + "\n");
 }
 
 export function setConfigField(field: string, value: string): void {
@@ -44,7 +65,7 @@ export function setConfigField(field: string, value: string): void {
   writeConfig(cfg);
 }
 
-/** Route `mnemos config <set|get> ...`. */
+/** Route `xmu config <set|get> ...`. */
 export function runConfigCommand(args: string[]): void {
   const action = args[0];
 
@@ -52,14 +73,14 @@ export function runConfigCommand(args: string[]): void {
     const field = args[1];
     const value = args.slice(2).join(" ");
     if (!field || !value) {
-      console.error('Usage: mnemos config set <field> <value>');
-      console.error('  e.g. mnemos config set agent "claude -p"');
+      console.error("Usage: xmu config set <field> <value>");
+      console.error('  e.g. xmu config set agent "claude -p"');
       process.exit(1);
     }
     try {
       setConfigField(field, value);
       console.log(`Set ${field} = ${value}`);
-      console.log(`Saved to ${CONFIG_PATH}`);
+      console.log(`Saved to ${xmuPath()}`);
     } catch (err) {
       console.error(err instanceof Error ? err.message : String(err));
       process.exit(1);
@@ -78,6 +99,6 @@ export function runConfigCommand(args: string[]): void {
     return;
   }
 
-  console.error("Usage: mnemos config set|get <field> [value]");
+  console.error("Usage: xmu config set|get <field> [value]");
   process.exit(1);
 }

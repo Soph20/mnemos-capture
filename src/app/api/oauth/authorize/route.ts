@@ -10,7 +10,7 @@ import { env } from "@/lib/env";
 //
 // PKCE is mandatory: a request without a code_challenge is rejected.
 
-const RETURN_COOKIE = "mnemos_oauth_return";
+const RETURN_COOKIE = "xmu_oauth_return";
 
 interface AuthParams {
   responseType: string;

@@ -21,7 +21,7 @@ export async function POST(): Promise<NextResponse> {
       );
     }
 
-    const apiKey = `mnemos_${crypto.randomBytes(24).toString("hex")}`;
+    const apiKey = `xmu_${crypto.randomBytes(24).toString("hex")}`;
     await updateUserApiKey(user.id, apiKey);
 
     // Rotating the key is the user's "revoke my access" lever, so it must also

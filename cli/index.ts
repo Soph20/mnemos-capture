@@ -59,7 +59,7 @@ async function main(): Promise<void> {
     const keyIdx = args.indexOf("--key");
     const apiKey = keyIdx !== -1 ? args[keyIdx + 1] : readConfig().key;
     if (!apiKey) {
-      console.error("No API key. Pass --key YOUR_KEY or store it: mnemos config set key YOUR_KEY");
+      console.error("No API key. Pass --key YOUR_KEY or store it: xmu config set key YOUR_KEY");
       process.exit(1);
     }
     const planIdx = args.indexOf("--plan");
@@ -76,7 +76,7 @@ async function main(): Promise<void> {
   console.log("  First time? Sign in with GitHub — setup takes 30 seconds.");
   console.log("");
   console.log("  Connect an AI worker:");
-  console.log("  claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY");
+  console.log("  claude mcp add xmu -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY");
   console.log("");
 
   // Try to open the URL in the default browser
@@ -91,15 +91,17 @@ function printHelp(): void {
   Xmu — A knowledge graph for your AI workers
 
   Usage:
-    npx mnemos-capture                                         Open Xmu in your browser
-    npx mnemos-capture serve-mcp --key KEY                     Start the MCP server for your AI worker
-    npx mnemos-capture setup-hooks --key KEY                   Install inbox count hook (fast)
-    npx mnemos-capture setup-hooks --key KEY --briefing        Install full briefing hook (uses LLM)
-    npx mnemos-capture setup-hooks --key KEY --vault           Install vault hook (PreToolCall)
-    npx mnemos-capture setup-hooks --key KEY --briefing --vault  Install both hooks
-    npx mnemos-capture config set agent "claude -p"            Set which AI worker kos drives
-    npx mnemos-capture kos --key KEY [--plan FILE]             Implement a plan in an isolated worktree
-    npx mnemos-capture help                                    Show this help
+    xmu                                                        Open Xmu in your browser
+    xmu serve-mcp --key KEY                                    Start the MCP server for your AI worker
+    xmu setup-hooks --key KEY                                  Install inbox count hook (fast)
+    xmu setup-hooks --key KEY --briefing                       Install full briefing hook (uses LLM)
+    xmu setup-hooks --key KEY --vault                          Install vault hook (PreToolCall)
+    xmu setup-hooks --key KEY --briefing --vault               Install both hooks
+    xmu config set agent "claude -p"                           Set which AI worker kos drives
+    xmu kos --key KEY [--plan FILE]                            Implement a plan in an isolated worktree
+    xmu help                                                   Show this help
+
+    npx -y mnemos-capture@latest …                             Same CLI, via the published package
 
   MCP tools (via your AI worker):
     briefing          — Session-start briefing with ranked insights to apply
@@ -110,9 +112,9 @@ function printHelp(): void {
 
   kos — implement plans with your own AI worker (model-agnostic):
     1. Tell Xmu which assistant to drive (once):
-         mnemos config set agent "claude -p"      # or "codex exec", "aider --yes --message"
+         xmu config set agent "claude -p"      # or "codex exec", "aider --yes --message"
     2. Generate a plan via the generate_plan MCP tool.
-    3. Run: mnemos kos --key YOUR_KEY
+    3. Run: xmu kos --key YOUR_KEY
        kos creates an isolated git worktree, hands the plan to your assistant,
        and reports the branch + the plan's Verification Checklist when done.
 
@@ -123,7 +125,7 @@ function printHelp(): void {
     4. Start capturing!
 
   Connect to Claude Code:
-    claude mcp add mnemos -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+    claude mcp add xmu -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 
   The @latest tag ensures every Claude Code session uses the most recent
   published version. serve-mcp also self-upgrades on startup as a safety net

@@ -192,7 +192,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
     await updateUserLlmKey(user.id, provider, llmKey);
 
     // Generate API key for MCP / CLI access
-    const apiKey = `mnemos_${crypto.randomBytes(24).toString("hex")}`;
+    const apiKey = `xmu_${crypto.randomBytes(24).toString("hex")}`;
     await updateUserApiKey(user.id, apiKey);
 
     return NextResponse.json({
