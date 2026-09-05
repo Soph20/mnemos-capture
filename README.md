@@ -23,6 +23,8 @@ Humans are constantly exposed to useful knowledge, domain expertise, and externa
 
 Xmu builds that bridge.
 
+The product is **Xmu**. The app URL, this GitHub repo, and the npm package still say `mnemos-capture` until a dedicated domain ships — same product.
+
 ## Table of Contents
 
 - [Xmu](#xmu)
