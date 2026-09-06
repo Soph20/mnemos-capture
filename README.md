@@ -13,9 +13,6 @@
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
     <img src="https://img.shields.io/badge/license-MIT-f0f4f8?labelColor=000820&style=flat" alt="MIT" />
   </p>
-  <p>
-    The product is <strong>Xmu</strong>. The app URL, this GitHub repo, and npm still say <code>mnemos-capture</code> — same product.
-  </p>
 </div>
 
 ## Xmu
@@ -54,6 +51,8 @@ Xmu is the knowledge graph for AI workers that bridges human knowledge into cont
 You find useful stuff, you capture through the web app, then Xmu connects it into a knowledge graph, and makes it available to the AI workers you already use.
 
 Xmu will continuously compound that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
+
+We are migrating from **mnemos** to **Xmu**. The app URL, this GitHub repo, and the npm package still say `mnemos-capture`. Sorry for the inconvenience.
 
 ## Start here
 
