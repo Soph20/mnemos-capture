@@ -21,7 +21,6 @@ Humans are constantly exposed to useful knowledge, domain expertise, and externa
 
 Xmu is the knowledge graph for AI workers that bridges human knowledge into context they can use.
 
-
 ## Table of Contents
 
 - [Xmu](#xmu)
@@ -52,6 +51,8 @@ Xmu is the knowledge graph for AI workers that bridges human knowledge into cont
 You find useful stuff, you capture through the web app, then Xmu connects it into a knowledge graph, and makes it available to the AI workers you already use.
 
 Xmu will continuously compound that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
+
+We are migrating from **mnemos** to **Xmu**. The app URL, this GitHub repo, and the npm package still say `mnemos-capture`. Sorry for the inconvenience.
 
 ## Start here
 
