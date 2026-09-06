@@ -13,6 +13,9 @@
     <img src="https://img.shields.io/badge/MCP-compatible-9dd8f5?labelColor=000820&style=flat" alt="MCP" />
     <img src="https://img.shields.io/badge/license-MIT-f0f4f8?labelColor=000820&style=flat" alt="MIT" />
   </p>
+  <p>
+    The product is <strong>Xmu</strong>. The app URL, this GitHub repo, and npm still say <code>mnemos-capture</code> — same product.
+  </p>
 </div>
 
 ## Xmu
@@ -20,9 +23,6 @@
 Humans are constantly exposed to useful knowledge, domain expertise, and external input. But there is no bridge between what humans know and what their AI workers know and do.
 
 Xmu is the knowledge graph for AI workers that bridges human knowledge into context they can use.
-
-
-The product is **Xmu**. The app URL, this GitHub repo, and the npm package still say `mnemos-capture` until a dedicated domain ships — same product.
 
 ## Table of Contents
 
