@@ -52,7 +52,8 @@ You find useful stuff, you capture through the web app, then Xmu connects it int
 
 Xmu will continuously compound that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
 
-We are migrating from **mnemos** to **Xmu**. The app URL, this GitHub repo, and the npm package still say `mnemos-capture`. Sorry for the inconvenience.
+> [!IMPORTANT]
+> We are migrating from **mnemos** to **Xmu**. The app URL, this GitHub repo, and the npm package still say `mnemos-capture`. Sorry for the inconvenience.
 
 ## Start here
 
