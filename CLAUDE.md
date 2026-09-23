@@ -1,4 +1,4 @@
-# Xmu — Engineering Notes
+# xkg — Engineering Notes
 
 ## Debugging learnings
 

@@ -1,10 +1,11 @@
-// MCP server that runs locally via stdio and proxies to the hosted mnemos API.
-// Used by Claude Code: claude mcp add xmu -- npx mnemos-capture serve-mcp --key <api-key>
+// MCP server that runs locally via stdio and proxies to the hosted API.
+// Used by Claude Code: claude mcp add xkg -- npx mnemos-capture serve-mcp --key <api-key>
 
 const DEFAULT_HOSTED_URL = "https://mnemos-capture.vercel.app/api/mcp";
 
 /** Override for pointing the proxy at a local instance during development. */
-const HOSTED_URL = process.env.XMU_API_URL ?? process.env.MNEMOS_API_URL ?? DEFAULT_HOSTED_URL;
+const HOSTED_URL =
+  process.env.XKG_API_URL ?? process.env.XMU_API_URL ?? process.env.MNEMOS_API_URL ?? DEFAULT_HOSTED_URL;
 
 interface JsonRpcMessage {
   jsonrpc: "2.0";
@@ -37,7 +38,7 @@ async function proxyToHosted(apiKey: string, msg: JsonRpcMessage): Promise<void>
     });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "unknown error";
-    rpcError(msg.id, `Could not reach Xmu at ${HOSTED_URL}: ${detail}`);
+    rpcError(msg.id, `Could not reach xkg at ${HOSTED_URL}: ${detail}`);
     return;
   }
 
@@ -71,7 +72,7 @@ export function interpretResponse(
   if (!type.includes("application/json")) {
     const snippet = body.trim().slice(0, 200).replace(/\s+/g, " ");
     return {
-      error: `Xmu returned a non-JSON response (HTTP ${status}${
+      error: `xkg returned a non-JSON response (HTTP ${status}${
         type ? `, ${type}` : ""
       })${snippet ? `: ${snippet}` : ""}`,
     };
@@ -80,7 +81,7 @@ export function interpretResponse(
   try {
     return { data: JSON.parse(body) as Record<string, unknown> };
   } catch {
-    return { error: `Xmu returned malformed JSON (HTTP ${status}).` };
+    return { error: `xkg returned malformed JSON (HTTP ${status}).` };
   }
 }
 
@@ -97,7 +98,7 @@ export async function serveMcp(): Promise<void> {
   const apiKey = keyIdx !== -1 ? args[keyIdx + 1] : undefined;
 
   if (!apiKey) {
-    process.stderr.write("\nMnemos MCP server requires an API key.\n");
+    process.stderr.write("\nxkg MCP server requires an API key.\n");
     process.stderr.write("Usage: npx -y mnemos-capture@latest serve-mcp --key <your-api-key>\n\n");
     process.stderr.write("Get your API key at: https://mnemos-capture.vercel.app/onboard\n\n");
     process.exit(1);
@@ -122,7 +123,7 @@ export async function serveMcp(): Promise<void> {
     // Non-fatal — hook setup should never block the MCP server from starting
   }
 
-  process.stderr.write("Xmu MCP server starting (proxying to hosted instance)...\n");
+  process.stderr.write("xkg MCP server starting (proxying to hosted instance)...\n");
 
   let buffer = "";
   process.stdin.setEncoding("utf-8");

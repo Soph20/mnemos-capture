@@ -72,7 +72,7 @@ async function createKnowledgeRepo(
   // Create repo
   const createRes = await githubApiPost(token, "/user/repos", {
     name: repoName,
-    description: "Knowledge hub for Xmu — captured insights routed to agentic workflows",
+    description: "Knowledge hub for xkg — captured insights routed to agentic workflows",
     private: !isPublic,
     auto_init: true,
   });
@@ -103,7 +103,7 @@ async function createKnowledgeRepo(
   const readmeRes = await githubApiGet(token, `/repos/${fullRepo}/contents/README.md`);
   const readmeSha = readmeRes.ok ? ((readmeRes.data as { sha: string }).sha) : undefined;
 
-  const readmeContent = `# My Knowledge Hub\n\nCaptures from [Xmu](https://github.com/Soph20/mnemos-capture) land here automatically.\n\nAll captures go to \`inbox/\` as structured Markdown files. Each file contains the core idea, key takeaways, quotes, tags, and an "Applied to" field linking the insight to something actionable.\n`;
+  const readmeContent = `# My Knowledge Hub\n\nCaptures from [xkg](https://github.com/Soph20/mnemos-capture) land here automatically.\n\nAll captures go to \`inbox/\` as structured Markdown files. Each file contains the core idea, key takeaways, quotes, tags, and an "Applied to" field linking the insight to something actionable.\n`;
 
   const readmeBody: Record<string, unknown> = {
     message: "Add knowledge hub README",
@@ -192,7 +192,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
     await updateUserLlmKey(user.id, provider, llmKey);
 
     // Generate API key for MCP / CLI access
-    const apiKey = `xmu_${crypto.randomBytes(24).toString("hex")}`;
+    const apiKey = `xkg_${crypto.randomBytes(24).toString("hex")}`;
     await updateUserApiKey(user.id, apiKey);
 
     return NextResponse.json({

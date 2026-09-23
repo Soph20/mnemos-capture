@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Xmu",
-  applicationName: "Xmu",
+  title: "xkg",
+  applicationName: "xkg",
   description: "A knowledge graph for your AI workers.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Xmu",
+    title: "xkg",
   },
   icons: {
     icon: [
@@ -34,15 +34,15 @@ export const viewport: Viewport = {
   ],
 };
 
-const THEME_BOOT = `(function(){try{var t=localStorage.getItem("xmu-theme")||localStorage.getItem("mnemos-theme");if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
+const THEME_BOOT = `(function(){try{var t=localStorage.getItem("xkg-theme")||localStorage.getItem("xmu-theme")||localStorage.getItem("mnemos-theme");if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
-        <meta name="apple-mobile-web-app-title" content="Xmu" />
-        <meta name="application-name" content="Xmu" />
+        <meta name="apple-mobile-web-app-title" content="xkg" />
+        <meta name="application-name" content="xkg" />
       </head>
       <body>{children}</body>
     </html>

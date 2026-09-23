@@ -93,7 +93,7 @@ function originRejected(req: NextRequest): NextResponse | null {
 /**
  * Resolve the caller from the Authorization header. Accepts either an OAuth 2.1
  * access token (Claude iOS/desktop/web remote connector) or a legacy static
- * `xmu_...` or legacy `mnemos_...` API key (CLI / stdio proxy). Returns null when neither validates.
+ * `xkg_...`, `xmu_...`, or `mnemos_...` API key (CLI / stdio proxy). Returns null when neither validates.
  */
 async function resolveUser(token: string): Promise<User | null> {
   // OAuth access token first (self-contained, signed).
@@ -203,11 +203,11 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
               protocolVersion,
               capabilities: { tools: {} },
               // `title`, `websiteUrl`, and `icons` are best-effort branding hints:
-              // clients that support them can show the Xmu name and logo instead
+              // clients that support them can show the xkg name and logo instead
               // of a generated letter avatar. Unknown fields are ignored by others.
               serverInfo: {
-                name: "xmu",
-                title: "Xmu",
+                name: "xkg",
+                title: "xkg",
                 version: "1.0.0",
                 websiteUrl: env.appUrl,
                 icons: [

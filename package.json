@@ -1,10 +1,11 @@
 {
   "name": "mnemos-capture",
   "version": "1.3.0",
-  "description": "Xmu — Turn what you discover into context your AI workers can use. Capture once, then brief, plan, and execute with any MCP-compatible tool.",
+  "description": "xkg — Turn what you discover into context your AI workers can use. Capture once, then brief, plan, and execute with any MCP-compatible tool.",
   "type": "module",
   "bin": {
     "mnemos-capture": "./dist/cli/index.js",
+    "xkg": "./dist/cli/index.js",
     "xmu": "./dist/cli/index.js"
   },
   "scripts": {
@@ -21,6 +22,7 @@
   },
   "keywords": [
     "ai",
+    "xkg",
     "xmu",
     "knowledge",
     "capture",

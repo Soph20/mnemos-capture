@@ -9,8 +9,8 @@ describe("config", () => {
   let origHome: string | undefined;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "xmu-config-test-"));
-    configPath = join(tmpDir, ".xmu", "config.json");
+    tmpDir = mkdtempSync(join(tmpdir(), "xkg-config-test-"));
+    configPath = join(tmpDir, ".xkg", "config.json");
     origHome = process.env["HOME"];
     process.env["HOME"] = tmpDir;
     // Module-level CONFIG_DIR is computed from homedir() at import — reset cache
@@ -43,16 +43,25 @@ describe("config", () => {
 
   it("preserves other fields when updating one", async () => {
     const { setConfigField, readConfig } = await import("../config.js");
-    setConfigField("key", "xmu_abc123");
+    setConfigField("key", "xkg_abc123");
     setConfigField("agent", "codex exec");
     const cfg = readConfig();
-    expect(cfg.key).toBe("xmu_abc123");
+    expect(cfg.key).toBe("xkg_abc123");
     expect(cfg.agent).toBe("codex exec");
   });
 
   it("throws on an unknown config field", async () => {
     const { setConfigField } = await import("../config.js");
     expect(() => setConfigField("provider", "openai")).toThrow(/Unknown config field/);
+  });
+
+  it("reads a legacy ~/.xmu/config.json", async () => {
+    const { mkdirSync, writeFileSync } = await import("fs");
+    const legacyDir = join(tmpDir, ".xmu");
+    mkdirSync(legacyDir);
+    writeFileSync(join(legacyDir, "config.json"), JSON.stringify({ agent: "codex exec" }) + "\n");
+    const { readConfig } = await import("../config.js");
+    expect(readConfig().agent).toBe("codex exec");
   });
 
   it("reads a legacy ~/.mnemos/config.json", async () => {
@@ -62,5 +71,18 @@ describe("config", () => {
     writeFileSync(join(legacyDir, "config.json"), JSON.stringify({ agent: "claude -p" }) + "\n");
     const { readConfig } = await import("../config.js");
     expect(readConfig().agent).toBe("claude -p");
+  });
+
+  it("writes to ~/.xkg even when a legacy ~/.xmu config exists", async () => {
+    const { mkdirSync, writeFileSync, existsSync } = await import("fs");
+    const legacyDir = join(tmpDir, ".xmu");
+    mkdirSync(legacyDir);
+    writeFileSync(join(legacyDir, "config.json"), JSON.stringify({ agent: "codex exec" }) + "\n");
+    const { setConfigField, readConfig } = await import("../config.js");
+    setConfigField("agent", "claude -p");
+    expect(existsSync(configPath)).toBe(true);
+    expect(readConfig().agent).toBe("claude -p");
+    const legacy = JSON.parse(readFileSync(join(legacyDir, "config.json"), "utf-8")) as { agent: string };
+    expect(legacy.agent).toBe("codex exec");
   });
 });

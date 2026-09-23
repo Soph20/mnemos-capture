@@ -59,7 +59,7 @@ async function main(): Promise<void> {
     const keyIdx = args.indexOf("--key");
     const apiKey = keyIdx !== -1 ? args[keyIdx + 1] : readConfig().key;
     if (!apiKey) {
-      console.error("No API key. Pass --key YOUR_KEY or store it: xmu config set key YOUR_KEY");
+      console.error("No API key. Pass --key YOUR_KEY or store it: xkg config set key YOUR_KEY");
       process.exit(1);
     }
     const planIdx = args.indexOf("--plan");
@@ -70,13 +70,13 @@ async function main(): Promise<void> {
 
   // Default: open the hosted app
   console.log("");
-  console.log("  Xmu — A knowledge graph for your AI workers\n");
+  console.log("  xkg — A knowledge graph for your AI workers\n");
   console.log(`  Open ${HOSTED_URL} to start capturing.`);
   console.log("");
   console.log("  First time? Sign in with GitHub — setup takes 30 seconds.");
   console.log("");
   console.log("  Connect an AI worker:");
-  console.log("  claude mcp add xmu -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY");
+  console.log("  claude mcp add xkg -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY");
   console.log("");
 
   // Try to open the URL in the default browser
@@ -88,18 +88,18 @@ async function main(): Promise<void> {
 
 function printHelp(): void {
   console.log(`
-  Xmu — A knowledge graph for your AI workers
+  xkg — A knowledge graph for your AI workers
 
   Usage:
-    xmu                                                        Open Xmu in your browser
-    xmu serve-mcp --key KEY                                    Start the MCP server for your AI worker
-    xmu setup-hooks --key KEY                                  Install inbox count hook (fast)
-    xmu setup-hooks --key KEY --briefing                       Install full briefing hook (uses LLM)
-    xmu setup-hooks --key KEY --vault                          Install vault hook (PreToolCall)
-    xmu setup-hooks --key KEY --briefing --vault               Install both hooks
-    xmu config set agent "claude -p"                           Set which AI worker kos drives
-    xmu kos --key KEY [--plan FILE]                            Implement a plan in an isolated worktree
-    xmu help                                                   Show this help
+    xkg                                                        Open xkg in your browser
+    xkg serve-mcp --key KEY                                    Start the MCP server for your AI worker
+    xkg setup-hooks --key KEY                                  Install inbox count hook (fast)
+    xkg setup-hooks --key KEY --briefing                       Install full briefing hook (uses LLM)
+    xkg setup-hooks --key KEY --vault                          Install vault hook (PreToolCall)
+    xkg setup-hooks --key KEY --briefing --vault               Install both hooks
+    xkg config set agent "claude -p"                           Set which AI worker kos drives
+    xkg kos --key KEY [--plan FILE]                            Implement a plan in an isolated worktree
+    xkg help                                                   Show this help
 
     npx -y mnemos-capture@latest …                             Same CLI, via the published package
 
@@ -111,10 +111,10 @@ function printHelp(): void {
     curate            — Validate URLs and flag stale captures
 
   kos — implement plans with your own AI worker (model-agnostic):
-    1. Tell Xmu which assistant to drive (once):
-         xmu config set agent "claude -p"      # or "codex exec", "aider --yes --message"
+    1. Tell xkg which assistant to drive (once):
+         xkg config set agent "claude -p"      # or "codex exec", "aider --yes --message"
     2. Generate a plan via the generate_plan MCP tool.
-    3. Run: xmu kos --key YOUR_KEY
+    3. Run: xkg kos --key YOUR_KEY
        kos creates an isolated git worktree, hands the plan to your assistant,
        and reports the branch + the plan's Verification Checklist when done.
 
@@ -125,7 +125,7 @@ function printHelp(): void {
     4. Start capturing!
 
   Connect to Claude Code:
-    claude mcp add xmu -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+    claude mcp add xkg -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 
   The @latest tag ensures every Claude Code session uses the most recent
   published version. serve-mcp also self-upgrades on startup as a safety net

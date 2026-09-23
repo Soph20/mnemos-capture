@@ -129,7 +129,7 @@ export function setupHooks(
   writeSettings(settings);
 
   if (!opts.silent) {
-    console.log("Xmu inbox hook installed.");
+    console.log("xkg inbox hook installed.");
     console.log(`Location: ${CLAUDE_SETTINGS_PATH}`);
     if (opts.briefing) {
       console.log("At the start of each Claude Code session you'll see a full project briefing.");
@@ -183,7 +183,7 @@ export function setupPreToolHook(
   writeSettings(settings);
 
   if (!opts.silent) {
-    console.log("Xmu vault hook installed (PreToolCall).");
+    console.log("xkg vault hook installed (PreToolCall).");
     console.log("Your knowledge vault will surface relevant captures as you edit files.");
   }
 }
@@ -325,7 +325,7 @@ export async function inboxCheck(
       if (applyNow.length > 0) {
         const filenames = applyNow.map((s) => `'${s.filename}'`).join(", ");
         process.stdout.write(
-          `\n---\nMnemos: ${applyNow.length} insight${applyNow.length === 1 ? "" : "s"} ready to apply now.\n` +
+          `\n---\nxkg: ${applyNow.length} insight${applyNow.length === 1 ? "" : "s"} ready to apply now.\n` +
           `Run generate_plan with selected_captures: [${filenames}] to get a full implementation plan.\n`,
         );
       }
@@ -343,7 +343,7 @@ export async function inboxCheck(
     const count = parseInt(match[1] as string, 10);
     if (count > 0) {
       process.stdout.write(
-        `Xmu: ${count} capture${count === 1 ? "" : "s"} in inbox — run list_inbox to review\n`,
+        `xkg: ${count} capture${count === 1 ? "" : "s"} in inbox — run list_inbox to review\n`,
       );
     }
   } catch {
