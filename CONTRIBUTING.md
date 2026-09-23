@@ -95,6 +95,19 @@ two different sources.
   in the PR body — that is the part a reviewer cannot infer from the diff.
 - Add a test when you fix a bug. If the bug could return, something should fail when it does.
 
+## Releasing the CLI
+
+Publishing a GitHub Release is the only way a version reaches npm. Do not run `npm publish` locally.
+
+1. Open a PR that runs `npm version <patch|minor|major> --no-git-tag-version`, so `package.json` and
+   `package-lock.json` move together. Merge it.
+2. GitHub → Releases → Draft a new release → create tag `vX.Y.Z` on `main` → Publish. Mark it as a
+   pre-release to publish under the `next` dist-tag instead of `latest`.
+
+`.github/workflows/release.yml` refuses to publish unless the tag matches `package.json`, the tagged
+commit is on `main`, and the version is not already on npm. It then runs the checks, publishes with
+provenance, and confirms npm recorded the tagged commit.
+
 ## Security issues
 
 Do not open a public issue for a vulnerability. Report it privately through
