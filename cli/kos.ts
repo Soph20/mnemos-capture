@@ -1,7 +1,7 @@
 /**
  * kos — mnemos' Knowledge Operations orchestrator.
  *
- * Drives whatever AI assistant the user configured (`xmu config set agent ...`)
+ * Drives whatever AI assistant the user configured (`xkg config set agent ...`)
  * to implement a generated plan in an isolated git worktree. mnemos owns the
  * harness-independent parts: fetching the plan, the worktree, and reporting the
  * Verification Checklist. The assistant is a black box — model-agnostic by design.
@@ -63,10 +63,10 @@ function run(cmd: string, cwd?: string): string {
 export async function kos(apiKey: string, opts: { plan?: string } = {}): Promise<void> {
   const cfg = readConfig();
   if (!cfg.agent) {
-    console.error("No agent configured. Tell Xmu which AI worker to drive:\n");
-    console.error('  xmu config set agent "claude -p"               # Claude Code');
-    console.error('  xmu config set agent "codex exec"              # Codex');
-    console.error('  xmu config set agent "aider --yes --message"   # Aider');
+    console.error("No agent configured. Tell xkg which AI worker to drive:\n");
+    console.error('  xkg config set agent "claude -p"               # Claude Code');
+    console.error('  xkg config set agent "codex exec"              # Codex');
+    console.error('  xkg config set agent "aider --yes --message"   # Aider');
     process.exit(1);
   }
 
@@ -87,7 +87,7 @@ export async function kos(apiKey: string, opts: { plan?: string } = {}): Promise
   try {
     repoRoot = run("git rev-parse --show-toplevel");
   } catch {
-    console.error("xmu kos must be run inside a git repository.");
+    console.error("xkg kos must be run inside a git repository.");
     process.exit(1);
     return;
   }

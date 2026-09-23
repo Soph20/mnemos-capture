@@ -1,11 +1,11 @@
-# Contributing to Xmu
+# Contributing to xkg
 
-Thanks for looking. Xmu is a small project with a large surface — an MCP server, a Next.js app, a
+Thanks for looking. xkg is a small project with a large surface — an MCP server, a Next.js app, a
 CLI, and OAuth — so this page is about how to change it safely rather than about process ceremony.
 
 ## Before you start
 
-Open an issue first for anything beyond a bug fix or a doc correction. Xmu holds people's GitHub
+Open an issue first for anything beyond a bug fix or a doc correction. xkg holds people's GitHub
 tokens and LLM API keys, so changes near auth, storage, or the MCP surface deserve a conversation
 before the code exists.
 
@@ -14,7 +14,7 @@ to a PR.
 
 ## Getting it running
 
-You do not need to run Xmu to use it — the hosted instance at [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is for working on the code.
+You do not need to run xkg to use it — the hosted instance at [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the supported way in. This section is for working on the code.
 
 | | |
 | --- | --- |
@@ -46,7 +46,7 @@ curl -X POST http://localhost:3000/api/init-db -H "x-admin-secret: $ADMIN_SECRET
 Sign in at `http://localhost:3000` with GitHub. **`init-db` must succeed before sign-in works.**
 
 ```bash
-XMU_API_URL=http://localhost:3000/api/mcp node dist/cli/index.js serve-mcp --key <key>
+XKG_API_URL=http://localhost:3000/api/mcp node dist/cli/index.js serve-mcp --key <key>
 ```
 
 **After any schema change**, `init-db` must run again. From GitHub: **Actions → Initialize database → Run workflow**.
@@ -102,7 +102,7 @@ Do not open a public issue for a vulnerability. Report it privately through
 
 ## Self-hosting
 
-Xmu is MIT licensed, so you may run your own instance. It is not a supported path and there is no
+xkg is MIT licensed, so you may run your own instance. It is not a supported path and there is no
 deployment guide: a self-hosted copy does not receive the security fixes made here, and this project
 has shipped several that matter. The hosted instance at
 [mnemos-capture.vercel.app](https://mnemos-capture.vercel.app) is the maintained way to use it.

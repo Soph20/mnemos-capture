@@ -1,33 +1,43 @@
 /**
- * Xmu CLI config — stores which AI assistant kos should drive, and an
- * optional API key, in ~/.xmu/config.json. Falls back to ~/.mnemos/config.json.
+ * xkg CLI config — stores which AI assistant kos should drive, and an
+ * optional API key, in ~/.xkg/config.json.
+ * Falls back to ~/.xmu/config.json then ~/.mnemos/config.json.
  */
 
 import { homedir } from "os";
 import { join } from "path";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 
+function xkgDir(): string {
+  return join(homedir(), ".xkg");
+}
+
 function xmuDir(): string {
   return join(homedir(), ".xmu");
 }
 
-function legacyDir(): string {
+function mnemosDir(): string {
   return join(homedir(), ".mnemos");
+}
+
+function xkgPath(): string {
+  return join(xkgDir(), "config.json");
 }
 
 function xmuPath(): string {
   return join(xmuDir(), "config.json");
 }
 
-function legacyPath(): string {
-  return join(legacyDir(), "config.json");
+function mnemosPath(): string {
+  return join(mnemosDir(), "config.json");
 }
 
-/** Path we currently read from: new dir if present, else the mnemos fallback. */
+/** Path we currently read from: xkg, then xmu, then mnemos. */
 function readPath(): string {
+  if (existsSync(xkgPath())) return xkgPath();
   if (existsSync(xmuPath())) return xmuPath();
-  if (existsSync(legacyPath())) return legacyPath();
-  return xmuPath();
+  if (existsSync(mnemosPath())) return mnemosPath();
+  return xkgPath();
 }
 
 export interface MnemosConfig {
@@ -51,9 +61,9 @@ export function readConfig(): MnemosConfig {
 }
 
 export function writeConfig(cfg: MnemosConfig): void {
-  const dir = xmuDir();
+  const dir = xkgDir();
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(xmuPath(), JSON.stringify(cfg, null, 2) + "\n");
+  writeFileSync(xkgPath(), JSON.stringify(cfg, null, 2) + "\n");
 }
 
 export function setConfigField(field: string, value: string): void {
@@ -65,7 +75,7 @@ export function setConfigField(field: string, value: string): void {
   writeConfig(cfg);
 }
 
-/** Route `xmu config <set|get> ...`. */
+/** Route `xkg config <set|get> ...`. */
 export function runConfigCommand(args: string[]): void {
   const action = args[0];
 
@@ -73,14 +83,14 @@ export function runConfigCommand(args: string[]): void {
     const field = args[1];
     const value = args.slice(2).join(" ");
     if (!field || !value) {
-      console.error("Usage: xmu config set <field> <value>");
-      console.error('  e.g. xmu config set agent "claude -p"');
+      console.error("Usage: xkg config set <field> <value>");
+      console.error('  e.g. xkg config set agent "claude -p"');
       process.exit(1);
     }
     try {
       setConfigField(field, value);
       console.log(`Set ${field} = ${value}`);
-      console.log(`Saved to ${xmuPath()}`);
+      console.log(`Saved to ${xkgPath()}`);
     } catch (err) {
       console.error(err instanceof Error ? err.message : String(err));
       process.exit(1);
@@ -99,6 +109,6 @@ export function runConfigCommand(args: string[]): void {
     return;
   }
 
-  console.error("Usage: xmu config set|get <field> [value]");
+  console.error("Usage: xkg config set|get <field> [value]");
   process.exit(1);
 }

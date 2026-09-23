@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Xmu",
-    short_name: "Xmu",
+    name: "xkg",
+    short_name: "xkg",
     description: "A knowledge graph for your AI workers",
     start_url: "/",
     scope: "/",

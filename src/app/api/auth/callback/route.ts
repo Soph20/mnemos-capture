@@ -79,7 +79,8 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
 
     // If this login was initiated to resume an OAuth authorization request
     // (Claude connecting over MCP), send the browser back to that request.
-    const oauthReturn = req.cookies.get("xmu_oauth_return")?.value
+    const oauthReturn = req.cookies.get("xkg_oauth_return")?.value
+      ?? req.cookies.get("xmu_oauth_return")?.value
       ?? req.cookies.get("mnemos_oauth_return")?.value;
 
     let response: NextResponse;
@@ -93,6 +94,7 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
     }
 
     response.cookies.delete("oauth_state");
+    response.cookies.delete("xkg_oauth_return");
     response.cookies.delete("xmu_oauth_return");
     response.cookies.delete("mnemos_oauth_return");
 
@@ -103,6 +105,7 @@ async function handleGet(req: NextRequest): Promise<NextResponse> {
       issueDeviceToken(user.id, user.token_version ?? 0),
       deviceCookieOptions(),
     );
+    response.cookies.delete("xmu_device");
     response.cookies.delete("mnemos_device");
 
     return response;

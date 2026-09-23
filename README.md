@@ -3,7 +3,7 @@
   <a href="https://mnemos-capture.vercel.app">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="public/mnemos-hero-dark.gif">
-      <img src="public/mnemos-hero-light.gif" width="160" height="160" alt="Xmu">
+      <img src="public/mnemos-hero-light.gif" width="160" height="160" alt="xkg">
     </picture>
   </a>
   <br>
@@ -15,15 +15,15 @@
   </p>
 </div>
 
-## Xmu
+## xkg
 
 Humans are constantly exposed to useful knowledge, domain expertise, and external input. But there is no bridge between what humans know and what their AI workers know and do.
 
-Xmu is the knowledge graph for AI workers that bridges human knowledge into context they can use.
+xkg is the knowledge graph for AI workers that bridges human knowledge into context they can use.
 
 ## Table of Contents
 
-- [Xmu](#xmu)
+- [xkg](#xkg)
 - [How it works](#how-it-works)
 - [Start here](#start-here)
 - [Connect your AI workers](#connect-your-ai-workers)
@@ -48,12 +48,12 @@ Xmu is the knowledge graph for AI workers that bridges human knowledge into cont
 
 ## How it works
 
-You find useful stuff, you capture through the web app, then Xmu connects it into a knowledge graph, and makes it available to the AI workers you already use.
+You find useful stuff, you capture through the web app, then xkg connects it into a knowledge graph, and makes it available to the AI workers you already use.
 
-Xmu will continuously compound that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
+xkg will continuously compound that knowledge over time — keeping AI workers' context up to date as human knowledge evolves.
 
 > [!IMPORTANT]
-> We are migrating from **mnemos** to **Xmu**. The app URL, this GitHub repo, and the npm package still say `mnemos-capture`. Sorry for the inconvenience.
+> We are migrating from **mnemos** / **Xmu** to **xkg**. The app URL, this GitHub repo, and the npm package still say `mnemos-capture`. Sorry for the inconvenience.
 
 ## Start here
 
@@ -63,12 +63,12 @@ You do not need a terminal to start.
 
 Open **[mnemos-capture.vercel.app](https://mnemos-capture.vercel.app)** and sign in with GitHub.
 
-Xmu will:
+xkg will:
 
 1. Create a **private** GitHub repo for your knowledge (you can opt to make it public)
 2. Ask for your LLM provider API key — Anthropic, OpenAI, or Google. Your key, your cost.
 3. Let you set a PIN (6+ characters) for quick unlock on this device
-4. Show your **Xmu API key** once — save it if you want to connect an AI worker
+4. Show your **xkg API key** once — save it if you want to connect an AI worker
 
 That's the whole setup. No repo to clone. No database. No CLI required.
 
@@ -76,7 +76,7 @@ That's the whole setup. No repo to clone. No database. No CLI required.
 
 In the app, paste a URL, a note, a doc excerpt, a transcript, or an idea, then hit **Capture**.
 
-Xmu extracts the **core idea**, **key takeaways**, **where to apply it**, and the **capture type**, then commits Markdown to your GitHub repo.
+xkg extracts the **core idea**, **key takeaways**, **where to apply it**, and the **capture type**, then commits Markdown to your GitHub repo.
 
 On a phone: open the app → **Share → Add to Home Screen**. It runs like a native app.
 
@@ -86,7 +86,7 @@ Skip this if you only want the app today. When you're ready, pick your tool unde
 
 ## Connect your AI workers
 
-Xmu is LLM-agnostic. Any worker that speaks MCP can use the same knowledge.
+xkg is LLM-agnostic. Any worker that speaks MCP can use the same knowledge.
 
 Two primitives:
 
@@ -98,13 +98,13 @@ https://mnemos-capture.vercel.app/api/mcp
 npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
-The CLI binary is **`xmu`** (also `mnemos-capture`). `npx` still uses the package name until a standalone `xmu` package ships. An MCP server already registered as `mnemos` keeps working.
+The CLI binary is **`xkg`** (also `xmu` and `mnemos-capture`). `npx` still uses the package name `mnemos-capture`. An MCP server already registered as `xmu` or `mnemos` keeps working.
 
-**On the web** — paste the URL (no terminal). **In the terminal** — run the command. Finish Xmu onboarding first, then ask: *list my inbox* or *brief me*.
+**On the web** — paste the URL (no terminal). **In the terminal** — run the command. Finish xkg onboarding first, then ask: *list my inbox* or *brief me*.
 
 ### On the web
 
-Name the connector `Xmu`, paste `https://mnemos-capture.vercel.app/api/mcp`, sign in with GitHub when asked.
+Name the connector `xkg`, paste `https://mnemos-capture.vercel.app/api/mcp`, sign in with GitHub when asked.
 
 #### Claude
 
@@ -113,7 +113,7 @@ Name the connector `Xmu`, paste `https://mnemos-capture.vercel.app/api/mcp`, sig
 #### ChatGPT
 
 1. Settings → Plugins → Browse plugins
-2. Name it Xmu
+2. Name it xkg
 3. Paste `https://mnemos-capture.vercel.app/api/mcp`
 4. Sign in with GitHub when asked
 
@@ -138,7 +138,7 @@ Add this to `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (all projects):
 ```json
 {
   "mcpServers": {
-    "xmu": {
+    "xkg": {
       "command": "npx",
       "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
     }
@@ -155,7 +155,7 @@ Add this to `.vscode/mcp.json`:
 ```json
 {
   "servers": {
-    "xmu": {
+    "xkg": {
       "command": "npx",
       "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
     }
@@ -170,7 +170,7 @@ GitHub Copilot Chat in VS Code uses the same file.
 Codex CLI — add this to `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.xmu]
+[mcp_servers.xkg]
 command = "npx"
 args = ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
 ```
@@ -180,19 +180,19 @@ Codex App: Settings → MCP → add the same `npx` command.
 #### Gemini CLI
 
 ```bash
-gemini mcp add xmu npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+gemini mcp add xkg npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
 #### Claude Code
 
 ```bash
-claude mcp add xmu -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
+claude mcp add xkg -- npx -y mnemos-capture@latest serve-mcp --key YOUR_API_KEY
 ```
 
 Or the URL, no API key:
 
 ```bash
-claude mcp add --transport http xmu https://mnemos-capture.vercel.app/api/mcp
+claude mcp add --transport http xkg https://mnemos-capture.vercel.app/api/mcp
 ```
 
 Optional session hooks (MCP works without them):
@@ -210,7 +210,7 @@ Settings → Developer → Edit Config. Add the same `npx` block to `claude_desk
 ```json
 {
   "mcpServers": {
-    "xmu": {
+    "xkg": {
       "command": "npx",
       "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
     }
@@ -225,7 +225,7 @@ If the tool can launch a local process, register the same `npx` command. If it h
 ```json
 {
   "mcpServers": {
-    "xmu": {
+    "xkg": {
       "command": "npx",
       "args": ["-y", "mnemos-capture@latest", "serve-mcp", "--key", "YOUR_API_KEY"]
     }
@@ -233,7 +233,7 @@ If the tool can launch a local process, register the same `npx` command. If it h
 }
 ```
 
-No MCP support yet? Capture in the [Xmu app](https://mnemos-capture.vercel.app) and connect later.
+No MCP support yet? Capture in the [xkg app](https://mnemos-capture.vercel.app) and connect later.
 
 ## Workflow
 
@@ -241,7 +241,7 @@ No MCP support yet? Capture in the [Xmu app](https://mnemos-capture.vercel.app) 
   <img src="public/flow-workflow.svg" width="720" alt="Docs and notes → Capture → GitHub Markdown → Brief → Plan → Execute → Mark applied" />
 </p>
 
-1. **Capture** — Paste anything text-based: papers, docs, posts, GitHub repos, notes, decisions, ideas, transcripts. Xmu detects a URL, a short note, or longer text. No manual tagging.
+1. **Capture** — Paste anything text-based: papers, docs, posts, GitHub repos, notes, decisions, ideas, transcripts. xkg detects a URL, a short note, or longer text. No manual tagging.
 
    From a connected worker:
 
@@ -249,7 +249,7 @@ No MCP support yet? Capture in the [Xmu app](https://mnemos-capture.vercel.app) 
    capture "The Mom Test: don't ask if your idea is good. Ask about the person's real behavior, current workflow, and past spending."
    ```
 
-2. **Brief** — At the start of a work session, ask your worker for a briefing. Xmu looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
+2. **Brief** — At the start of a work session, ask your worker for a briefing. xkg looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
 
 3. **Plan** — Select the captures you want and ask your worker to call `generate_plan`. Each plan is Markdown: codebase mapping, implementation steps with effort tiers (`simple`, `complex`, `architectural`), and a verification checklist.
 
@@ -328,7 +328,7 @@ You don't have to memorize these. Ask in plain language: "save this", "what do I
 
 ## CLI
 
-No global install required. The binary is **`xmu`** (also `mnemos-capture`). Via npx:
+No global install required. The binary is **`xkg`** (also `xmu` and `mnemos-capture`). Via npx:
 
 ```bash
 npx -y mnemos-capture@latest <command>
@@ -349,18 +349,18 @@ npx -y mnemos-capture@latest <command>
 
 Captures live as structured Markdown in **your** GitHub repository. Private by default.
 
-- **No lock-in** — clone it, move it, delete Xmu, keep the files
+- **No lock-in** — clone it, move it, delete xkg, keep the files
 - **No proprietary format** — every capture is a readable `.md` file
 - **No training on your data** — captures are sent only to the LLM provider you chose, with the key you supplied, to extract the insight you asked for
 - **Any tool can read it** — anything that reads Git or speaks MCP
 - **BYOK** — your provider, your key, your cost
-- **Never commit your Xmu API key** to source control
+- **Never commit your xkg API key** to source control
 
-### What Xmu stores, and where
+### What xkg stores, and where
 
 The whole point of this repo being public is that you can check these claims rather than trust them.
 
-**Your captures are never stored by Xmu.** They are written straight to your own GitHub repo as Markdown (`src/lib/github.ts`). There is no captures table. Delete the app and your knowledge is untouched.
+**Your captures are never stored by xkg.** They are written straight to your own GitHub repo as Markdown (`src/lib/github.ts`). There is no captures table. Delete the app and your knowledge is untouched.
 
 **The database holds only account plumbing** (`src/lib/db.ts`):
 
@@ -389,7 +389,7 @@ No analytics, no telemetry, no third-party tracking.
 | --- | --- |
 | GitHub token | Encrypted at rest (AES-256-GCM). Uses the `repo` scope, required to read and write a **private** knowledge hub |
 | Your LLM API key | Encrypted at rest (AES-256-GCM) |
-| Your MCP API key | Hashed — never recoverable, not even by Xmu |
+| Your MCP API key | Hashed — never recoverable, not even by xkg |
 | Your PIN | Salted scrypt hash |
 
 Your MCP key is shown exactly once. If you lose it, generate a new one.
@@ -400,7 +400,7 @@ Your MCP key is shown exactly once. If you lose it, generate a new one.
 
 ## Cost
 
-Xmu is BYOK. You bring your own API key. Xmu never charges you for inference.
+xkg is BYOK. You bring your own API key. xkg never charges you for inference.
 
 Extraction runs on a fast, low-cost model (Claude Haiku 4.5 by default):
 
@@ -417,7 +417,7 @@ Briefing, planning, and synthesis only run when you ask for them.
 - **Learning Graph** — Applied work feeds the next brief. The graph compounds.
 - **Knowledge Graph for Teams** — One graph the team and their AI workers share and compound.
 - **Chrome extension** — Capture from the page you are on, without leaving the browser.
-- **Voice memo** — Speak it. Xmu turns it into a capture.
+- **Voice memo** — Speak it. xkg turns it into a capture.
 
 Working on the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -425,11 +425,11 @@ Working on the code? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 [MIT License](./LICENSE)
 
-If you use Xmu in published work:
+If you use xkg in published work:
 
 ```bibtex
 @misc{2026mnemos,
-  title        = {Xmu: A Knowledge Graph for AI workers},
+  title        = {xkg: A Knowledge Graph for AI workers},
   author       = {Sofia Padron Valdez},
   year         = 2026,
   journal      = {GitHub repository},

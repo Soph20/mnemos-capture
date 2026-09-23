@@ -478,7 +478,7 @@ export async function handleGeneratePlan(
     // Plan save is best-effort — return the plan text regardless
   }
 
-  return `${planText}\n\n---\nPlan saved to \`plans/${planFilename}\`\n\nTo implement it in an isolated worktree with your own AI worker, run:\n\n    xmu kos --plan ${planFilename}\n\n(First time? Set your worker once: \`xmu config set agent "claude -p"\` — or "codex exec", "aider --yes --message", etc. Omit --plan to run the most recent plan.)`;
+  return `${planText}\n\n---\nPlan saved to \`plans/${planFilename}\`\n\nTo implement it in an isolated worktree with your own AI worker, run:\n\n    xkg kos --plan ${planFilename}\n\n(First time? Set your worker once: \`xkg config set agent "claude -p"\` — or "codex exec", "aider --yes --message", etc. Omit --plan to run the most recent plan.)`;
 }
 
 export async function handleListPlans(
@@ -542,7 +542,7 @@ export async function handleVaultScan(
   const firstTakeaway = takeawaysMatch?.[1]?.split("\n").find((l) => l.startsWith("- ")) ?? "";
   const basename = topMatch.filename.split("/").pop() ?? topMatch.filename;
 
-  return `Xmu vault match (score: ${Math.round(topMatch.score * 100)}%):
+  return `xkg vault match (score: ${Math.round(topMatch.score * 100)}%):
 
 **${basename.replace(/\.md$/, "")}**
 ${coreIdea}
