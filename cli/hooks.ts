@@ -218,13 +218,7 @@ function detectProjectContext(): string {
     if (log) parts.push(`Recent commits:\n${log}`);
   } catch {}
 
-  // CLAUDE.md — first 800 chars gives the model real project intent
-  try {
-    const root = run("git rev-parse --show-toplevel");
-    const claudeMd = readFileSync(join(root, "CLAUDE.md"), "utf-8").slice(0, 800).trim();
-    if (claudeMd) parts.push(`Project instructions (CLAUDE.md excerpt):\n${claudeMd}`);
-  } catch {}
-
+  // Local agent instructions may contain private maintainer notes; do not upload them.
   return parts.length > 0 ? parts.join("\n\n") : "current project";
 }
 

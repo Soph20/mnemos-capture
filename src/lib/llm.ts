@@ -433,7 +433,7 @@ const BRIEFING_PROMPT = `You compose structured knowledge briefings for AI agent
 
 PART 1 — JSON suggestions block (must come first, before any Markdown):
 Output a JSON array wrapped in \`\`\`json...\`\`\` fences. Each item represents a capture to surface:
-{"filename":"path/to/file.md","why":"one sentence — how this specifically relates to the current branch/task","benefit":"one sentence — what applying this concretely achieves","where":"specific file or module (e.g. src/api/capture/route.ts, CLAUDE.md)","applyNow":true}
+{"filename":"path/to/file.md","why":"one sentence — how this specifically relates to the current branch/task","benefit":"one sentence — what applying this concretely achieves","where":"specific file or module (e.g. src/api/capture/route.ts, docs/conventions.md)","applyNow":true}
 
 applyNow rules:
 - true if capture score >= 0.70 AND insight is directly actionable for the current work
@@ -448,7 +448,7 @@ PART 2 — Markdown briefing (immediately after the JSON block):
 
 RULES:
 - JSON must be valid — no trailing commas, no comments, no extra text before the opening \`\`\`json
-- "why" must reference specifics from the project context (branch name, recent commit messages, CLAUDE.md content)
+- "why" must reference specifics from the supplied project context (branch name, recent commit messages)
 - "where" must name a specific file or module — never "the codebase" or "your project"
 - "benefit" must be concrete — not "improves code quality"
 - Markdown briefing: concise, ≤ 400 words — agents need signal, not essays
@@ -547,7 +547,7 @@ Structure your response exactly as follows:
 # Implementation Plan: [short descriptive title]
 
 ## Context
-Why these captures are relevant now. Ground it in the project context (branch, recent commits, CLAUDE.md).
+Why these captures are relevant now. Ground it in the supplied project context (branch, recent commits).
 
 ## Captures Being Applied
 For each: \`- **[slug]** — [core idea in ≤ 20 words]\`

@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Keep local assistant instructions out of the shared repository.
+  agentRules: false,
   // Serve the OAuth discovery documents from their spec-mandated .well-known
   // paths by rewriting to concrete API routes. MCP clients (Claude iOS/desktop/web)
   // probe these to discover how to authenticate against /api/mcp.

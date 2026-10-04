@@ -68,8 +68,8 @@ export const TOOLS = [
       type: "object" as const,
       properties: {
         filename: { type: "string", description: "Filename in inbox (e.g. '2026-04-02-some-slug.md')" },
-        applied_note: { type: "string", description: "Brief note on how/where the capture was applied (e.g. 'Added as CLAUDE.md rule for error handling')" },
-        target_file: { type: "string", description: "File path where the knowledge was applied (e.g. 'CLAUDE.md', 'src/utils/pricing.ts')" },
+        applied_note: { type: "string", description: "Brief note on how/where the capture was applied (e.g. 'Added an error handling rule to project guidance')" },
+        target_file: { type: "string", description: "File path where the knowledge was applied (e.g. 'docs/conventions.md', 'src/utils/pricing.ts')" },
         outcome: { type: "string", description: "What changed as a result (e.g. 'Reduced error rate by rewriting retry logic per capture advice')" },
         plan_file: { type: "string", description: "Optional plan filename that drove this application (e.g. 'plans/2026-06-04-plan-slug.md') — creates an audit trail linking captures to plans" },
       },
@@ -123,7 +123,7 @@ export const TOOLS = [
   },
   {
     name: "get_rules",
-    description: "Get the synthesized knowledge rules file. Use to populate a project's CLAUDE.md or system prompt with accumulated knowledge. Returns RULES.md content.",
+    description: "Get the synthesized knowledge rules file. Use to populate project guidance or a system prompt with accumulated knowledge. Returns RULES.md content.",
     inputSchema: {
       type: "object" as const,
       properties: {

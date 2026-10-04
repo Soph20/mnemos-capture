@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync, readFileSync, existsSync } from "fs";
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } from "fs";
+import { execFileSync } from "child_process";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -140,6 +141,35 @@ describe("inboxCheck — briefing mode", () => {
       ),
     );
   }
+
+  it("keeps local agent instructions out of the uploaded briefing context", async () => {
+    const projectDir = mkdtempSync(join(tmpdir(), "xkg-private-notes-"));
+    const originalCwd = process.cwd();
+    const privateNote = "PRIVATE_MAINTAINER_NOTE_DO_NOT_UPLOAD";
+    try {
+      execFileSync("git", ["init", "--quiet", projectDir]);
+      writeFileSync(join(projectDir, "CLAUDE.md"), privateNote);
+      writeFileSync(join(projectDir, "AGENTS.md"), privateNote);
+      process.chdir(projectDir);
+      fetchSpy.mockReturnValue(makeMcpResponse(""));
+
+      const { inboxCheck } = await import("../hooks.js");
+      await inboxCheck("test-key", { briefing: true });
+
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const request = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body)) as {
+        params: { name: string; arguments: { project_context: string } };
+      };
+      expect(request.params.name).toBe("briefing");
+      expect(request.params.arguments.project_context).toContain("Project:");
+      expect(request.params.arguments.project_context).not.toContain(privateNote);
+      expect(request.params.arguments.project_context).not.toContain("CLAUDE.md");
+      expect(request.params.arguments.project_context).not.toContain("AGENTS.md");
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(projectDir, { recursive: true, force: true });
+    }
+  });
 
   it("strips the JSON block from display output", async () => {
     fetchSpy.mockReturnValue(makeMcpResponse(`\`\`\`json

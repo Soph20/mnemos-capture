@@ -249,7 +249,7 @@ No MCP support yet? Capture in the [xkg app](https://mnemos-capture.vercel.app) 
    capture "The Mom Test: don't ask if your idea is good. Ask about the person's real behavior, current workflow, and past spending."
    ```
 
-2. **Brief** — At the start of a work session, ask your worker for a briefing. xkg looks at your project (branch, recent commits, `CLAUDE.md`, repo context) and ranks captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. You decide what to apply.
+2. **Brief** — At the start of a work session, ask your worker for a briefing. xkg uses your project name, branch, and recent commit messages to rank captures that could help now: **why** it matters, **what** applying it could achieve, **where** it could land. Local agent instruction files are not read or uploaded by the CLI hooks. You decide what to apply.
 
 3. **Plan** — Select the captures you want and ask your worker to call `generate_plan`. Each plan is Markdown: codebase mapping, implementation steps with effort tiers (`simple`, `complex`, `architectural`), and a verification checklist.
 
