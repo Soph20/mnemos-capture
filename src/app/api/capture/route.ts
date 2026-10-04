@@ -10,7 +10,7 @@ import { consumeQuota } from "@/lib/rate-limit";
  * Capture touches the database, GitHub, and an LLM provider — any of which can
  * throw. An escaped exception makes Next.js answer with its HTML error page,
  * and the client's res.json() then fails with a cryptic browser-engine error
- * instead of the real reason (CLAUDE.md, Source A / Trigger #1). The handler is
+ * instead of the real reason. The handler is
  * wrapped so this route always answers with JSON, whatever fails inside it.
  *
  * This is not hypothetical: adding the quota check surfaced it immediately —
@@ -49,7 +49,7 @@ async function handleCapture(req: NextRequest): Promise<NextResponse> {
   // Parse the body in its own try/catch: an unguarded req.json() throw escapes
   // the handler, Next.js answers with its HTML error page, and the client's
   // res.json() then fails with Safari's "The string did not match the expected
-  // pattern." — the exact failure documented in CLAUDE.md. API routes must
+  // pattern." when the response is HTML. API routes must
   // always return JSON.
   let body: { content?: unknown; title?: unknown };
   try {

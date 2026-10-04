@@ -39,7 +39,7 @@ function isHttpsOrLoopback(uri: string): boolean {
 
 // Wrapped so an escaped exception can never make Next.js answer with HTML —
 // the client would then fail on res.json() with a browser-engine error instead
-// of the real reason. API routes must always return JSON (CLAUDE.md).
+// of the real reason. API routes must always return JSON.
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     return await handlePost(req);

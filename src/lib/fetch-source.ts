@@ -76,7 +76,7 @@ export function isBlockedHost(hostname: string): boolean {
 /**
  * Detect Cloudflare / generic bot-challenge interstitials that are served with
  * status 200 OK in place of the real article. `res.ok === true` does not mean
- * the body is usable — see the "Bot-challenge pages" note in CLAUDE.md.
+ * the body is usable: a challenge page can have a successful status code.
  */
 export function isChallengePage(html: string): boolean {
   const h = html.toLowerCase();
@@ -119,7 +119,7 @@ function safeFromCodePoint(code: number): string {
  * Uses *separate* passes for `<script>` and `<style>` rather than one combined
  * backreference regex: embedded strings like `"</script>"` inside JavaScript
  * make a lazy combined regex stop early and leak code into the output (the bug
- * documented in CLAUDE.md).
+ * caused by parsing an HTML response as JSON).
  */
 export function htmlToText(html: string): string {
   let text = html;

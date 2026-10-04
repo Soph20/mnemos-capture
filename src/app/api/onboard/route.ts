@@ -127,7 +127,7 @@ interface OnboardBody {
 
 // Wrapped so an escaped exception can never make Next.js answer with HTML —
 // the client would then fail on res.json() with a browser-engine error instead
-// of the real reason. API routes must always return JSON (CLAUDE.md).
+// of the real reason. API routes must always return JSON.
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     return await handlePost(req);
@@ -146,7 +146,7 @@ async function handlePost(req: NextRequest): Promise<NextResponse> {
 
   // Own try/catch: an unguarded req.json() throw escapes the handler and Next.js
   // answers with HTML, which makes the client's res.json() fail with Safari's
-  // "The string did not match the expected pattern." (see CLAUDE.md).
+  // "The string did not match the expected pattern." after an HTML response.
   let body: OnboardBody;
   try {
     body = (await req.json()) as OnboardBody;

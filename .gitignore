@@ -10,15 +10,29 @@ dist/
 next-env.d.ts
 
 # Environment
-.env.local
-.env*.local
+.env
+.env.*
+!.env.example
+!.env.*.example
 
 # OS artifacts
 .DS_Store
 Thumbs.db
 
 # Editor / tooling
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+AGENTS.local.md
 .claude/
+.codex/
+.cursor/
+.agents/
+.aws/
+.ssh/
+.xkg/
+.xmu/
+.mnemos/
 .vscode/
 .idea/
 

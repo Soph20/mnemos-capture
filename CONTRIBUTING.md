@@ -26,7 +26,7 @@ You do not need to run xkg to use it — the hosted instance at [mnemos-capture.
 git clone https://github.com/Soph20/mnemos-capture.git
 cd mnemos-capture
 npm ci
-cp .env.example .env
+cp .env.example .env.local
 ```
 
 | Variable | Where it comes from |
@@ -80,12 +80,18 @@ an HTML error page, and the client's `res.json()` then fails with a cryptic brow
 `req.json()` belongs inside its own try/catch — enforced by `route-json-guards.test.ts`.
 
 **Tag errors with their source.** `[capture] ...`, `[auth] ...`. An error string with no origin turns
-every future fix into a guess. [CLAUDE.md](CLAUDE.md) explains what that cost the project once
-already.
+every future fix into a guess. Trace the request and response before assuming what caused an error.
 
-**Read [CLAUDE.md](CLAUDE.md)** before debugging anything strange. It is the accumulated record of
-bugs that were misdiagnosed and why — bot-challenge pages, dropped connections, error strings with
-two different sources.
+## Local files and privacy
+
+Keep environment values, credentials, and personal assistant notes out of Git. `.env.local`, local
+agent instruction files, and assistant settings directories are ignored. Commit only empty or
+non-secret environment templates. Next.js agent-file generation is disabled so starting development
+does not create personal instruction files in the repository.
+
+CLI briefing and vault hooks send the project name, branch, and recent commit messages to the
+hosted service; they do not read local agent instruction files. Vault hooks also send the path of
+the file being edited. Enable these hooks only for project context you intend to share.
 
 ## Pull requests
 
